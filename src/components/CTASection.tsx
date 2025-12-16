@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function CTASection() {
   return (
     <section className="bg-white">
@@ -10,10 +12,13 @@ export function CTASection() {
           grows, without changing how you work.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button className="inline-flex items-center justify-center rounded-full bg-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-600">
+          <Link
+            href="/tools/color-contrast-checker"
+            className="inline-flex items-center justify-center rounded-full bg-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+          >
             Open color contrast checker
-          </button>
-          <button className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50">
+          </Link>
+          <button className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50">
             Learn how WCAG ratios work
           </button>
         </div>
@@ -21,4 +26,3 @@ export function CTASection() {
     </section>
   );
 }
-

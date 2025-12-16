@@ -1,8 +1,10 @@
+import Link from "next/link";
+
 export function Hero() {
   return (
     <section className="border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-14 md:flex-row md:items-center md:gap-16 md:px-8 lg:py-20">
-        <div className="flex-1 space-y-6">
+      <div className="min-h-screen mx-auto flex max-w-6xl flex-col gap-10 px-4 pt-0 pb-14 md:flex-row md:items-center md:gap-16 md:px-8 lg:py-20">
+        <div className="hero-intro flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
             New: Color contrast checker and ratio calculator
@@ -16,12 +18,18 @@ export function Hero() {
             stay accessible.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button className="inline-flex items-center justify-center rounded-full bg-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-600">
+            <Link
+              href="/tools/color-contrast-checker"
+              className="inline-flex items-center justify-center rounded-full bg-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+            >
               Start checking colors
-            </button>
-            <button className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50">
+            </Link>
+            <Link
+              href="#tools"
+              className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50"
+            >
               Explore all tools
-            </button>
+            </Link>
           </div>
           <p className="text-xs text-zinc-500">
             No account required for basic tools. Optimized for designers and
@@ -29,7 +37,7 @@ export function Hero() {
           </p>
         </div>
         <div className="flex-1">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="hero-preview rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-red-500" />
