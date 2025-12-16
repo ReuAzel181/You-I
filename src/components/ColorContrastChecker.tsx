@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 type RgbColor = {
@@ -108,6 +109,88 @@ function normalizeHexInput(value: string): string {
   return `#${hex}`;
 }
 
+function rgbToHex(color: RgbColor): string {
+  const toHex = (channel: number) => channel.toString(16).padStart(2, "0");
+
+  return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
+}
+
+function mixColors(a: RgbColor, b: RgbColor, t: number): RgbColor {
+  const factor = Math.min(1, Math.max(0, t));
+
+  return {
+    r: Math.round(a.r + (b.r - a.r) * factor),
+    g: Math.round(a.g + (b.g - a.g) * factor),
+    b: Math.round(a.b + (b.b - a.b) * factor),
+  };
+}
+
+function suggestAccessibleColor(
+  foregroundHex: string,
+  backgroundHex: string,
+  targetRatio: number,
+): string | null {
+  const currentRatio = getContrastRatio(foregroundHex, backgroundHex);
+
+  if (currentRatio !== null && currentRatio >= targetRatio) {
+    return null;
+  }
+
+  const foreground = parseHexColor(foregroundHex);
+  const background = parseHexColor(backgroundHex);
+
+  if (!foreground || !background) {
+    return null;
+  }
+
+  const blackRatio = getContrastRatio("#000000", backgroundHex) ?? 0;
+  const whiteRatio = getContrastRatio("#ffffff", backgroundHex) ?? 0;
+  const targetHex = blackRatio >= whiteRatio ? "#000000" : "#ffffff";
+  const target = parseHexColor(targetHex);
+
+  if (!target) {
+    return null;
+  }
+
+  let low = 0;
+  let high = 1;
+  let best: RgbColor | null = null;
+
+  for (let index = 0; index < 20; index += 1) {
+    const mid = (low + high) / 2;
+    const mixed = mixColors(foreground, target, mid);
+    const mixedHex = rgbToHex(mixed);
+    const ratio = getContrastRatio(mixedHex, backgroundHex);
+
+    if (ratio !== null && ratio >= targetRatio) {
+      best = mixed;
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+
+  if (!best) {
+    return null;
+  }
+
+  return rgbToHex(best);
+}
+
+function copyHexToClipboard(value: string) {
+  const normalized = normalizeHexInput(value);
+
+  if (!normalized) {
+    return;
+  }
+
+  if (typeof navigator === "undefined" || !navigator.clipboard) {
+    return;
+  }
+
+  navigator.clipboard.writeText(normalized).catch(() => undefined);
+}
+
 type ColorSwatchPickerProps = {
   value: string;
   onChange: (value: string) => void;
@@ -119,15 +202,19 @@ function ColorSwatchPicker({ value, onChange, fallback, label }: ColorSwatchPick
   const normalized = formatHex(value) || fallback;
 
   return (
-    <div className="h-9 w-9 overflow-hidden rounded border border-zinc-200">
+    <label className="relative inline-flex h-full w-9 cursor-pointer items-center justify-center overflow-hidden rounded border border-zinc-400">
+      <span className="sr-only">{label}</span>
+      <span
+        className="absolute inset-0"
+        style={{ backgroundColor: normalized }}
+      />
       <input
         type="color"
-        aria-label={label}
         value={normalized}
         onChange={(event) => onChange(event.target.value)}
-        className="h-full w-full cursor-pointer border-none bg-transparent p-0"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
       />
-    </div>
+    </label>
   );
 }
 
@@ -160,6 +247,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     [formattedContainerColor, formattedTextColor],
   );
 
+  const activeBackgroundColor =
+    effectiveMode === "two" ? formattedBackgroundColor : formattedContainerColor;
+
   const activeRatio = effectiveMode === "two" ? twoColorRatio : containerTextRatio;
   const roundedActiveRatio = activeRatio ? Math.round(activeRatio * 100) / 100 : null;
 
@@ -169,6 +259,14 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
 
   const bgContainerPassAA = bgContainerRatio !== null && bgContainerRatio >= 4.5;
   const containerTextPassAA = containerTextRatio !== null && containerTextRatio >= 4.5;
+
+  const recommendedTextColor = useMemo(
+    () =>
+      activeBackgroundColor && formattedTextColor
+        ? suggestAccessibleColor(formattedTextColor, activeBackgroundColor, 4.5)
+        : null,
+    [formattedTextColor, activeBackgroundColor],
+  );
 
   const previewStyleTwoColor = {
     color: formattedTextColor,
@@ -195,7 +293,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Input
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex h-9 items-center gap-3">
               {isFull && (
                 <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-[11px] font-medium text-zinc-600">
                   <button
@@ -230,52 +328,84 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <label className="block text-xs font-medium text-zinc-700">
                 Text color
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex h-9 items-center gap-2">
                 <ColorSwatchPicker
                   value={textColor}
                   onChange={setTextColor}
                   fallback="#000000"
                   label="Pick text color"
                 />
-                <input
-                  value={textColor}
-                  onChange={(event) => setTextColor(event.target.value)}
-                  onBlur={() => setTextColor((current) => normalizeHexInput(current))}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      setTextColor((current) => normalizeHexInput(current));
-                    }
-                  }}
-                  placeholder="#111827"
-                  className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-                />
+                <div className="relative h-full flex-1">
+                  <input
+                    value={textColor}
+                    onChange={(event) => setTextColor(event.target.value)}
+                    onBlur={() => setTextColor((current) => normalizeHexInput(current))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setTextColor((current) => normalizeHexInput(current));
+                      }
+                    }}
+                    placeholder="#111827"
+                    className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copyHexToClipboard(textColor)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
+                    aria-label="Copy text color value"
+                  >
+                    <Image
+                      src="/icons/copy.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="h-3.5 w-3.5"
+                    />
+                  </button>
+                </div>
               </div>
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
                 Background
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex h-9 items-center gap-2">
                 <ColorSwatchPicker
                   value={backgroundColor}
                   onChange={setBackgroundColor}
                   fallback="#ffffff"
                   label="Pick background color"
                 />
-                <input
-                  value={backgroundColor}
-                  onChange={(event) => setBackgroundColor(event.target.value)}
-                  onBlur={() => setBackgroundColor((current) => normalizeHexInput(current))}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      setBackgroundColor((current) => normalizeHexInput(current));
-                    }
-                  }}
-                  placeholder="#ffffff"
-                  className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-                />
+                <div className="relative h-full flex-1">
+                  <input
+                    value={backgroundColor}
+                    onChange={(event) => setBackgroundColor(event.target.value)}
+                    onBlur={() => setBackgroundColor((current) => normalizeHexInput(current))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setBackgroundColor((current) => normalizeHexInput(current));
+                      }
+                    }}
+                    placeholder="#ffffff"
+                    className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copyHexToClipboard(backgroundColor)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
+                    aria-label="Copy background color value"
+                  >
+                    <Image
+                      src="/icons/copy.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="h-3.5 w-3.5"
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -291,19 +421,35 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   fallback="#f4f4f5"
                   label="Pick container color"
                 />
-                <input
-                  value={containerColor}
-                  onChange={(event) => setContainerColor(event.target.value)}
-                  onBlur={() => setContainerColor((current) => normalizeHexInput(current))}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      setContainerColor((current) => normalizeHexInput(current));
-                    }
-                  }}
-                  placeholder="#f4f4f5"
-                  className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-                />
+                <div className="relative flex-1">
+                  <input
+                    value={containerColor}
+                    onChange={(event) => setContainerColor(event.target.value)}
+                    onBlur={() => setContainerColor((current) => normalizeHexInput(current))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setContainerColor((current) => normalizeHexInput(current));
+                      }
+                    }}
+                    placeholder="#f4f4f5"
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copyHexToClipboard(containerColor)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
+                    aria-label="Copy container color value"
+                  >
+                    <Image
+                      src="/icons/copy.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="h-3.5 w-3.5"
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -345,6 +491,15 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <p className="text-xs font-mono text-amber-600">Enter valid hex colors</p>
             )}
           </div>
+          {isFull && roundedActiveRatio !== null && !passesAANormal && recommendedTextColor && (
+            <div className="mb-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
+              <p className="font-medium">Recommendation</p>
+              <p>
+                Try text color{" "}
+                <span className="font-mono">{recommendedTextColor}</span> to reach AA contrast.
+              </p>
+            </div>
+          )}
           {effectiveMode === "two" && (
             <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
               <div

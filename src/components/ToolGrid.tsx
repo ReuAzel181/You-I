@@ -88,7 +88,7 @@ export function ToolGrid({ pinnedToolName, onPinTool }: ToolGridProps) {
                       }`}
                     >
                       <Image
-                        src="/icons/pin.svg"
+                        src={isPinned ? "/icons/pin-alt.svg" : "/icons/pin.svg"}
                         alt=""
                         width={14}
                         height={14}

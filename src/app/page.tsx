@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Header } from "@/components/Header";
@@ -46,9 +47,16 @@ function PinnedToolHero({ tool, onClear }: PinnedToolHeroProps) {
                   <button
                     type="button"
                     onClick={onClear}
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50"
+                    className="inline-flex items-center justify-center rounded-full bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+                    aria-label="Unpin tool"
                   >
-                    Unpin
+                    <Image
+                      src="/icons/pin-alt.svg"
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="h-4 w-4 -rotate-12"
+                    />
                   </button>
                 </div>
               )}
