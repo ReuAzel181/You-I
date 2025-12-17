@@ -47,7 +47,7 @@ function PinnedToolHero({ tool, onClear }: PinnedToolHeroProps) {
                   <button
                     type="button"
                     onClick={onClear}
-                    className="inline-flex items-center justify-center rounded-full bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+                    className="inline-flex h-full items-center justify-center rounded-full bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
                     aria-label="Unpin tool"
                   >
                     <Image

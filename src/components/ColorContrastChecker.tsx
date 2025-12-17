@@ -1,12 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type RgbColor = {
   r: number;
   g: number;
   b: number;
+};
+
+type HslColor = {
+  h: number;
+  s: number;
+  l: number;
 };
 
 type ColorContrastCheckerProps = {
@@ -115,6 +121,114 @@ function rgbToHex(color: RgbColor): string {
   return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
 }
 
+function rgbToHsl(color: RgbColor): HslColor {
+  const r = color.r / 255;
+  const g = color.g / 255;
+  const b = color.b / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    if (max === r) {
+      h = (g - b) / d + (g < b ? 6 : 0);
+    } else if (max === g) {
+      h = (b - r) / d + 2;
+    } else {
+      h = (r - g) / d + 4;
+    }
+
+    h /= 6;
+  }
+
+  return { h, s, l };
+}
+
+function hslToRgb(color: HslColor): RgbColor {
+  const h = color.h;
+  const s = color.s;
+  const l = color.l;
+
+  if (s === 0) {
+    const value = Math.round(l * 255);
+
+    return { r: value, g: value, b: value };
+  }
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+
+  const hueToRgb = (t: number) => {
+    let temp = t;
+
+    if (temp < 0) {
+      temp += 1;
+    }
+
+    if (temp > 1) {
+      temp -= 1;
+    }
+
+    if (temp < 1 / 6) {
+      return p + (q - p) * 6 * temp;
+    }
+
+    if (temp < 1 / 2) {
+      return q;
+    }
+
+    if (temp < 2 / 3) {
+      return p + (q - p) * (2 / 3 - temp) * 6;
+    }
+
+    return p;
+  };
+
+  const r = Math.round(hueToRgb(h + 1 / 3) * 255);
+  const g = Math.round(hueToRgb(h) * 255);
+  const b = Math.round(hueToRgb(h - 1 / 3) * 255);
+
+  return { r, g, b };
+}
+
+function getHexLightness(value: string, fallback: string): number {
+  const rgb = parseHexColor(value) ?? parseHexColor(fallback);
+
+  if (!rgb) {
+    return 50;
+  }
+
+  const { l } = rgbToHsl(rgb);
+
+  return Math.round(l * 100);
+}
+
+function setHexLightness(value: string, fallback: string, lightnessPercent: number): string {
+  const clamped = Math.min(100, Math.max(0, lightnessPercent));
+  const rgb = parseHexColor(value) ?? parseHexColor(fallback);
+
+  if (!rgb) {
+    return fallback;
+  }
+
+  const hsl = rgbToHsl(rgb);
+  const updated = hslToRgb({
+    h: hsl.h,
+    s: hsl.s,
+    l: clamped / 100,
+  });
+
+  return rgbToHex(updated);
+}
+
 function mixColors(a: RgbColor, b: RgbColor, t: number): RgbColor {
   const factor = Math.min(1, Math.max(0, t));
 
@@ -184,11 +298,31 @@ function copyHexToClipboard(value: string) {
     return;
   }
 
-  if (typeof navigator === "undefined" || !navigator.clipboard) {
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    navigator.clipboard.writeText(normalized).catch(() => undefined);
+
     return;
   }
 
-  navigator.clipboard.writeText(normalized).catch(() => undefined);
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+
+  textarea.value = normalized;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }
 
 type ColorSwatchPickerProps = {
@@ -224,6 +358,8 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const [containerColor, setContainerColor] = useState("#f4f4f5");
   const [fontSize, setFontSize] = useState("16");
   const [colorMode, setColorMode] = useState<"two" | "three">("two");
+  const [copyNotice, setCopyNotice] = useState<string | null>(null);
+  const copyNoticeTimeoutRef = useRef<number | null>(null);
 
   const isFull = variant === "full";
   const effectiveMode = isFull ? colorMode : "two";
@@ -256,6 +392,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const passesAANormal = activeRatio !== null && activeRatio >= 4.5;
   const passesAAALarge = activeRatio !== null && activeRatio >= 3;
   const passesAAA = activeRatio !== null && activeRatio >= 7;
+  const passesAPlus = activeRatio !== null && activeRatio >= 12.5;
 
   const bgContainerPassAA = bgContainerRatio !== null && bgContainerRatio >= 4.5;
   const containerTextPassAA = containerTextRatio !== null && containerTextRatio >= 4.5;
@@ -271,7 +408,6 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const previewStyleTwoColor = {
     color: formattedTextColor,
     backgroundColor: formattedBackgroundColor,
-    fontSize: `${Number.parseInt(fontSize || "16", 10)}px`,
   };
 
   const previewStyleThreeColorOuter = {
@@ -281,13 +417,41 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const previewStyleThreeColorInner = {
     backgroundColor: formattedContainerColor,
     color: formattedTextColor,
-    fontSize: `${Number.parseInt(fontSize || "16", 10)}px`,
   };
+
+  const fontSizeNumberRaw = Number.parseInt(fontSize || "16", 10);
+  const fontSizeNumber = Number.isNaN(fontSizeNumberRaw) ? 16 : fontSizeNumberRaw;
+  const headingFontSize = fontSizeNumber;
+  const supportingFontSize = Math.max(10, fontSizeNumber - 2);
+  const bodyFontSize = 14;
+
+  const handleCopy = (value: string, label: string) => {
+    copyHexToClipboard(value);
+    setCopyNotice(label);
+
+    if (copyNoticeTimeoutRef.current !== null) {
+      window.clearTimeout(copyNoticeTimeoutRef.current);
+    }
+
+    copyNoticeTimeoutRef.current = window.setTimeout(() => {
+      setCopyNotice(null);
+      copyNoticeTimeoutRef.current = null;
+    }, 1500);
+  };
+
+  useEffect(
+    () => () => {
+      if (copyNoticeTimeoutRef.current !== null) {
+        window.clearTimeout(copyNoticeTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <div className="grid gap-6 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
       <div className="space-y-4">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
+        <div className="relative rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -323,6 +487,11 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <p className="text-xs text-zinc-400">Hex values, with or without #</p>
             </div>
           </div>
+          {copyNotice && (
+            <div className="pointer-events-none absolute right-4 top-4 rounded-md bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700 shadow-sm">
+              Copied {copyNotice}
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
@@ -349,9 +518,10 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     placeholder="#111827"
                     className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
+                  <span className="pointer-events-none absolute inset-y-1 right-8 w-px bg-zinc-200" />
                   <button
                     type="button"
-                    onClick={() => copyHexToClipboard(textColor)}
+                    onClick={() => handleCopy(textColor, "text color")}
                     className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
                     aria-label="Copy text color value"
                   >
@@ -365,6 +535,16 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                 </div>
               </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={getHexLightness(textColor, "#111827")}
+                onChange={(event) =>
+                  setTextColor(setHexLightness(textColor, "#111827", Number(event.target.value)))
+                }
+                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+              />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
@@ -391,9 +571,10 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     placeholder="#ffffff"
                     className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
+                  <span className="pointer-events-none absolute inset-y-1 right-8 w-px bg-zinc-200" />
                   <button
                     type="button"
-                    onClick={() => copyHexToClipboard(backgroundColor)}
+                    onClick={() => handleCopy(backgroundColor, "background color")}
                     className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
                     aria-label="Copy background color value"
                   >
@@ -407,6 +588,18 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                 </div>
               </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={getHexLightness(backgroundColor, "#ffffff")}
+                onChange={(event) =>
+                  setBackgroundColor(
+                    setHexLightness(backgroundColor, "#ffffff", Number(event.target.value)),
+                  )
+                }
+                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+              />
             </div>
           </div>
           {isFull && effectiveMode === "three" && (
@@ -435,9 +628,10 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     placeholder="#f4f4f5"
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
+                  <span className="pointer-events-none absolute inset-y-1 right-8 w-px bg-zinc-200" />
                   <button
                     type="button"
-                    onClick={() => copyHexToClipboard(containerColor)}
+                    onClick={() => handleCopy(containerColor, "container color")}
                     className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
                     aria-label="Copy container color value"
                   >
@@ -451,21 +645,35 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                 </div>
               </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={getHexLightness(containerColor, "#f4f4f5")}
+                onChange={(event) =>
+                  setContainerColor(
+                    setHexLightness(containerColor, "#f4f4f5", Number(event.target.value)),
+                  )
+                }
+                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+              />
             </div>
           )}
-          <div className="mt-4 space-y-2">
-            <label className="block text-xs font-medium text-zinc-700">
-              Font size (px)
-            </label>
-            <input
-              type="number"
-              min={10}
-              max={72}
-              value={fontSize}
-              onChange={(event) => setFontSize(event.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-            />
-          </div>
+          {isFull && (
+            <div className="mt-4 space-y-2">
+              <label className="block text-xs font-medium text-zinc-700">
+                Font size (px)
+              </label>
+              <input
+                type="number"
+                min={10}
+                max={72}
+                value={fontSize}
+                onChange={(event) => setFontSize(event.target.value)}
+                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+              />
+            </div>
+          )}
         </div>
       </div>
       <div className="space-y-4">
@@ -473,10 +681,24 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
           <div className="mb-4 flex items-center justify-between">
             <p className="text-xs font-medium text-zinc-500">Preview</p>
             {roundedActiveRatio !== null ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs font-mono text-zinc-500">
                   {roundedActiveRatio.toFixed(2)} : 1
                 </p>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    passesAPlus ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"
+                  }`}
+                >
+                  {passesAPlus ? "Pass A+" : "Fail A+"}
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    passesAAA ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"
+                  }`}
+                >
+                  {passesAAA ? "Pass AAA" : "Fail AAA"}
+                </span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     passesAANormal
@@ -508,19 +730,19 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               >
                 <p
                   className="font-semibold"
-                  style={{ fontSize: "1.05em" }}
+                  style={{ fontSize: `${headingFontSize}px` }}
                 >
                   Sample interface heading
                 </p>
                 <p
                   className="font-medium"
-                  style={{ fontSize: "0.95em" }}
+                  style={{ fontSize: `${supportingFontSize}px` }}
                 >
                   Supporting line with medium emphasis for short descriptions.
                 </p>
                 <p
                   className="mt-1 opacity-80"
-                  style={{ fontSize: "0.9em" }}
+                  style={{ fontSize: `${bodyFontSize}px` }}
                 >
                   Long-form body copy appears at a regular weight to check comfortable reading.
                 </p>
@@ -586,19 +808,19 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 >
                   <p
                     className="font-semibold"
-                    style={{ fontSize: "1.05em" }}
+                    style={{ fontSize: `${headingFontSize}px` }}
                   >
                     Container heading example
                   </p>
                   <p
                     className="font-medium"
-                    style={{ fontSize: "0.95em" }}
+                    style={{ fontSize: `${supportingFontSize}px` }}
                   >
                     Medium-emphasis copy tested against the container surface.
                   </p>
                   <p
                     className="mt-1 opacity-80"
-                    style={{ fontSize: "0.9em" }}
+                    style={{ fontSize: `${bodyFontSize}px` }}
                   >
                     Background, container, and text are all evaluated separately for clarity.
                   </p>
