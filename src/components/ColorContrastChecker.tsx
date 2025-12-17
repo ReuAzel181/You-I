@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import type { MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type RgbColor = {
@@ -13,6 +14,12 @@ type HslColor = {
   h: number;
   s: number;
   l: number;
+};
+
+type CopyNoticeState = {
+  label: string;
+  x: number;
+  y: number;
 };
 
 type ColorContrastCheckerProps = {
@@ -229,6 +236,16 @@ function setHexLightness(value: string, fallback: string, lightnessPercent: numb
   return rgbToHex(updated);
 }
 
+function hexToRgbString(value: string, fallback: string): string {
+  const rgb = parseHexColor(value) ?? parseHexColor(fallback);
+
+  if (!rgb) {
+    return "";
+  }
+
+  return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+}
+
 function mixColors(a: RgbColor, b: RgbColor, t: number): RgbColor {
   const factor = Math.min(1, Math.max(0, t));
 
@@ -358,8 +375,25 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const [containerColor, setContainerColor] = useState("#f4f4f5");
   const [fontSize, setFontSize] = useState("16");
   const [colorMode, setColorMode] = useState<"two" | "three">("two");
-  const [copyNotice, setCopyNotice] = useState<string | null>(null);
+  const [presets, setPresets] = useState<
+    {
+      id: number;
+      name: string;
+      textColor: string;
+      backgroundColor: string;
+      containerColor: string;
+      fontSize: string;
+      mode: "two" | "three";
+    }[]
+  >([]);
+  const [presetName, setPresetName] = useState("Preset 1");
+  const [editingPresetId, setEditingPresetId] = useState<number | null>(null);
+  const [copyNotice, setCopyNotice] = useState<CopyNoticeState | null>(null);
   const copyNoticeTimeoutRef = useRef<number | null>(null);
+  const inputCardRef = useRef<HTMLDivElement | null>(null);
+  const [whatIfTarget, setWhatIfTarget] = useState<
+    "aa-normal" | "aa-large" | "aaa" | "a-plus"
+  >("aa-normal");
 
   const isFull = variant === "full";
   const effectiveMode = isFull ? colorMode : "two";
@@ -397,6 +431,38 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const bgContainerPassAA = bgContainerRatio !== null && bgContainerRatio >= 4.5;
   const containerTextPassAA = containerTextRatio !== null && containerTextRatio >= 4.5;
 
+  const whatIfTargetRatio = useMemo(() => {
+    if (whatIfTarget === "aa-large") {
+      return 3;
+    }
+
+    if (whatIfTarget === "aaa") {
+      return 7;
+    }
+
+    if (whatIfTarget === "a-plus") {
+      return 12.5;
+    }
+
+    return 4.5;
+  }, [whatIfTarget]);
+
+  const whatIfTextSuggestion = useMemo(
+    () =>
+      activeBackgroundColor && formattedTextColor
+        ? suggestAccessibleColor(formattedTextColor, activeBackgroundColor, whatIfTargetRatio)
+        : null,
+    [formattedTextColor, activeBackgroundColor, whatIfTargetRatio],
+  );
+
+  const whatIfBackgroundSuggestion = useMemo(
+    () =>
+      activeBackgroundColor && formattedTextColor
+        ? suggestAccessibleColor(activeBackgroundColor, formattedTextColor, whatIfTargetRatio)
+        : null,
+    [activeBackgroundColor, formattedTextColor, whatIfTargetRatio],
+  );
+
   const recommendedTextColor = useMemo(
     () =>
       activeBackgroundColor && formattedTextColor
@@ -419,15 +485,59 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     color: formattedTextColor,
   };
 
+  const handleSavePreset = () => {
+    const trimmedName = presetName.trim();
+    const name = trimmedName || `Preset ${presets.length + 1}`;
+
+    setPresets((current) => {
+      const nextId = Date.now();
+
+      return [
+        ...current,
+        {
+          id: nextId,
+          name,
+          textColor,
+          backgroundColor,
+          containerColor,
+          fontSize,
+          mode: colorMode,
+        },
+      ];
+    });
+
+    setPresetName(`Preset ${presets.length + 2}`);
+  };
+
+  const handlePresetNameChange = (presetId: number, name: string) => {
+    setPresets((current) =>
+      current.map((preset) => (preset.id === presetId ? { ...preset, name } : preset)),
+    );
+  };
+
   const fontSizeNumberRaw = Number.parseInt(fontSize || "16", 10);
   const fontSizeNumber = Number.isNaN(fontSizeNumberRaw) ? 16 : fontSizeNumberRaw;
   const headingFontSize = fontSizeNumber;
   const supportingFontSize = Math.max(10, fontSizeNumber - 2);
   const bodyFontSize = 14;
 
-  const handleCopy = (value: string, label: string) => {
+  const handleCopy = (value: string, label: string, event: MouseEvent<HTMLElement>) => {
     copyHexToClipboard(value);
-    setCopyNotice(label);
+    const card = inputCardRef.current;
+
+    if (card) {
+      const rect = card.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      setCopyNotice({ label, x, y });
+    } else {
+      setCopyNotice({
+        label,
+        x: 0,
+        y: 0,
+      });
+    }
 
     if (copyNoticeTimeoutRef.current !== null) {
       window.clearTimeout(copyNoticeTimeoutRef.current);
@@ -449,24 +559,31 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   );
 
   return (
-    <div className="grid gap-6 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
-      <div className="space-y-4">
-        <div className="relative rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
-          <div className="mb-4 flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-6 md:flex-row">
+        <div className="space-y-4 md:flex-1 md:basis-0">
+        <div
+          ref={inputCardRef}
+          className="relative rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6"
+        >
+          <div className="mb-4 flex items-center">
             <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Input
             </div>
-            <div className="flex h-9 items-center gap-3">
+            <div className="ml-auto flex h-9 w-[264px] flex-none items-center justify-end gap-3 whitespace-nowrap">
               {isFull && (
-                <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-[11px] font-medium text-zinc-600">
+                <div className="relative inline-flex h-8 w-[170px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-1 text-[11px] font-medium">
+                  <span
+                    className={`absolute inset-y-1 left-0 w-1/2 rounded-full bg-red-500 transition-transform duration-300 ease-out ${
+                      effectiveMode === "two" ? "translate-x-0" : "translate-x-full"
+                    }`}
+                  />
                   <button
                     type="button"
                     onClick={() => setColorMode("two")}
-                    className={`rounded-full px-2 py-0.5 ${
-                      effectiveMode === "two"
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500"
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                      effectiveMode === "two" ? "text-white" : "text-zinc-700"
                     }`}
                   >
                     2 colors
@@ -474,10 +591,8 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   <button
                     type="button"
                     onClick={() => setColorMode("three")}
-                    className={`rounded-full px-2 py-0.5 ${
-                      effectiveMode === "three"
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500"
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                      effectiveMode === "three" ? "text-white" : "text-zinc-700"
                     }`}
                   >
                     3 colors
@@ -488,11 +603,14 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             </div>
           </div>
           {copyNotice && (
-            <div className="pointer-events-none absolute right-4 top-4 rounded-md bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700 shadow-sm">
-              Copied {copyNotice}
+            <div
+              className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-md bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white shadow-lg"
+              style={{ left: copyNotice.x, top: copyNotice.y }}
+            >
+              Copied 
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
                 Text color
@@ -521,7 +639,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   <span className="pointer-events-none absolute inset-y-1 right-8 w-px bg-zinc-200" />
                   <button
                     type="button"
-                    onClick={() => handleCopy(textColor, "text color")}
+                    onClick={(event) => handleCopy(textColor, "text color", event)}
                     className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
                     aria-label="Copy text color value"
                   >
@@ -574,7 +692,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   <span className="pointer-events-none absolute inset-y-1 right-8 w-px bg-zinc-200" />
                   <button
                     type="button"
-                    onClick={() => handleCopy(backgroundColor, "background color")}
+                    onClick={(event) => handleCopy(backgroundColor, "background color", event)}
                     className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
                     aria-label="Copy background color value"
                   >
@@ -607,7 +725,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <label className="block text-xs font-medium text-zinc-700">
                 Container
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex h-9 items-center gap-3">
                 <ColorSwatchPicker
                   value={containerColor}
                   onChange={setContainerColor}
@@ -626,12 +744,12 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                       }
                     }}
                     placeholder="#f4f4f5"
-                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                    className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
                   <span className="pointer-events-none absolute inset-y-1 right-8 w-px bg-zinc-200" />
                   <button
                     type="button"
-                    onClick={() => handleCopy(containerColor, "container color")}
+                    onClick={(event) => handleCopy(containerColor, "container color", event)}
                     className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-600"
                     aria-label="Copy container color value"
                   >
@@ -674,9 +792,166 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               />
             </div>
           )}
+          {isFull && roundedActiveRatio !== null && !passesAANormal && recommendedTextColor && (
+            <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">Recommendation</p>
+                  <p>Try this text color to reach AA contrast.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    handleCopy(recommendedTextColor, "recommended text color", event)
+                  }
+                  className="rounded-md bg-amber-500 px-2 py-1 text-[11px] font-mono font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-amber-600"
+                >
+                  {recommendedTextColor}
+                </button>
+              </div>
+            </div>
+          )}
+          {isFull && (
+            <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-[11px] leading-snug text-zinc-800">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-medium">What-if contrast simulator</p>
+                <div className="relative inline-flex h-7 w-[220px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-0.5 text-[10px]">
+                  <span
+                    className={`absolute inset-y-1 left-0 w-1/4 rounded-full bg-zinc-900 transition-transform duration-300 ease-out ${
+                      whatIfTarget === "aa-normal"
+                        ? "translate-x-0"
+                        : whatIfTarget === "aa-large"
+                          ? "translate-x-full"
+                          : whatIfTarget === "aaa"
+                            ? "translate-x-[200%]"
+                            : "translate-x-[300%]"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setWhatIfTarget("aa-normal")}
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                      whatIfTarget === "aa-normal" ? "text-white" : "text-zinc-600"
+                    }`}
+                  >
+                    AA
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatIfTarget("aa-large")}
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                      whatIfTarget === "aa-large" ? "text-white" : "text-zinc-600"
+                    }`}
+                  >CIO
+                    AA large
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatIfTarget("aaa")}
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                      whatIfTarget === "aaa" ? "text-white" : "text-zinc-600"
+                    }`}
+                  >
+                    AAA
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatIfTarget("a-plus")}
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                      whatIfTarget === "a-plus" ? "text-white" : "text-zinc-600"
+                    }`}
+                  >
+                    A+
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                    Suggested text color
+                  </p>
+                  {whatIfTextSuggestion ? (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: whatIfTextSuggestion }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTextColor(whatIfTextSuggestion)}
+                        className="rounded border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                      >
+                        {whatIfTextSuggestion}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) =>
+                          handleCopy(whatIfTextSuggestion, "what-if text color", event)
+                        }
+                        className="text-zinc-400 transition-colors hover:text-zinc-700"
+                        aria-label="Copy suggested text color"
+                      >
+                        <Image
+                          src="/icons/copy.svg"
+                          alt=""
+                          width={14}
+                          height={14}
+                          className="h-3.5 w-3.5"
+                        />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-zinc-500">
+                      Enter valid colors to see suggestions.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                    Suggested background
+                  </p>
+                  {whatIfBackgroundSuggestion ? (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: whatIfBackgroundSuggestion }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setBackgroundColor(whatIfBackgroundSuggestion)}
+                        className="rounded border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                      >
+                        {whatIfBackgroundSuggestion}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) =>
+                          handleCopy(whatIfBackgroundSuggestion, "what-if background color", event)
+                        }
+                        className="text-zinc-400 transition-colors hover:text-zinc-700"
+                        aria-label="Copy suggested background color"
+                      >
+                        <Image
+                          src="/icons/copy.svg"
+                          alt=""
+                          width={14}
+                          height={14}
+                          className="h-3.5 w-3.5"
+                        />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-zinc-500">
+                      Enter valid colors to see suggestions.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      <div className="space-y-4">
+        <div className="space-y-4 md:flex-1 md:basis-0">
         <div className="hero-preview rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-xs font-medium text-zinc-500">Preview</p>
@@ -713,15 +988,6 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <p className="text-xs font-mono text-amber-600">Enter valid hex colors</p>
             )}
           </div>
-          {isFull && roundedActiveRatio !== null && !passesAANormal && recommendedTextColor && (
-            <div className="mb-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
-              <p className="font-medium">Recommendation</p>
-              <p>
-                Try text color{" "}
-                <span className="font-mono">{recommendedTextColor}</span> to reach AA contrast.
-              </p>
-            </div>
-          )}
           {effectiveMode === "two" && (
             <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
               <div
@@ -803,7 +1069,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 style={previewStyleThreeColorOuter}
               >
                 <div
-                  className="rounded-md border border-zinc-200 px-3 py-3"
+                  className="rounded-md px-3 py-3"
                   style={previewStyleThreeColorInner}
                 >
                   <p
@@ -869,5 +1135,197 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
         </div>
       </div>
     </div>
+    {isFull && (
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-medium text-zinc-500">Presets</p>
+            {presets.length > 0 && (
+              <p className="text-[11px] text-zinc-400">{presets.length} saved</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              value={presetName}
+              onChange={(event) => setPresetName(event.target.value)}
+              placeholder={`Preset ${presets.length + 1}`}
+              className="h-8 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+            />
+            <button
+              type="button"
+              onClick={handleSavePreset}
+              className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+            >
+              Save preset
+            </button>
+          </div>
+          {presets.length > 0 && (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {presets.map((preset) => {
+                const formattedText = formatHex(preset.textColor) || "#111827";
+                const formattedBackground = formatHex(preset.backgroundColor) || "#ffffff";
+                const formattedContainer = formatHex(preset.containerColor) || "#f4f4f5";
+
+                return (
+                  <div
+                    key={preset.id}
+                    className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-[11px] text-zinc-800"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1">
+                        {editingPresetId === preset.id ? (
+                          <input
+                            autoFocus
+                            value={preset.name}
+                            onChange={(event) =>
+                              handlePresetNameChange(preset.id, event.target.value)
+                            }
+                            onBlur={() => setEditingPresetId(null)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === "Escape") {
+                                event.preventDefault();
+                                setEditingPresetId(null);
+                              }
+                            }}
+                            className="h-6 rounded border border-zinc-200 bg-white px-2 text-[11px] text-zinc-900 outline-none ring-red-100 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                          />
+                        ) : (
+                          <p className="font-medium">{preset.name}</p>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditingPresetId(preset.id)}
+                            className="flex h-6 w-6 items-center justify-center rounded-full border border-transparent text-[10px] text-zinc-400 transition-colors hover:border-zinc-200 hover:bg-white hover:text-zinc-700"
+                            aria-label="Edit preset name"
+                          >
+                            <Image
+                              src="/icons/pen.svg"
+                              alt=""
+                              width={14}
+                              height={14}
+                              className="h-3.5 w-3.5"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPresets((current) =>
+                                current.filter((item) => item.id !== preset.id),
+                              );
+                              if (editingPresetId === preset.id) {
+                                setEditingPresetId(null);
+                              }
+                            }}
+                            className="text-[10px] text-zinc-400 transition-colors hover:text-red-500"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTextColor(preset.textColor);
+                          setBackgroundColor(preset.backgroundColor);
+                          setContainerColor(preset.containerColor);
+                          setFontSize(preset.fontSize);
+                          setColorMode(preset.mode);
+                        }}
+                        className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-700 hover:border-red-200 hover:bg-red-50"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div className="flex items-start gap-2">
+                        <span
+                          className="mt-0.5 h-3 w-3 rounded-full"
+                          style={{ backgroundColor: formattedText }}
+                        />
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                            Text
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(event) =>
+                                handleCopy(preset.textColor, "preset text color", event)
+                              }
+                              className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                            >
+                              {formattedText}
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-zinc-500">
+                            {hexToRgbString(formattedText, "#111827")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span
+                          className="mt-0.5 h-3 w-3 rounded-full"
+                          style={{ backgroundColor: formattedBackground }}
+                        />
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                            Background
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(event) =>
+                                handleCopy(preset.backgroundColor, "preset background color", event)
+                              }
+                              className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                            >
+                              {formattedBackground}
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-zinc-500">
+                            {hexToRgbString(formattedBackground, "#ffffff")}
+                          </p>
+                        </div>
+                      </div>
+                      {preset.mode === "three" && (
+                        <div className="flex items-start gap-2">
+                          <span
+                            className="mt-0.5 h-3 w-3 rounded-full"
+                            style={{ backgroundColor: formattedContainer }}
+                          />
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                              Container
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(event) =>
+                                  handleCopy(
+                                    preset.containerColor,
+                                    "preset container color",
+                                    event,
+                                  )
+                                }
+                                className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                              >
+                                {formattedContainer}
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              {hexToRgbString(formattedContainer, "#f4f4f5")}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+  </div>
   );
 }

@@ -8,7 +8,7 @@ export default function ColorContrastCheckerPage() {
       <Header />
       <main>
         <section className="">
-          <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
+          <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-8">
             <div className="hero-intro space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -18,8 +18,7 @@ export default function ColorContrastCheckerPage() {
                 Color contrast checker
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                Enter text and background colors to see WCAG contrast ratios, evaluate AA and AAA
-                states, and grade multi-layer layouts.
+                Check text and background colors for WCAG contrast & AA/AAA compliance.
               </p>
             </div>
           </div>
