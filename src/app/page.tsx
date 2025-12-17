@@ -69,7 +69,7 @@ function getPinnedToolIcon(toolName: string) {
 function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
   return (
     <section className="min-h-screen border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center pt-0 pb-12 md:px-8">
+      <div className="mx-auto flex min-h-screen px-4 max-w-6xl flex-col justify-center pt-0 pb-12 md:px-8">
         <div className="space-y-8">
        
           <div className="space-y-10">

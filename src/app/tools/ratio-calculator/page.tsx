@@ -18,8 +18,9 @@ export default function RatioCalculatorPage() {
                 Ratio calculator
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                Calculate matching dimensions for any aspect ratio. Pick a preset like 16:9 or set
-                your own, enter either width or height, and get the other value instantly.
+                Calculate matching dimensions for any aspect ratio. Pick presets like 16:9, 1:1,
+                4:5, or 9:16, or set your own, enter either width or height, and get the other
+                value instantly.
               </p>
             </div>
           </div>
