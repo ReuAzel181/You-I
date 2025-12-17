@@ -16,6 +16,7 @@ export const tools: Tool[] = [
   {
     name: "Ratio calculator",
     description: "See pass/fail states for AA and AAA across font sizes.",
+    href: "/tools/ratio-calculator",
   },
   {
     name: "Palette comparisons",
@@ -36,11 +37,11 @@ export const tools: Tool[] = [
 ];
 
 type ToolGridProps = {
-  pinnedToolName?: string | null;
+  pinnedToolNames?: string[] | null;
   onPinTool?: (tool: Tool) => void;
 };
 
-export function ToolGrid({ pinnedToolName, onPinTool }: ToolGridProps) {
+export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
   return (
     <section id="tools" className="border-b border-zinc-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
@@ -59,7 +60,7 @@ export function ToolGrid({ pinnedToolName, onPinTool }: ToolGridProps) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tools.map((tool) => {
-            const isPinned = tool.name === pinnedToolName;
+            const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
             const hasHref = Boolean(tool.href);
 
             return (
@@ -81,9 +82,9 @@ export function ToolGrid({ pinnedToolName, onPinTool }: ToolGridProps) {
                       type="button"
                       onClick={() => onPinTool(tool)}
                       aria-pressed={isPinned}
-                      className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold transition-colors transition-transform duration-200 ${
                         isPinned
-                          ? "border-red-500 bg-red-500 text-white"
+                          ? "border-red-500 bg-red-500 text-white scale-105"
                           : "border-zinc-200 bg-white text-zinc-500 hover:border-red-200 hover:text-red-500"
                       }`}
                     >
@@ -92,7 +93,9 @@ export function ToolGrid({ pinnedToolName, onPinTool }: ToolGridProps) {
                         alt=""
                         width={14}
                         height={14}
-                        className="h-3.5 w-3.5 -rotate-12"
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                          isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
+                        }`}
                       />
                     </button>
                   )}

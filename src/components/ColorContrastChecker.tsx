@@ -558,9 +558,11 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     [],
   );
 
+  const layoutDirectionClass = isFull ? "flex flex-col gap-6 md:flex-row" : "flex flex-col gap-6";
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-6 md:flex-row">
+      <div className={layoutDirectionClass}>
         <div className="space-y-4 md:flex-1 md:basis-0">
         <div
           ref={inputCardRef}
@@ -815,7 +817,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-[11px] leading-snug text-zinc-800">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-medium">What-if contrast simulator</p>
-                <div className="relative inline-flex h-7 w-[220px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-0.5 text-[10px]">
+                <div className="relative inline-flex h-7 w-[260px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-0.5 text-[10px]">
                   <span
                     className={`absolute inset-y-1 left-0 w-1/4 rounded-full bg-zinc-900 transition-transform duration-300 ease-out ${
                       whatIfTarget === "aa-normal"
@@ -830,7 +832,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   <button
                     type="button"
                     onClick={() => setWhatIfTarget("aa-normal")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "aa-normal" ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -839,16 +841,16 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   <button
                     type="button"
                     onClick={() => setWhatIfTarget("aa-large")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "aa-large" ? "text-white" : "text-zinc-600"
                     }`}
-                  >CIO
+                  >
                     AA large
                   </button>
                   <button
                     type="button"
                     onClick={() => setWhatIfTarget("aaa")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "aaa" ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -857,7 +859,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   <button
                     type="button"
                     onClick={() => setWhatIfTarget("a-plus")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "a-plus" ? "text-white" : "text-zinc-600"
                     }`}
                   >
