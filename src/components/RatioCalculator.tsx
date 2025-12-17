@@ -27,6 +27,7 @@ const ratioPresets: RatioPreset[] = [
 
 type RatioCalculatorProps = {
   variant?: "simple" | "full";
+  onDimensionsChange?: (dimensions: { width: number | null; height: number | null }) => void;
 };
 
 type CopyNoticeState = {
@@ -85,7 +86,7 @@ function copyToClipboard(value: string) {
   document.body.removeChild(textarea);
 }
 
-export function RatioCalculator({ variant = "full" }: RatioCalculatorProps) {
+export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioCalculatorProps) {
   const [presetId, setPresetId] = useState<RatioPresetId>("16:9");
   const [customWidthRatio, setCustomWidthRatio] = useState("16");
   const [customHeightRatio, setCustomHeightRatio] = useState("9");
@@ -143,30 +144,6 @@ export function RatioCalculator({ variant = "full" }: RatioCalculatorProps) {
 
   const sizeBarPercent =
     relativeSizePercent !== null ? Math.max(4, Math.min(relativeSizePercent, 100)) : 0;
-
-  const viewportWidthPx = 1510;
-  const previewMaxWidth = 260;
-  const previewMaxHeight = 140;
-
-  const previewScale = useMemo(() => {
-    if (!hasDimensions || numericWidth <= 0 || numericHeight <= 0) {
-      return 0;
-    }
-
-    const widthScale = previewMaxWidth / viewportWidthPx;
-    const scaledHeight = numericHeight * widthScale;
-
-    if (scaledHeight <= previewMaxHeight) {
-      return widthScale;
-    }
-
-    const heightAdjustment = previewMaxHeight / scaledHeight;
-
-    return widthScale * heightAdjustment;
-  }, [hasDimensions, numericHeight, numericWidth, previewMaxHeight, previewMaxWidth, viewportWidthPx]);
-
-  const previewBoxWidth = hasDimensions ? Math.max(8, numericWidth * previewScale) : 0;
-  const previewBoxHeight = hasDimensions ? Math.max(8, numericHeight * previewScale) : 0;
 
   const updateFromWidth = (rawValue: string) => {
     const value = sanitizeIntegerInput(rawValue);
@@ -306,24 +283,19 @@ export function RatioCalculator({ variant = "full" }: RatioCalculatorProps) {
     },
     [],
   );
-
-  const summaryText = useMemo(() => {
-    if (!ratioValue) {
-      return "";
+  useEffect(() => {
+    if (!onDimensionsChange) {
+      return;
     }
 
-    const label = `${ratio.width}:${ratio.height}`;
+    const parsedWidth = Number.parseFloat(width);
+    const parsedHeight = Number.parseFloat(height);
 
-    if (lastCalculatedFrom === "width" && width && height) {
-      return `${width} × ${height} keeps a ${label} frame (${ratioValue}:1).`;
-    }
-
-    if (lastCalculatedFrom === "height" && width && height) {
-      return `${width} × ${height} keeps a ${label} frame (${ratioValue}:1).`;
-    }
-
-    return `${label} means ${ratio.width} units wide for every ${ratio.height} units tall (${ratioValue}:1).`;
-  }, [height, lastCalculatedFrom, ratio.height, ratio.width, ratioValue, width]);
+    onDimensionsChange({
+      width: !Number.isNaN(parsedWidth) && parsedWidth > 0 ? parsedWidth : null,
+      height: !Number.isNaN(parsedHeight) && parsedHeight > 0 ? parsedHeight : null,
+    });
+  }, [height, onDimensionsChange, width]);
 
   const containerPadding = variant === "full" ? "p-5 sm:p-6" : "p-4 sm:p-5";
 
@@ -339,7 +311,7 @@ export function RatioCalculator({ variant = "full" }: RatioCalculatorProps) {
             <p className="text-xs font-mono text-zinc-500">{ratioValue.toFixed(2)} : 1</p>
           )}
         </div>
-        <div ref={cardRef} className="relative grid gap-4 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
+        <div ref={cardRef} className="relative">
           {copyNotice && (
             <div
               className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-md bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white shadow-lg"
@@ -540,81 +512,6 @@ export function RatioCalculator({ variant = "full" }: RatioCalculatorProps) {
               >
                 Snap to 8
               </button>
-            </div>
-          </div>
-          <div className="space-y-3 rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-3 sm:p-4">
-            <p className="text-xs font-medium text-zinc-700">Visual preview</p>
-            <div className="space-y-2 rounded-lg border border-zinc-200 bg-white p-3">
-              <div className="mb-2 flex items-center justify-between text-[11px] text-zinc-500">
-                <span>Website viewport</span>
-                <span className="font-mono text-[11px] text-zinc-500">{viewportWidthPx} px</span>
-              </div>
-              <div
-                className="relative h-40 w-full overflow-hidden rounded-md border border-zinc-200 bg-zinc-50"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.18) 1px, transparent 1px)",
-                  backgroundSize: "8px 8px",
-                }}
-              >
-                <div className="absolute left-3 top-2 flex gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                </div>
-                <div className="flex h-full items-center justify-center px-4">
-                  {hasDimensions && previewBoxWidth > 0 && previewBoxHeight > 0 ? (
-                    <div
-                      className="relative rounded-md border border-red-400 bg-red-500/5"
-                      style={{
-                        width: `${previewBoxWidth}px`,
-                        height: `${previewBoxHeight}px`,
-                        maxWidth: "88%",
-                        maxHeight: "70%",
-                      }}
-                    >
-                      <div
-                        className="pointer-events-none absolute inset-0"
-                        style={{
-                          backgroundImage:
-                            "linear-gradient(to right, rgba(248,113,113,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(248,113,113,0.18) 1px, transparent 1px)",
-                          backgroundSize: "8px 8px",
-                        }}
-                      />
-                      <div className="relative flex h-full items-center justify-center">
-                        <span className="rounded bg-white/80 px-2 py-0.5 text-[10px] font-medium text-red-700 shadow-sm">
-                          {numericWidth} × {numericHeight}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="px-4 text-center text-[11px] text-zinc-400">
-                      Enter width and height to see this frame inside a page.
-                    </p>
-                  )}
-                  <div className="pointer-events-none absolute bottom-2 right-3 rounded bg-white/85 px-2 py-0.5 text-[10px] font-medium text-zinc-600 shadow-sm">
-                    {viewportWidthPx} px viewport
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-zinc-700">How this helps</p>
-              <p className="text-xs leading-relaxed text-zinc-600">
-                Aspect ratio is the width-to-height proportion of an image or video. Pick a preset
-                or set your own ratio, enter either width or height, and this calculator fills in
-                the other side for you.
-              </p>
-              {summaryText && (
-                <p className="text-[11px] leading-relaxed text-zinc-500">{summaryText}</p>
-              )}
-              {variant === "full" && (
-                <ul className="mt-1 space-y-1 text-[11px] text-zinc-600">
-                  <li>16:9 is common for modern video and presentations.</li>
-                  <li>4:3 is used for older footage and some slides.</li>
-                  <li>3:2 matches many camera sensors and prints.</li>
-                </ul>
-              )}
             </div>
           </div>
         </div>
