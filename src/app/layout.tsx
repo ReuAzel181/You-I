@@ -13,14 +13,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://you-i-tool.vercel.app"),
   title: "YOU-I Toolkit",
-  description: "A web-based collection of UI development tools",
+  description:
+    "A web-based collection of UI development tools",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "YOU-I Toolkit",
-    description: "A web-based collection of UI development tools",
+    title: "YOU-I",
+    description:
+      "A web-based collection of UI development tools",
+    url: "https://you-i-tool.vercel.app/",
+    siteName: "YOU-I",
+    type: "website",
     images: [
       {
         url: "/og-banner.svg",
@@ -32,9 +38,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "YOU-I Toolkit",
-    description: "A web-based collection of UI development tools",
-    images: ["/og-banner.svg"],
+    title: "YOU-I – Color Contrast & Accessibility Toolkit",
+    description:
+      "YOU-I is a simple toolkit for checking color contrast ratios, exploring palettes, and designing accessible interfaces.",
+    images: ["https://you-i-tool.vercel.app/og-banner.svg"],
   },
 };
 
