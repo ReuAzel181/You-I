@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://you-i-tool.vercel.app/opengraph-image",
+        url: "https://you-i-tool.vercel.app/og-banner.png",
         width: 1200,
         height: 630,
         alt: "YOU-I Toolkit – color contrast and ratio tools",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     title: "YOU-I Toolkit",
     description:
       "A web-based collection of UI development tools",
-    images: ["https://you-i-tool.vercel.app/opengraph-image"],
+    images: ["https://you-i-tool.vercel.app/og-banner.png"],
   },
 };
 
