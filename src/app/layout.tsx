@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://you-i-tool.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://you-i-azel.vercel.app"),
   title: "YOU-I Toolkit",
   description:
     "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
@@ -24,12 +24,12 @@ export const metadata: Metadata = {
     title: "YOU-I",
     description:
       "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
-    url: "https://you-i-tool.vercel.app/",
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://you-i-azel.vercel.app/",
     siteName: "YOU-I",
     type: "website",
     images: [
       {
-        url: "https://you-i-tool.vercel.app/og-banner.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "YOU-I Toolkit – color contrast and ratio tools",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     title: "YOU-I Toolkit",
     description:
       "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
-    images: ["https://you-i-tool.vercel.app/og-banner.png"],
+    images: ["/opengraph-image"],
   },
 };
 
