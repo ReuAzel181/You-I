@@ -40,10 +40,10 @@ function getPinnedToolIcon(toolName: string) {
     };
   }
 
-  if (toolName === "Theme explorer") {
+  if (toolName === "Google font explorer") {
     return {
       src: "/icons/theme-explorer.svg",
-      alt: "Theme explorer",
+      alt: "Google font explorer",
     };
   }
 

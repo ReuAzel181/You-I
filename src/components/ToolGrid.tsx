@@ -24,8 +24,9 @@ export const tools: Tool[] = [
     href: "/tools/em-to-percent-converter",
   },
   {
-    name: "Theme explorer",
-    description: "Preview light and dark themes with real interface samples.",
+    name: "Google font explorer",
+    description: "Browse Google Fonts with live previews focused on English text.",
+    href: "/tools/google-font-explorer",
   },
   {
     name: "Accessible gradients",
