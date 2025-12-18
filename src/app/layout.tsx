@@ -16,14 +16,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://you-i-tool.vercel.app"),
   title: "YOU-I Toolkit",
   description:
-    "A web-based collection of UI development tools",
+    "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
     title: "YOU-I",
     description:
-      "A web-based collection of UI development tools",
+      "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
     url: "https://you-i-tool.vercel.app/",
     siteName: "YOU-I",
     type: "website",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "YOU-I Toolkit",
     description:
-      "A web-based collection of UI development tools",
+      "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
     images: ["https://you-i-tool.vercel.app/og-banner.png"],
   },
 };
