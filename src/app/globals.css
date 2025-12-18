@@ -102,3 +102,59 @@ html {
   -webkit-appearance: none;
   margin: 0;
 }
+
+@keyframes modal-backdrop-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-backdrop-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-panel-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-panel-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+.modal-backdrop {
+  animation: modal-backdrop-in 160ms ease-out;
+}
+
+.modal-backdrop-leaving {
+  animation: modal-backdrop-out 160ms ease-in forwards;
+}
+
+.modal-panel {
+  animation: modal-panel-in 180ms ease-out;
+}
+
+.modal-panel-leaving {
+  animation: modal-panel-out 180ms ease-in forwards;
+}
