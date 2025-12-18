@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-banner.svg",
+        url: "https://you-i-tool.vercel.app/opengraph-image",
         width: 1200,
         height: 630,
         alt: "YOU-I Toolkit – color contrast and ratio tools",
@@ -38,10 +38,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "YOU-I – Color Contrast & Accessibility Toolkit",
+    title: "YOU-I Toolkit",
     description:
-      "YOU-I is a simple toolkit for checking color contrast ratios, exploring palettes, and designing accessible interfaces.",
-    images: ["https://you-i-tool.vercel.app/og-banner.svg"],
+      "A web-based collection of UI development tools",
+    images: ["https://you-i-tool.vercel.app/opengraph-image"],
   },
 };
 
