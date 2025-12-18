@@ -19,8 +19,9 @@ export const tools: Tool[] = [
     href: "/tools/ratio-calculator",
   },
   {
-    name: "Palette comparisons",
-    description: "Compare multiple brand colors against shared backgrounds.",
+    name: "EM to percent converter",
+    description: "Convert px, rem, em, and percentage values with a custom base size.",
+    href: "/tools/em-to-percent-converter",
   },
   {
     name: "Theme explorer",

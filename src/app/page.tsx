@@ -11,6 +11,7 @@ import { CTASection } from "@/components/CTASection";
 import { Footer } from "@/components/Footer";
 import { ColorContrastChecker } from "@/components/ColorContrastChecker";
 import { RatioCalculator } from "@/components/RatioCalculator";
+import { EmPercentConverter } from "@/components/EmPercentConverter";
 
 type PinnedToolHeroProps = {
   tools: Tool[];
@@ -32,10 +33,10 @@ function getPinnedToolIcon(toolName: string) {
     };
   }
 
-  if (toolName === "Palette comparisons") {
+  if (toolName === "EM to percent converter") {
     return {
       src: "/icons/palette-comparisons.svg",
-      alt: "Palette comparisons",
+      alt: "EM to percent converter",
     };
   }
 
@@ -134,6 +135,13 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                       <div className="mt-6 flex-1 md:mt-0">
                         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
                           <RatioCalculator variant="simple" />
+                        </div>
+                      </div>
+                    )}
+                    {tool.href === "/tools/em-to-percent-converter" && (
+                      <div className="mt-6 flex-1 md:mt-0">
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                          <EmPercentConverter variant="simple" />
                         </div>
                       </div>
                     )}
