@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/og-banner.png",
         width: 1200,
         height: 630,
         alt: "YOU-I Toolkit – color contrast and ratio tools",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     title: "YOU-I Toolkit",
     description:
       "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
-    images: ["/opengraph-image"],
+    images: ["/og-banner.png"],
   },
 };
 
