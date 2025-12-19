@@ -268,8 +268,10 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
             <span>EM to percent converter</span>
           </div>
           <div className="text-right">
-            <p className="text-[10px] uppercase tracking-wide text-zinc-400">Base font size</p>
-            <div className="mt-1 inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-zinc-700 focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100">
+            <p className="text-[10px] uppercase tracking-wide text-zinc-400 [data-theme=dark]:text-zinc-300">
+              Base font size
+            </p>
+            <div className="mt-1 inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-zinc-700 focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100 [data-theme=dark]:border-red-500 [data-theme=dark]:bg-red-500/20 [data-theme=dark]:text-red-100">
               <input
                 value={basePx}
                 onChange={(event) => handleBaseChange(event.target.value)}
@@ -281,16 +283,13 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                     onFieldChange: (field, value) => updateFrom(field, value),
                   }, effectiveNudgeAmount)
                 }
-                className="h-6 w-20 border-0 bg-transparent px-1 text-center text-[11px] text-zinc-900 outline-none ring-0 placeholder:text-zinc-400"
+                className="h-6 w-20 border-0 bg-transparent px-1 text-center text-[11px] text-zinc-900 outline-none ring-0 placeholder:text-zinc-400 [data-theme=dark]:text-white [data-theme=dark]:placeholder:text-zinc-300"
                 aria-label="Base font size in pixels"
                 placeholder="16"
               />
-              <span className="ml-1 text-[11px] text-zinc-400">px</span>
-              {tipsAndGuides && (
-                <span className="ml-2 hidden text-[10px] text-zinc-500 sm:inline">
-                  Use Shift+Arrow keys to nudge by {effectiveNudgeAmount}px
-                </span>
-              )}
+              <span className="ml-1 text-[11px] text-zinc-400 [data-theme=dark]:text-zinc-200">
+                px
+              </span>
             </div>
           </div>
         </div>

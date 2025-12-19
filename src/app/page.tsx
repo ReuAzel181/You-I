@@ -5,19 +5,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
-import { ToolGrid, type Tool } from "@/components/ToolGrid";
+import { ToolGrid, type Tool, tools as allTools } from "@/components/ToolGrid";
 import { FeatureSections } from "@/components/FeatureSections";
 import { CTASection } from "@/components/CTASection";
 import { Footer } from "@/components/Footer";
 import { ColorContrastChecker } from "@/components/ColorContrastChecker";
 import { RatioCalculator } from "@/components/RatioCalculator";
 import { EmPercentConverter } from "@/components/EmPercentConverter";
+import { GoogleFontExplorer } from "@/components/GoogleFontExplorer";
 import { useAnalytics } from "@/providers/SettingsProvider";
 
 type PinnedToolHeroProps = {
   tools: Tool[];
   onClear: (toolName: string) => void;
 };
+
+const PINNED_TOOLS_STORAGE_KEY = "you-i-pinned-tools";
 
 function getPinnedToolIcon(toolName: string) {
   if (toolName === "Color contrast checker") {
@@ -69,17 +72,24 @@ function getPinnedToolIcon(toolName: string) {
 }
 
 function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
+  const [unpinningTools, setUnpinningTools] = useState<string[]>([]);
+
   return (
     <section className="min-h-screen border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
-      <div className="mx-auto flex min-h-screen px-4 max-w-6xl flex-col justify-center pt-0 pb-12 md:px-8">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 pt-8 pb-12 md:px-8">
         <div className="space-y-8">
-       
           <div className="space-y-10">
             {tools.map((tool, index) => {
               const icon = getPinnedToolIcon(tool.name);
+              const isUnpinning = unpinningTools.includes(tool.name);
 
               return (
-                <div key={tool.name}>
+                <div
+                  key={tool.name}
+                  className={`transition-all duration-200 ease-out ${
+                    isUnpinning ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
+                  }`}
+                >
                   {index > 0 && <div className="my-6 h-px w-full bg-zinc-200" />}
                   <div className="flex flex-col md:flex-row md:gap-12">
                     <div className="flex flex-1 flex-col justify-center space-y-4">
@@ -110,7 +120,20 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                           </Link>
                           <button
                             type="button"
-                            onClick={() => onClear(tool.name)}
+                            onClick={() => {
+                              setUnpinningTools((current) =>
+                                current.includes(tool.name)
+                                  ? current
+                                  : [...current, tool.name],
+                              );
+
+                              window.setTimeout(() => {
+                                onClear(tool.name);
+                                setUnpinningTools((current) =>
+                                  current.filter((name) => name !== tool.name),
+                                );
+                              }, 180);
+                            }}
                             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-red-600 active:scale-95"
                             aria-label="Unpin tool"
                           >
@@ -119,7 +142,7 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                               alt=""
                               width={16}
                               height={16}
-                              className="h-4 w-4 -rotate-12"
+                              className="h-4 w-4 -rotate-12 transition-transform duration-200"
                             />
                           </button>
                         </div>
@@ -146,6 +169,13 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                         </div>
                       </div>
                     )}
+                    {tool.href === "/tools/google-font-explorer" && (
+                      <div className="mt-6 flex-1 md:mt-0">
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                          <GoogleFontExplorer variant="preview" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -158,7 +188,35 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
 }
 
 export default function Home() {
-  const [pinnedTools, setPinnedTools] = useState<Tool[]>([]);
+  const [pinnedTools, setPinnedTools] = useState<Tool[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const stored = window.localStorage.getItem(PINNED_TOOLS_STORAGE_KEY);
+
+      if (!stored) {
+        return [];
+      }
+
+      const parsed = JSON.parse(stored) as unknown;
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      const names = parsed.filter((value) => typeof value === "string") as string[];
+
+      return names
+        .map((name) => allTools.find((tool) => tool.name === name))
+        .filter((tool): tool is Tool => Boolean(tool));
+    } catch {
+      return [];
+    }
+  });
+
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   const { analyticsEnabled, trackEvent } = useAnalytics();
 
@@ -170,11 +228,31 @@ export default function Home() {
     trackEvent("view_home", { path: "/" });
   }, [analyticsEnabled, trackEvent]);
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setHasHydrated(true);
+    }, 0);
+
+    return () => {
+      clearTimeout(id);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const names = pinnedTools.map((tool) => tool.name);
+
+    window.localStorage.setItem(PINNED_TOOLS_STORAGE_KEY, JSON.stringify(names));
+  }, [pinnedTools]);
+
   return (
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
       <Header />
       <main>
-        {pinnedTools.length > 0 ? (
+        {hasHydrated && pinnedTools.length > 0 ? (
           <PinnedToolHero
             tools={pinnedTools}
             onClear={(toolName) =>
@@ -185,7 +263,7 @@ export default function Home() {
           <Hero />
         )}
         <ToolGrid
-          pinnedToolNames={pinnedTools.map((tool) => tool.name)}
+          pinnedToolNames={hasHydrated ? pinnedTools.map((tool) => tool.name) : []}
           onPinTool={(tool) =>
             setPinnedTools((current) => {
               const isAlreadyPinned = current.some((item) => item.name === tool.name);

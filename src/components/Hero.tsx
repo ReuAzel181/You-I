@@ -83,15 +83,15 @@ export function Hero() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 text-xs font-medium text-emerald-800">
-                  <span className="rounded-full bg-white/80 px-2 py-0.5">
+                  <span className="aa-badge rounded-full px-2 py-0.5">
                     AA normal
                   </span>
-                  <span className="rounded-full bg-white/80 px-2 py-0.5">
+                  <span className="aa-badge rounded-full px-2 py-0.5">
                     AAA large
                   </span>
                 </div>
               </div>
-              <div className="space-y-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3">
+              <div className="space-y-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 upcoming-tools-card">
                 <p className="text-xs font-medium text-zinc-700">
                   Upcoming tools
                 </p>

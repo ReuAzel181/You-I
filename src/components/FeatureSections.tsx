@@ -1,32 +1,32 @@
 const personas = [
   {
-    title: "For designers",
+    title: "Designers",
     description:
-      "Audit palettes, experiment with themes, and keep accessibility in view while you explore.",
+      "Experiment with palettes while contrast, ratios, and real UI previews stay visible the whole time.",
     items: [
-      "Live preview on sample UI blocks",
-      "WCAG-aware color suggestions",
-      "Export to your design system",
+      "Hero previews with AA / AAA status at a glance",
+      "Color contrast checker embedded on the homepage",
+      "Pinned tools so your favorite checks are always open",
     ],
   },
   {
-    title: "For developers",
+    title: "Developers",
     description:
-      "Turn color specs into tokens you can ship, with ratios and states already verified.",
+      "Turn color specs into shippable code with predictable ratios, sizes, and states already verified.",
     items: [
-      "Token-friendly color outputs",
-      "Quick AA / AAA status checks",
-      "Ready for handoff notes",
+      "Ratio calculator for viewports and component dimensions",
+      "EM ↔ percent converter for responsive typography",
+      "Copy-ready values for hex, RGB, and HSL tokens",
     ],
   },
   {
-    title: "For teams",
+    title: "Teams",
     description:
-      "Create a shared source of truth for colors so every screen feels consistent.",
+      "Keep everyone using the same, accessible defaults across projects and devices.",
     items: [
-      "Centralized palette overview",
-      "Accessible defaults for new projects",
-      "Clear review checklists",
+      "Appearance settings that travel with each browser",
+      "Local-only settings and analytics toggles in one place",
+      "Upcoming tools roadmap focused on color-first workflows",
     ],
   },
 ];
@@ -37,11 +37,11 @@ export function FeatureSections() {
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
         <div className="mb-8 text-center">
           <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">
-            Built for everyday workflows
+            Built around your daily interface work
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Whether you sketch in Figma or ship React components, YOU-I keeps
-            accessibility close without slowing you down.
+            From quick checks on a color pair to exploring whole font families, YOU-I keeps the most
+            useful tools one pin away.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
@@ -71,4 +71,3 @@ export function FeatureSections() {
     </section>
   );
 }
-

@@ -103,11 +103,20 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                       }`}
                     >
                       <Image
+                        src={isPinned ? "/icons/pin-alt.svg" : "/icons/pin.svg"}
+                        alt=""
+                        width={14}
+                        height={14}
+                        className={`pin-icon-light h-3.5 w-3.5 transition-transform duration-200 ${
+                          isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
+                        }`}
+                      />
+                      <Image
                         src="/icons/pin-alt.svg"
                         alt=""
                         width={14}
                         height={14}
-                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                        className={`pin-icon-dark h-3.5 w-3.5 transition-transform duration-200 ${
                           isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
                         }`}
                       />

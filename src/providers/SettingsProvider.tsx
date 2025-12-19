@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 
 type AppearanceMode = "system" | "light" | "light-high-contrast" | "dark";
 
+type SubscriptionMode = "free" | "starter" | "top";
+
 type SettingsState = {
   appearance: AppearanceMode;
   nudgeAmount: number;
@@ -11,6 +13,13 @@ type SettingsState = {
   productUpdates: boolean;
   tipsAndGuides: boolean;
   analyticsEnabled: boolean;
+  profileEmail: string;
+  profileUsername: string;
+  profileBio: string;
+  profileStatus: string;
+  subscriptionMode: SubscriptionMode;
+  focusMode: boolean;
+  profileBannerColor: "red" | "sky" | "emerald" | "violet" | "amber";
 };
 
 type SettingsContextValue = SettingsState & {
@@ -20,6 +29,13 @@ type SettingsContextValue = SettingsState & {
   setProductUpdates: (value: boolean) => void;
   setTipsAndGuides: (value: boolean) => void;
   setAnalyticsEnabled: (value: boolean) => void;
+  setProfileEmail: (value: string) => void;
+  setProfileUsername: (value: string) => void;
+  setProfileBio: (value: string) => void;
+  setProfileStatus: (value: string) => void;
+  setSubscriptionMode: (mode: SubscriptionMode) => void;
+  setFocusMode: (value: boolean) => void;
+  setProfileBannerColor: (value: SettingsState["profileBannerColor"]) => void;
 };
 
 const defaultSettings: SettingsState = {
@@ -29,6 +45,13 @@ const defaultSettings: SettingsState = {
   productUpdates: true,
   tipsAndGuides: true,
   analyticsEnabled: false,
+  profileEmail: "",
+  profileUsername: "",
+  profileBio: "",
+  profileStatus: "online",
+  subscriptionMode: "starter",
+  focusMode: false,
+  profileBannerColor: "red",
 };
 
 const SettingsContext = createContext<SettingsContextValue | undefined>(undefined);
@@ -74,6 +97,38 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           typeof parsed.analyticsEnabled === "boolean"
             ? parsed.analyticsEnabled
             : defaultSettings.analyticsEnabled,
+        profileEmail:
+          typeof parsed.profileEmail === "string"
+            ? parsed.profileEmail
+            : defaultSettings.profileEmail,
+        profileUsername:
+          typeof parsed.profileUsername === "string"
+            ? parsed.profileUsername
+            : defaultSettings.profileUsername,
+        profileBio:
+          typeof parsed.profileBio === "string" ? parsed.profileBio : defaultSettings.profileBio,
+        profileStatus:
+          parsed.profileStatus === "online" ||
+          parsed.profileStatus === "idle" ||
+          parsed.profileStatus === "offline"
+            ? parsed.profileStatus
+            : defaultSettings.profileStatus,
+        subscriptionMode:
+          parsed.subscriptionMode === "free" ||
+          parsed.subscriptionMode === "starter" ||
+          parsed.subscriptionMode === "top"
+            ? parsed.subscriptionMode
+            : defaultSettings.subscriptionMode,
+        focusMode:
+          typeof parsed.focusMode === "boolean" ? parsed.focusMode : defaultSettings.focusMode,
+        profileBannerColor:
+          parsed.profileBannerColor === "red" ||
+          parsed.profileBannerColor === "emerald" ||
+          parsed.profileBannerColor === "violet" ||
+          parsed.profileBannerColor === "amber" ||
+          parsed.profileBannerColor === "sky"
+            ? parsed.profileBannerColor
+            : defaultSettings.profileBannerColor,
       };
     } catch {
       return defaultSettings;
@@ -103,6 +158,15 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
 
     root.setAttribute("data-theme", mode);
   }, [settings.appearance]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const root = document.documentElement;
+    root.setAttribute("data-accent", settings.profileBannerColor);
+  }, [settings.profileBannerColor]);
 
   const setAppearance = (mode: AppearanceMode) => {
     setSettings((current) => ({
@@ -148,6 +212,55 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }));
   };
 
+  const setProfileEmail = (value: string) => {
+    setSettings((current) => ({
+      ...current,
+      profileEmail: value,
+    }));
+  };
+
+  const setProfileUsername = (value: string) => {
+    setSettings((current) => ({
+      ...current,
+      profileUsername: value,
+    }));
+  };
+
+  const setProfileBio = (value: string) => {
+    setSettings((current) => ({
+      ...current,
+      profileBio: value,
+    }));
+  };
+
+  const setProfileStatus = (value: string) => {
+    setSettings((current) => ({
+      ...current,
+      profileStatus: value,
+    }));
+  };
+
+  const setProfileBannerColor = (value: SettingsState["profileBannerColor"]) => {
+    setSettings((current) => ({
+      ...current,
+      profileBannerColor: value,
+    }));
+  };
+
+  const setSubscriptionMode = (mode: SubscriptionMode) => {
+    setSettings((current) => ({
+      ...current,
+      subscriptionMode: mode,
+    }));
+  };
+
+  const setFocusMode = (value: boolean) => {
+    setSettings((current) => ({
+      ...current,
+      focusMode: value,
+    }));
+  };
+
   const value: SettingsContextValue = {
     ...settings,
     setAppearance,
@@ -156,6 +269,13 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setProductUpdates,
     setTipsAndGuides,
     setAnalyticsEnabled,
+    setProfileEmail,
+    setProfileUsername,
+    setProfileBio,
+    setProfileStatus,
+    setSubscriptionMode,
+    setFocusMode,
+    setProfileBannerColor,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

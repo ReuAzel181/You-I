@@ -536,6 +536,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const [editingPresetId, setEditingPresetId] = useState<number | null>(null);
   const [copyNotice, setCopyNotice] = useState<CopyNoticeState | null>(null);
   const copyNoticeTimeoutRef = useRef<number | null>(null);
+  const [copyIconSrc, setCopyIconSrc] = useState("/icons/copy.svg");
   const inputCardRef = useRef<HTMLDivElement | null>(null);
   const [whatIfTarget, setWhatIfTarget] = useState<
     "aa-normal" | "aa-large" | "aaa" | "a-plus"
@@ -755,6 +756,29 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     }, 1500);
   };
 
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const root = document.documentElement;
+
+    const updateIcon = () => {
+      const theme = root.getAttribute("data-theme");
+      setCopyIconSrc(theme === "dark" ? "/icons/copy-white.svg" : "/icons/copy.svg");
+    };
+
+    updateIcon();
+
+    const observer = new MutationObserver(updateIcon);
+
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   useEffect(
     () => () => {
       if (copyNoticeTimeoutRef.current !== null) {
@@ -862,7 +886,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     aria-label="Copy text color value"
                   >
                     <Image
-                      src="/icons/copy.svg"
+                      src={copyIconSrc}
                       alt=""
                       width={14}
                       height={14}
@@ -1122,7 +1146,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     aria-label="Copy background color value"
                   >
                     <Image
-                      src="/icons/copy.svg"
+                      src={copyIconSrc}
                       alt=""
                       width={14}
                       height={14}
@@ -1386,7 +1410,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     aria-label="Copy container color value"
                   >
                     <Image
-                      src="/icons/copy.svg"
+                      src={copyIconSrc}
                       alt=""
                       width={14}
                       height={14}
@@ -1721,7 +1745,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                         aria-label="Copy suggested text color"
                       >
                         <Image
-                          src="/icons/copy.svg"
+                          src={copyIconSrc}
                           alt=""
                           width={14}
                           height={14}
@@ -1761,7 +1785,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                         aria-label="Copy suggested background color"
                       >
                         <Image
-                          src="/icons/copy.svg"
+                          src={copyIconSrc}
                           alt=""
                           width={14}
                           height={14}

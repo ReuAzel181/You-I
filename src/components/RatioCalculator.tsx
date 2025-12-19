@@ -97,6 +97,7 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
   const [activeField, setActiveField] = useState<"width" | "height" | null>(null);
   const [copyNotice, setCopyNotice] = useState<CopyNoticeState | null>(null);
   const { nudgeAmount, tipsAndGuides } = useSettings();
+  const [copyIconSrc, setCopyIconSrc] = useState("/icons/copy.svg");
 
   const effectiveNudgeAmount = Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
 
@@ -313,6 +314,29 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
     }, 1500);
   };
 
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const root = document.documentElement;
+
+    const updateIcon = () => {
+      const theme = root.getAttribute("data-theme");
+      setCopyIconSrc(theme === "dark" ? "/icons/copy-white.svg" : "/icons/copy.svg");
+    };
+
+    updateIcon();
+
+    const observer = new MutationObserver(updateIcon);
+
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   useEffect(
     () => () => {
       if (copyNoticeTimeoutRef.current !== null) {
@@ -449,7 +473,7 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
                     aria-label="Copy width"
                   >
                     <Image
-                      src="/icons/copy.svg"
+                      src={copyIconSrc}
                       alt=""
                       width={14}
                       height={14}
@@ -489,7 +513,7 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
                     aria-label="Copy height"
                   >
                     <Image
-                      src="/icons/copy.svg"
+                      src={copyIconSrc}
                       alt=""
                       width={14}
                       height={14}

@@ -108,7 +108,11 @@ function getFontFeeling(family: string): FeelingId {
   return "neutral";
 }
 
-export function GoogleFontExplorer() {
+type GoogleFontExplorerProps = {
+  variant?: "full" | "preview";
+};
+
+export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps) {
   const [fonts, setFonts] = useState<FontItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -276,6 +280,122 @@ export function GoogleFontExplorer() {
     { id: "display", label: "Display" },
     { id: "handwriting", label: "Handwriting" },
   ];
+
+  const feelings: { id: FeelingId; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "neutral", label: "Neutral" },
+    { id: "friendly", label: "Friendly" },
+    { id: "elegant", label: "Elegant" },
+    { id: "playful", label: "Playful" },
+    { id: "tech", label: "Technical" },
+  ];
+
+  const previewFonts = visibleFonts.slice(0, 4);
+
+  if (variant === "preview") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2">
+          <p className="text-xs font-medium text-zinc-700">Google font explorer</p>
+          <p className="mt-1 text-[11px] text-zinc-500">
+            Search curated families and preview your copy in a few styles without leaving the
+            homepage.
+          </p>
+        </div>
+        <div className="flex min-h-[220px] max-h-[260px] flex-col overflow-hidden rounded-xl border border-zinc-100 bg-white">
+          <div className="flex items-center justify-between border-b border-zinc-100 px-3 py-2">
+            <p className="text-[11px] font-medium text-zinc-600">Sample families</p>
+            <p className="text-[10px] text-zinc-400">
+              {filteredFonts.length.toLocaleString("en-US")} available
+            </p>
+          </div>
+          <div className="space-y-2 border-b border-zinc-100 px-3 py-2">
+            <div className="space-y-1">
+              <p className="text-[10px] font-medium text-zinc-600">Search</p>
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by family name"
+                className="h-7 w-full rounded-md border border-zinc-200 bg-zinc-50 px-2 text-[10px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-offset-0"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-medium text-zinc-600">Feeling</p>
+              <div className="flex flex-wrap gap-1.5">
+                {feelings.map((feeling) => {
+                  const isActive = feelingFilter === feeling.id;
+
+                  return (
+                    <button
+                      key={feeling.id}
+                      type="button"
+                      onClick={() => setFeelingFilter(feeling.id)}
+                      className={`rounded-full border px-2 py-0.5 text-[9px] font-medium transition-colors ${
+                        isActive
+                          ? "border-red-500 bg-red-500 text-white shadow-sm"
+                          : "border-zinc-200 bg-white text-zinc-500 hover:border-red-200 hover:text-red-600"
+                      }`}
+                    >
+                      {feeling.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {isLoading && (
+              <div className="flex h-32 items-center justify-center text-[11px] text-zinc-500">
+                Loading Google Fonts…
+              </div>
+            )}
+            {!isLoading && error && (
+              <div className="flex h-32 items-center justify-center px-3 text-center text-[11px] text-red-600">
+                {error}
+              </div>
+            )}
+            {!isLoading && !error && previewFonts.length === 0 && (
+              <div className="flex h-32 items-center justify-center px-3 text-center text-[11px] text-zinc-500">
+                Fonts will appear here once loaded.
+              </div>
+            )}
+            {!isLoading && !error && previewFonts.length > 0 && (
+              <ul className="divide-y divide-zinc-100 text-xs">
+                {previewFonts.map((font) => {
+                  const previewFamily = `"${font.family}", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+                  const previewFontWeight = getPreviewWeightValue(previewWeight);
+
+                  return (
+                    <li key={font.family} className="px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[11px] font-medium text-zinc-800">
+                          {font.family}
+                        </span>
+                        <span className="ml-2 whitespace-nowrap text-[10px] lowercase text-zinc-500">
+                          {font.category}
+                        </span>
+                      </div>
+                      <p
+                        style={{
+                          fontFamily: previewFamily,
+                          fontSize: previewSize,
+                          lineHeight: 1.2,
+                          fontWeight: previewFontWeight,
+                        }}
+                        className="mt-1 line-clamp-2 break-words text-[11px] leading-tight text-zinc-900"
+                      >
+                        {sampleText}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -460,7 +580,7 @@ export function GoogleFontExplorer() {
           <div className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-medium text-zinc-700">
-                {filteredFonts.length.toLocaleString()}{" "}
+                {filteredFonts.length.toLocaleString("en-US")}{" "}
                 {filteredFonts.length === 1 ? "font" : "fonts"} available
               </p>
               <p className="text-[11px] text-zinc-500">

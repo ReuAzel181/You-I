@@ -49,7 +49,7 @@ export default function GoogleFontExplorerPage() {
         </section>
         <section className="bg-[var(--background)]">
           <div className="mx-auto max-w-6xl px-4 pb-12 md:px-8">
-            <GoogleFontExplorer />
+            <GoogleFontExplorer variant="full" />
           </div>
         </section>
       </main>

@@ -2,17 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 
 const navItems = [
-  { label: "Products", href: "#" },
+  { label: "Workspace", href: "/pinned-tools" },
   { label: "Solutions", href: "#" },
   { label: "Resources", href: "#" },
-  { label: "Pricing", href: "#" },
+  { label: "Pricing", href: "/pricing" },
 ];
 
 export function Header() {
+  const pathname = usePathname();
   const {
     user,
     isLoading,
@@ -118,16 +120,25 @@ export function Header() {
               </span>
             </div>
           </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-zinc-600 md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="relative inline-flex items-center gap-1 transition-colors after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform hover:text-red-500 hover:after:scale-x-100"
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="hidden items-center gap-6 md:flex">
+            {navItems.map((item) => {
+              const isActive =
+                item.href !== "#" && pathname && pathname.startsWith(item.href);
+
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`relative inline-flex items-center gap-1 text-[13px] transition-colors after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform ${
+                    isActive
+                      ? "font-semibold text-red-600 after:scale-x-100"
+                      : "font-medium text-zinc-600 hover:text-red-500 hover:after:scale-x-100"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
           <div className="flex items-center gap-2">
             {user ? (
