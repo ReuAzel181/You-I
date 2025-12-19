@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export type Tool = {
   name: string;
@@ -44,6 +44,8 @@ type ToolGridProps = {
 };
 
 export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
+  const router = useRouter();
+
   return (
     <section id="tools" className="border-b border-zinc-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
@@ -65,10 +67,17 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
             const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
             const hasHref = Boolean(tool.href);
 
+            const handleCardClick = () => {
+              if (hasHref) {
+                router.push(tool.href as string);
+              }
+            };
+
             return (
               <div
                 key={tool.name}
-                className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-transform transition-colors hover:-translate-y-1 hover:border-red-200 hover:bg-red-50 hover:shadow-sm"
+                onClick={handleCardClick}
+                className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-transform transition-colors hover:-translate-y-1 hover:border-red-200 hover:bg-red-50 hover:shadow-sm cursor-pointer"
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -82,7 +91,10 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   {onPinTool && (
                     <button
                       type="button"
-                      onClick={() => onPinTool(tool)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onPinTool(tool);
+                      }}
                       aria-pressed={isPinned}
                       className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold transition-colors transition-transform duration-200 ${
                         isPinned
@@ -91,7 +103,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                       }`}
                     >
                       <Image
-                        src={isPinned ? "/icons/pin-alt.svg" : "/icons/pin.svg"}
+                        src="/icons/pin-alt.svg"
                         alt=""
                         width={14}
                         height={14}
@@ -103,12 +115,9 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                 </div>
                 {hasHref ? (
-                  <Link
-                    href={tool.href as string}
-                    className="mt-1 flex-1 text-xs leading-relaxed text-zinc-600 outline-none transition-transform hover:-translate-y-0.5 focus-visible:-translate-y-0.5"
-                  >
+                  <p className="mt-1 flex-1 text-xs leading-relaxed text-zinc-600">
                     {tool.description}
-                  </Link>
+                  </p>
                 ) : (
                   <p className="mt-1 text-xs leading-relaxed text-zinc-600">{tool.description}</p>
                 )}

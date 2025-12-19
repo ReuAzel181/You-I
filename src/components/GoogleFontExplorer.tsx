@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSettings } from "@/providers/SettingsProvider";
 
 type FontItem = {
   family: string;
@@ -14,7 +15,7 @@ type FeelingId = "all" | "neutral" | "friendly" | "elegant" | "playful" | "tech"
 type PreviewWeightId = "regular" | "medium" | "semibold" | "bold" | "extrabold" | "black";
 
 const pageSize = 40;
-const defaultSampleText = "The quick brown fox jumps over the lazy dog.";
+const defaultSampleText = "ABCDEFG abcdefg 1234567890 !@#$%^&*()";
 
 const loadedFontFamilies = new Set<string>();
 
@@ -116,6 +117,9 @@ export function GoogleFontExplorer() {
   const [feelingFilter, setFeelingFilter] = useState<FeelingId>("all");
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [sampleText, setSampleText] = useState(defaultSampleText);
+  const { nudgeAmount } = useSettings();
+  const effectiveNudgeAmount =
+    Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
   const [previewSize, setPreviewSize] = useState(26);
   const [sliderValue, setSliderValue] = useState(26);
   const [sizeInput, setSizeInput] = useState("26");
@@ -324,7 +328,7 @@ export function GoogleFontExplorer() {
 
                       const currentNumeric = Number(sizeInput);
                       const base = Number.isNaN(currentNumeric) ? sliderValue : currentNumeric;
-                      const step = event.shiftKey ? 8 : 1;
+                      const step = event.shiftKey ? effectiveNudgeAmount : 1;
                       const direction = event.key === "ArrowUp" ? 1 : -1;
                       const nextRaw = base + step * direction;
 
@@ -338,6 +342,7 @@ export function GoogleFontExplorer() {
                       const clamped = clampPreviewSize(rawValue, sliderValue);
                       setSliderValue(clamped);
                       setSizeInput(String(clamped));
+                      event.currentTarget.blur();
                     }
                   }}
                   className="font-size-input h-6 w-12 rounded border border-zinc-200 bg-white px-1 text-right text-[10px] text-zinc-700 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200"

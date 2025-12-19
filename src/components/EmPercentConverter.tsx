@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
+import { useSettings } from "@/providers/SettingsProvider";
 
 type EmPercentConverterProps = {
   variant?: "simple" | "full";
@@ -12,7 +13,6 @@ type ActiveField = "px" | "rem" | "em" | "percent" | null;
 const presetBases = [14, 16, 18, 20, 24];
 
 const baseStepAmount = 1;
-const nudgeStepAmount = 8;
 
 function sanitizeDecimalInput(value: string): string {
   const trimmed = value.trim();
@@ -78,6 +78,7 @@ function handleStepKey(
     onBaseChange: (value: string) => void;
     onFieldChange: (field: Exclude<ActiveField, null>, value: string) => void;
   },
+  stepAmount: number,
 ) {
   if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
     return;
@@ -85,7 +86,7 @@ function handleStepKey(
 
   event.preventDefault();
 
-  const step = event.shiftKey ? nudgeStepAmount : baseStepAmount;
+  const step = event.shiftKey ? stepAmount : baseStepAmount;
   const direction = event.key === "ArrowUp" ? 1 : -1;
   const delta = step * direction;
   const nextValue = applyStepToValue(currentValue, delta);
@@ -107,6 +108,9 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
   const [scaleRemValue, setScaleRemValue] = useState("1");
   const [previewText, setPreviewText] = useState("Hello");
   const [cssMode, setCssMode] = useState<"tailwind" | "css" | "react" | "vue" | "angular">("tailwind");
+  const { nudgeAmount, tipsAndGuides } = useSettings();
+
+  const effectiveNudgeAmount = Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
 
   const numericBasePx = useMemo(() => {
     const parsed = Number.parseFloat(basePx);
@@ -275,13 +279,18 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                   handleStepKey(event, "base", basePx, {
                     onBaseChange: handleBaseChange,
                     onFieldChange: (field, value) => updateFrom(field, value),
-                  })
+                  }, effectiveNudgeAmount)
                 }
                 className="h-6 w-20 border-0 bg-transparent px-1 text-center text-[11px] text-zinc-900 outline-none ring-0 placeholder:text-zinc-400"
                 aria-label="Base font size in pixels"
                 placeholder="16"
               />
               <span className="ml-1 text-[11px] text-zinc-400">px</span>
+              {tipsAndGuides && (
+                <span className="ml-2 hidden text-[10px] text-zinc-500 sm:inline">
+                  Use Shift+Arrow keys to nudge by {effectiveNudgeAmount}px
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -298,7 +307,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                 handleStepKey(event, "px", pxValue, {
                   onBaseChange: handleBaseChange,
                   onFieldChange: (field, value) => updateFrom(field, value),
-                })
+                }, effectiveNudgeAmount)
               }
               placeholder="16"
               className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
@@ -317,7 +326,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                 handleStepKey(event, "percent", percentValue, {
                   onBaseChange: handleBaseChange,
                   onFieldChange: (field, value) => updateFrom(field, value),
-                })
+                }, effectiveNudgeAmount)
               }
               placeholder="100"
               className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
@@ -336,7 +345,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                 handleStepKey(event, "rem", remValue, {
                   onBaseChange: handleBaseChange,
                   onFieldChange: (field, value) => updateFrom(field, value),
-                })
+                }, effectiveNudgeAmount)
               }
               placeholder="1"
               className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
@@ -355,7 +364,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                 handleStepKey(event, "em", emValue, {
                   onBaseChange: handleBaseChange,
                   onFieldChange: (field, value) => updateFrom(field, value),
-                })
+                }, effectiveNudgeAmount)
               }
               placeholder="1"
               className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
@@ -507,7 +516,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
 
                     event.preventDefault();
 
-                    const step = event.shiftKey ? nudgeStepAmount : baseStepAmount;
+                    const step = event.shiftKey ? effectiveNudgeAmount : baseStepAmount;
                     const direction = event.key === "ArrowUp" ? 1 : -1;
                     const delta = step * direction;
                     const nextValue = applyStepToValue(scaleRemValue, delta);

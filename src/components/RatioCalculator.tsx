@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import type { MouseEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSettings } from "@/providers/SettingsProvider";
 
 type RatioPresetId = "16:9" | "1:1" | "4:3" | "3:2" | "3:1" | "4:5" | "9:16" | "21:9" | "custom";
 
@@ -95,6 +96,9 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
   const [lastCalculatedFrom, setLastCalculatedFrom] = useState<"width" | "height" | null>(null);
   const [activeField, setActiveField] = useState<"width" | "height" | null>(null);
   const [copyNotice, setCopyNotice] = useState<CopyNoticeState | null>(null);
+  const { nudgeAmount, tipsAndGuides } = useSettings();
+
+  const effectiveNudgeAmount = Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const copyNoticeTimeoutRef = useRef<number | null>(null);
@@ -220,6 +224,40 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
       setWidth(baseWidth > 0 ? String(baseWidth) : "");
       setHeight(baseHeight > 0 ? String(baseHeight) : "");
       setLastCalculatedFrom("width");
+    }
+  };
+
+  const handleDimensionKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+    target: "width" | "height",
+  ) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const currentValue = target === "width" ? width : height;
+    const numeric = Number.parseFloat(currentValue || "0");
+    const step = event.shiftKey ? effectiveNudgeAmount : 1;
+    const nextNumeric =
+      event.key === "ArrowUp" ? numeric + step : numeric - step;
+
+    if (nextNumeric <= 0) {
+      if (target === "width") {
+        updateFromWidth("");
+      } else {
+        updateFromHeight("");
+      }
+      return;
+    }
+
+    const nextValue = String(nextNumeric);
+
+    if (target === "width") {
+      updateFromWidth(nextValue);
+    } else {
+      updateFromHeight(nextValue);
     }
   };
 
@@ -398,6 +436,7 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
                     value={width}
                     onChange={(event) => updateFromWidth(event.target.value)}
                     onFocus={() => setActiveField("width")}
+                    onKeyDown={(event) => handleDimensionKeyDown(event, "width")}
                     inputMode="decimal"
                     placeholder="1920 px"
                     className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
@@ -437,6 +476,7 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
                     value={height}
                     onChange={(event) => updateFromHeight(event.target.value)}
                     onFocus={() => setActiveField("height")}
+                    onKeyDown={(event) => handleDimensionKeyDown(event, "height")}
                     inputMode="decimal"
                     placeholder="1080 px"
                     className="h-full w-full rounded-lg border border-zinc-200 bg-white px-3 pr-8 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
@@ -458,6 +498,11 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
                   </button>
                 </div>
               </div>
+              {tipsAndGuides && (
+                <p className="mt-1 text-[10px] text-zinc-500">
+                  Hold Shift and use the arrow keys to nudge by {effectiveNudgeAmount}.
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-[11px] text-zinc-500">

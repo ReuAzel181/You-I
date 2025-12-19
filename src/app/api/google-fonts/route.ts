@@ -61,6 +61,18 @@ export async function GET() {
     "Honk",
     "Kablammo",
     "Kalnia Glaze",
+    "Libre Barcode 128",
+    "Libre Barcode 128 Text",
+    "Libre Barcode 39",
+    "Libre Barcode 39 Extended",
+    "Libre Barcode 39 Extended Text",
+    "Libre Barcode 39 Text",
+    "Libre Barcode EAN13 Text",
+    "Aguafina Script",
+    "Allison",
+    "Ballet",
+    "Butterfly Kids",
+    "Carattere",
   ]);
 
   const apiKey = process.env.GOOGLE_FONTS_API_KEY;

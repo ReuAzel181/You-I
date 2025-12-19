@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { ToolGrid, type Tool } from "@/components/ToolGrid";
@@ -12,6 +12,7 @@ import { Footer } from "@/components/Footer";
 import { ColorContrastChecker } from "@/components/ColorContrastChecker";
 import { RatioCalculator } from "@/components/RatioCalculator";
 import { EmPercentConverter } from "@/components/EmPercentConverter";
+import { useAnalytics } from "@/providers/SettingsProvider";
 
 type PinnedToolHeroProps = {
   tools: Tool[];
@@ -159,8 +160,18 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
 export default function Home() {
   const [pinnedTools, setPinnedTools] = useState<Tool[]>([]);
 
+  const { analyticsEnabled, trackEvent } = useAnalytics();
+
+  useEffect(() => {
+    if (!analyticsEnabled) {
+      return;
+    }
+
+    trackEvent("view_home", { path: "/" });
+  }, [analyticsEnabled, trackEvent]);
+
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900">
+    <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
       <Header />
       <main>
         {pinnedTools.length > 0 ? (

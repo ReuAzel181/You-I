@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 
 const navItems = [
@@ -18,7 +18,6 @@ export function Header() {
     isLoading,
     signUpWithEmail,
     signInWithEmail,
-    signOut,
     signInWithGoogle,
     authError,
     authMessage,
@@ -31,20 +30,46 @@ export function Header() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [visibleError, setVisibleError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authError) {
-      setVisibleError(null);
-      return;
+  const displayName = useMemo(() => {
+    if (!user) {
+      return "";
     }
 
-    setVisibleError("No account found");
+    const metadata = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
+    const metaName =
+      (metadata.name as string | undefined) ||
+      (metadata.full_name as string | undefined) ||
+      (metadata.username as string | undefined);
 
-    const timeoutId = setTimeout(() => {
+    if (metaName && metaName.trim().length > 0) {
+      return metaName;
+    }
+
+    return user.email ?? "Account";
+  }, [user]);
+
+  useEffect(() => {
+    if (!authError) {
+      const timeoutId = window.setTimeout(() => {
+        setVisibleError(null);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    const showTimeoutId = window.setTimeout(() => {
+      setVisibleError("No account found");
+    }, 0);
+
+    const hideTimeoutId = window.setTimeout(() => {
       setVisibleError(null);
     }, 2600);
 
     return () => {
-      clearTimeout(timeoutId);
+      window.clearTimeout(showTimeoutId);
+      window.clearTimeout(hideTimeoutId);
     };
   }, [authError]);
 
@@ -98,42 +123,46 @@ export function Header() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="transition-colors hover:text-red-500"
+                className="relative inline-flex items-center gap-1 transition-colors after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform hover:text-red-500 hover:after:scale-x-100"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {user ? (
               <>
-                <span className="hidden max-w-[140px] truncate text-xs text-zinc-600 md:inline">
-                  {user.email}
-                </span>
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="hidden rounded-full border border-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 md:inline-flex"
+                <Link
+                  href="/settings"
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
                 >
-                  Log out
-                </button>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-semibold text-white">
+                    {displayName.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="hidden max-w-[120px] truncate text-left md:inline">
+                    {displayName}
+                  </span>
+                  <span className="inline text-[11px] text-zinc-400 md:hidden">Settings</span>
+                </Link>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => openAuth("login")}
-                className="hidden rounded-full border border-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-700 shadow-[0_0_0_0_rgba(0,0,0,0)] transition-colors transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-sm active:translate-y-0 active:scale-95 md:inline-flex"
-              >
-                {isLoading ? "Loading..." : "Log in"}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => openAuth("login")}
+                  className="hidden rounded-full border border-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-700 shadow-[0_0_0_0_rgba(0,0,0,0)] transition-colors transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-sm active:translate-y-0 active:scale-95 md:inline-flex"
+                >
+                  {isLoading ? "Loading..." : "Log in"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openAuth("signup")}
+                  className="rounded-full bg-red-500 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors transition-transform hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-md active:translate-y-0 active:scale-95"
+                >
+                  Get started
+                </button>
+              </>
             )}
-            <button
-              type="button"
-              onClick={() => openAuth("signup")}
-              className="rounded-full bg-red-500 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors transition-transform hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-md active:translate-y-0 active:scale-95"
-            >
-              Get started
-            </button>
           </div>
         </div>
       </header>

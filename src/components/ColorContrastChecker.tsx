@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSettings } from "@/providers/SettingsProvider";
 
 type RgbColor = {
   r: number;
@@ -246,6 +247,58 @@ function hexToRgbString(value: string, fallback: string): string {
   return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 }
 
+function hexToHslString(value: string, fallback: string): string {
+  const rgb = parseHexColor(value) ?? parseHexColor(fallback);
+
+  if (!rgb) {
+    return "";
+  }
+
+  const hsl = rgbToHsl(rgb);
+  const h = Math.round(hsl.h * 360);
+  const s = Math.round(hsl.s * 100);
+  const l = Math.round(hsl.l * 100);
+
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+function parseHslInput(value: string): HslColor | null {
+  const trimmed = value.trim().toLowerCase();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const withoutWrapper = trimmed
+    .replace(/^hsl\(/, "")
+    .replace(/\)$/, "")
+    .replace(/,/g, " ");
+
+  const parts = withoutWrapper.split(/\s+/).filter(Boolean);
+
+  if (parts.length < 3) {
+    return null;
+  }
+
+  const hRaw = parts[0].replace(/deg$/, "");
+  const sRaw = parts[1].replace(/%$/, "");
+  const lRaw = parts[2].replace(/%$/, "");
+
+  const hDeg = Number.parseFloat(hRaw);
+  const sPercent = Number.parseFloat(sRaw);
+  const lPercent = Number.parseFloat(lRaw);
+
+  if (!Number.isFinite(hDeg) || !Number.isFinite(sPercent) || !Number.isFinite(lPercent)) {
+    return null;
+  }
+
+  const h = (((hDeg % 360) + 360) % 360) / 360;
+  const s = Math.min(100, Math.max(0, sPercent)) / 100;
+  const l = Math.min(100, Math.max(0, lPercent)) / 100;
+
+  return { h, s, l };
+}
+
 function mixColors(a: RgbColor, b: RgbColor, t: number): RgbColor {
   const factor = Math.min(1, Math.max(0, t));
 
@@ -370,10 +423,103 @@ function ColorSwatchPicker({ value, onChange, fallback, label }: ColorSwatchPick
 }
 
 export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerProps) {
-  const [textColor, setTextColor] = useState("#111827");
-  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const [containerColor, setContainerColor] = useState("#f4f4f5");
+  const { nudgeAmount } = useSettings();
+  const effectiveNudgeAmount =
+    Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
+  const [textColor, setTextColorState] = useState("#111827");
+  const [backgroundColor, setBackgroundColorState] = useState("#ffffff");
+  const [containerColor, setContainerColorState] = useState("#f4f4f5");
   const [fontSize, setFontSize] = useState("16");
+  const [textHue, setTextHue] = useState(() => {
+    const hslString = hexToHslString("#111827", "#111827");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[0];
+    }
+
+    return "0";
+  });
+  const [textSaturation, setTextSaturation] = useState(() => {
+    const hslString = hexToHslString("#111827", "#111827");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[1];
+    }
+
+    return "0";
+  });
+  const [textLightness, setTextLightness] = useState(() => {
+    const hslString = hexToHslString("#111827", "#111827");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[2];
+    }
+
+    return "0";
+  });
+  const [backgroundHue, setBackgroundHue] = useState(() => {
+    const hslString = hexToHslString("#ffffff", "#ffffff");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[0];
+    }
+
+    return "0";
+  });
+  const [backgroundSaturation, setBackgroundSaturation] = useState(() => {
+    const hslString = hexToHslString("#ffffff", "#ffffff");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[1];
+    }
+
+    return "0";
+  });
+  const [backgroundLightness, setBackgroundLightness] = useState(() => {
+    const hslString = hexToHslString("#ffffff", "#ffffff");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[2];
+    }
+
+    return "0";
+  });
+  const [containerHue, setContainerHue] = useState(() => {
+    const hslString = hexToHslString("#f4f4f5", "#f4f4f5");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[0];
+    }
+
+    return "0";
+  });
+  const [containerSaturation, setContainerSaturation] = useState(() => {
+    const hslString = hexToHslString("#f4f4f5", "#f4f4f5");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[1];
+    }
+
+    return "0";
+  });
+  const [containerLightness, setContainerLightness] = useState(() => {
+    const hslString = hexToHslString("#f4f4f5", "#f4f4f5");
+    const parts = hslString.match(/\d+/g);
+
+    if (parts && parts.length >= 3) {
+      return parts[2];
+    }
+
+    return "0";
+  });
   const [colorMode, setColorMode] = useState<"two" | "three">("two");
   const [presets, setPresets] = useState<
     {
@@ -394,6 +540,66 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const [whatIfTarget, setWhatIfTarget] = useState<
     "aa-normal" | "aa-large" | "aaa" | "a-plus"
   >("aa-normal");
+
+  const setTextColor = (valueOrUpdater: string | ((previous: string) => string)) => {
+    setTextColorState((previous) => {
+      const next =
+        typeof valueOrUpdater === "function"
+          ? (valueOrUpdater as (value: string) => string)(previous)
+          : valueOrUpdater;
+
+      const hslString = hexToHslString(next, "#111827");
+      const parts = hslString.match(/\d+/g);
+
+      if (parts && parts.length >= 3) {
+        setTextHue(parts[0]);
+        setTextSaturation(parts[1]);
+        setTextLightness(parts[2]);
+      }
+
+      return next;
+    });
+  };
+
+  const setBackgroundColor = (valueOrUpdater: string | ((previous: string) => string)) => {
+    setBackgroundColorState((previous) => {
+      const next =
+        typeof valueOrUpdater === "function"
+          ? (valueOrUpdater as (value: string) => string)(previous)
+          : valueOrUpdater;
+
+      const hslString = hexToHslString(next, "#ffffff");
+      const parts = hslString.match(/\d+/g);
+
+      if (parts && parts.length >= 3) {
+        setBackgroundHue(parts[0]);
+        setBackgroundSaturation(parts[1]);
+        setBackgroundLightness(parts[2]);
+      }
+
+      return next;
+    });
+  };
+
+  const setContainerColor = (valueOrUpdater: string | ((previous: string) => string)) => {
+    setContainerColorState((previous) => {
+      const next =
+        typeof valueOrUpdater === "function"
+          ? (valueOrUpdater as (value: string) => string)(previous)
+          : valueOrUpdater;
+
+      const hslString = hexToHslString(next, "#f4f4f5");
+      const parts = hslString.match(/\d+/g);
+
+      if (parts && parts.length >= 3) {
+        setContainerHue(parts[0]);
+        setContainerSaturation(parts[1]);
+        setContainerLightness(parts[2]);
+      }
+
+      return next;
+    });
+  };
 
   const isFull = variant === "full";
   const effectiveMode = isFull ? colorMode : "two";
@@ -633,6 +839,16 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                       if (event.key === "Enter") {
                         event.preventDefault();
                         setTextColor((current) => normalizeHexInput(current));
+                        event.currentTarget.blur();
+                      } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const direction = event.key === "ArrowUp" ? 1 : -1;
+                        const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                        setTextColor((current) => {
+                          const lightness = getHexLightness(current, "#111827");
+                          const nextLightness = lightness + direction * step;
+                          return setHexLightness(current, "#111827", nextLightness);
+                        });
                       }
                     }}
                     placeholder="#111827"
@@ -665,6 +881,203 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 }
                 className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
+              <div className="mt-1 flex items-center gap-3">
+                <div className="flex flex-1 items-center gap-2">
+                  <span className="text-[10px] text-zinc-500">H</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={textHue}
+                      onChange={(event) => setTextHue(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setTextColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setTextColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(textHue || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(360, Math.max(0, base + direction * step));
+                          const nextHue = String(next);
+
+                          setTextHue(nextHue);
+
+                          const hslString = `hsl(${nextHue}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setTextColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Text color hue"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-1">
+                  <span className="text-[10px] text-zinc-500">S</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={textSaturation}
+                      onChange={(event) => setTextSaturation(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setTextColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setTextColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(textSaturation || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(100, Math.max(0, base + direction * step));
+                          const nextValue = String(next);
+
+                          setTextSaturation(nextValue);
+
+                          const hslString = `hsl(${textHue || "0"}, ${nextValue}%, ${textLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setTextColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Text color saturation"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-1">
+                  <span className="text-[10px] text-zinc-500">L</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={textLightness}
+                      onChange={(event) => setTextLightness(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setTextColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${textLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setTextColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(textLightness || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(100, Math.max(0, base + direction * step));
+                          const nextValue = String(next);
+
+                          setTextLightness(nextValue);
+
+                          const hslString = `hsl(${textHue || "0"}, ${textSaturation || "0"}%, ${nextValue}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setTextColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Text color lightness"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
@@ -686,6 +1099,16 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                       if (event.key === "Enter") {
                         event.preventDefault();
                         setBackgroundColor((current) => normalizeHexInput(current));
+                        event.currentTarget.blur();
+                      } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const direction = event.key === "ArrowUp" ? 1 : -1;
+                        const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                        setBackgroundColor((current) => {
+                          const lightness = getHexLightness(current, "#ffffff");
+                          const nextLightness = lightness + direction * step;
+                          return setHexLightness(current, "#ffffff", nextLightness);
+                        });
                       }
                     }}
                     placeholder="#ffffff"
@@ -720,6 +1143,203 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 }
                 className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
+              <div className="mt-1 flex items-center gap-3">
+                <div className="flex flex-1 items-center gap-2">
+                  <span className="text-[10px] text-zinc-500">H</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={backgroundHue}
+                      onChange={(event) => setBackgroundHue(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setBackgroundColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setBackgroundColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? 10 : 1;
+                          const raw = Number.parseFloat(backgroundHue || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(360, Math.max(0, base + direction * step));
+                          const nextHue = String(next);
+
+                          setBackgroundHue(nextHue);
+
+                          const hslString = `hsl(${nextHue}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setBackgroundColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Background color hue"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-1">
+                  <span className="text-[10px] text-zinc-500">S</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={backgroundSaturation}
+                      onChange={(event) => setBackgroundSaturation(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setBackgroundColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setBackgroundColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(backgroundSaturation || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(100, Math.max(0, base + direction * step));
+                          const nextValue = String(next);
+
+                          setBackgroundSaturation(nextValue);
+
+                          const hslString = `hsl(${backgroundHue || "0"}, ${nextValue}%, ${backgroundLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setBackgroundColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Background color saturation"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-1">
+                  <span className="text-[10px] text-zinc-500">L</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={backgroundLightness}
+                      onChange={(event) => setBackgroundLightness(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setBackgroundColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${backgroundLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setBackgroundColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(backgroundLightness || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(100, Math.max(0, base + direction * step));
+                          const nextValue = String(next);
+
+                          setBackgroundLightness(nextValue);
+
+                          const hslString = `hsl(${backgroundHue || "0"}, ${backgroundSaturation || "0"}%, ${nextValue}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setBackgroundColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Background color lightness"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           {isFull && effectiveMode === "three" && (
@@ -743,6 +1363,16 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                       if (event.key === "Enter") {
                         event.preventDefault();
                         setContainerColor((current) => normalizeHexInput(current));
+                        event.currentTarget.blur();
+                      } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const direction = event.key === "ArrowUp" ? 1 : -1;
+                        const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                        setContainerColor((current) => {
+                          const lightness = getHexLightness(current, "#f4f4f5");
+                          const nextLightness = lightness + direction * step;
+                          return setHexLightness(current, "#f4f4f5", nextLightness);
+                        });
                       }
                     }}
                     placeholder="#f4f4f5"
@@ -777,6 +1407,203 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 }
                 className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
+              <div className="mt-1 flex items-center gap-3">
+                <div className="flex flex-1 items-center gap-2">
+                  <span className="text-[10px] text-zinc-500">H</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={containerHue}
+                      onChange={(event) => setContainerHue(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setContainerColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setContainerColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(containerHue || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(360, Math.max(0, base + direction * step));
+                          const nextHue = String(next);
+
+                          setContainerHue(nextHue);
+
+                          const hslString = `hsl(${nextHue}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setContainerColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Container color hue"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-1">
+                  <span className="text-[10px] text-zinc-500">S</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={containerSaturation}
+                      onChange={(event) => setContainerSaturation(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setContainerColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setContainerColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? 10 : 1;
+                          const raw = Number.parseFloat(containerSaturation || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(100, Math.max(0, base + direction * step));
+                          const nextValue = String(next);
+
+                          setContainerSaturation(nextValue);
+
+                          const hslString = `hsl(${containerHue || "0"}, ${nextValue}%, ${containerLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setContainerColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Container color saturation"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-1">
+                  <span className="text-[10px] text-zinc-500">L</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={containerLightness}
+                      onChange={(event) => setContainerLightness(event.target.value)}
+                      onBlur={() => {
+                        const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                        const parsed = parseHslInput(hslString);
+
+                        if (!parsed) {
+                          return;
+                        }
+
+                        const rgb = hslToRgb(parsed);
+                        const hex = rgbToHex(rgb);
+
+                        setContainerColor(hex);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${containerLightness || "0"}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setContainerColor(hex);
+                          event.currentTarget.blur();
+                        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          const direction = event.key === "ArrowUp" ? 1 : -1;
+                          const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                          const raw = Number.parseFloat(containerLightness || "0");
+                          const base = Number.isFinite(raw) ? raw : 0;
+                          const next = Math.min(100, Math.max(0, base + direction * step));
+                          const nextValue = String(next);
+
+                          setContainerLightness(nextValue);
+
+                          const hslString = `hsl(${containerHue || "0"}, ${containerSaturation || "0"}%, ${nextValue}%)`;
+                          const parsed = parseHslInput(hslString);
+
+                          if (!parsed) {
+                            return;
+                          }
+
+                          const rgb = hslToRgb(parsed);
+                          const hex = rgbToHex(rgb);
+
+                          setContainerColor(hex);
+                        }
+                      }}
+                      className="h-7 w-full rounded-md border border-zinc-200 bg-white px-1.5 text-center text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                      aria-label="Container color lightness"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {isFull && (
@@ -819,7 +1646,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 <p className="font-medium">What-if contrast simulator</p>
                 <div className="relative inline-flex h-7 w-[260px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-0.5 text-[10px]">
                   <span
-                    className={`absolute inset-y-1 left-0 w-1/4 rounded-full bg-zinc-900 transition-transform duration-300 ease-out ${
+                    className={`absolute inset-y-1 left-0 w-1/4 rounded-full bg-zinc-900 transition-transform duration-300 ease-out what-if-indicator ${
                       whatIfTarget === "aa-normal"
                         ? "translate-x-0"
                         : whatIfTarget === "aa-large"
