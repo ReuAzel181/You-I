@@ -514,6 +514,236 @@ html {
   animation: modal-panel-out 180ms ease-in forwards;
 }
 
+@keyframes celebrate-confetti-orbit {
+  0% {
+    transform: translate3d(-12px, 4px, 0) rotate(-8deg) scale(0.9);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(6px, -10px, 0) rotate(6deg) scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate3d(-4px, -16px, 0) rotate(-4deg) scale(0.96);
+    opacity: 0.5;
+  }
+}
+
+@keyframes celebrate-confetti-sway {
+  0% {
+    transform: translate3d(10px, 12px, 0) rotate(10deg) scale(0.9);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(-4px, -4px, 0) rotate(-8deg) scale(1.06);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(6px, -18px, 0) rotate(4deg) scale(0.94);
+    opacity: 0.5;
+  }
+}
+
+@keyframes celebrate-confetti-pop {
+  0% {
+    transform: translateY(6px) scale(0.86);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-3px) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.celebrate-confetti-orbit {
+  animation: celebrate-confetti-orbit 5200ms ease-in-out infinite alternate;
+}
+
+.celebrate-confetti-sway {
+  animation: celebrate-confetti-sway 4600ms ease-in-out infinite alternate;
+}
+
+.celebrate-icon-pop {
+  animation: celebrate-confetti-pop 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes celebrate-ribbon-float-a {
+  0% {
+    transform: translate3d(-12px, -6px, 0) rotate(-6deg) scale(0.96);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(6px, 4px, 0) rotate(4deg) scale(1.02);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate3d(-4px, 10px, 0) rotate(-2deg) scale(0.98);
+    opacity: 0.45;
+  }
+}
+
+@keyframes celebrate-ribbon-float-b {
+  0% {
+    transform: translate3d(10px, 12px, 0) rotate(5deg) scale(0.94);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(-6px, -4px, 0) rotate(-3deg) scale(1.04);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(4px, 8px, 0) rotate(2deg) scale(0.96);
+    opacity: 0.45;
+  }
+}
+
+@keyframes celebrate-ribbon-float-c {
+  0% {
+    transform: translate3d(-8px, 10px, 0) rotate(4deg) scale(0.94);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate3d(4px, -6px, 0) rotate(-4deg) scale(1.03);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate3d(-2px, 8px, 0) rotate(2deg) scale(0.96);
+    opacity: 0.4;
+  }
+}
+
+@keyframes celebrate-ribbon-float-d {
+  0% {
+    transform: translate3d(6px, -10px, 0) rotate(-5deg) scale(0.96);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(-4px, 4px, 0) rotate(3deg) scale(1.04);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(2px, -6px, 0) rotate(-2deg) scale(0.96);
+    opacity: 0.45;
+  }
+}
+
+.celebrate-ribbon-a {
+  animation: celebrate-ribbon-float-a 14000ms ease-in-out infinite alternate;
+}
+
+.celebrate-ribbon-b {
+  animation: celebrate-ribbon-float-b 16000ms ease-in-out infinite alternate;
+}
+
+.celebrate-ribbon-c {
+  animation: celebrate-ribbon-float-c 15000ms ease-in-out infinite alternate;
+}
+
+.celebrate-ribbon-d {
+  animation: celebrate-ribbon-float-d 17000ms ease-in-out infinite alternate;
+}
+
+@keyframes celebrate-ribbon-fall-a {
+  0% {
+    transform: translate3d(0, -120%, 0) rotate(-14deg) scale(0.9);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(8px, 130%, 0) rotate(10deg) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes celebrate-ribbon-fall-b {
+  0% {
+    transform: translate3d(0, -130%, 0) rotate(10deg) scale(0.85);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-10px, 135%, 0) rotate(-8deg) scale(1.02);
+    opacity: 0;
+  }
+}
+
+@keyframes celebrate-ribbon-fall-c {
+  0% {
+    transform: translate3d(0, -115%, 0) rotate(-6deg) scale(0.92);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate3d(6px, 128%, 0) rotate(6deg) scale(1.03);
+    opacity: 0;
+  }
+}
+
+@keyframes celebrate-ribbon-fall-d {
+  0% {
+    transform: translate3d(0, -125%, 0) rotate(12deg) scale(0.88);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-8px, 140%, 0) rotate(-10deg) scale(1.04);
+    opacity: 0;
+  }
+}
+
+.celebrate-ribbon-fall-a {
+  animation: celebrate-ribbon-fall-a 8.5s linear infinite;
+}
+
+.celebrate-ribbon-fall-b {
+  animation: celebrate-ribbon-fall-b 10s linear infinite;
+}
+
+.celebrate-ribbon-fall-c {
+  animation: celebrate-ribbon-fall-c 9.5s linear infinite;
+}
+
+.celebrate-ribbon-fall-d {
+  animation: celebrate-ribbon-fall-d 11s linear infinite;
+}
+
+@keyframes celebrate-card-glow {
+  0% {
+    box-shadow:
+      0 16px 30px rgba(16, 185, 129, 0.35),
+      0 0 0 0 rgba(52, 211, 153, 0.6);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow:
+      0 22px 46px rgba(16, 185, 129, 0.5),
+      0 0 0 6px rgba(52, 211, 153, 0.24);
+    transform: translateY(-2px);
+  }
+  100% {
+    box-shadow:
+      0 16px 30px rgba(16, 185, 129, 0.35),
+      0 0 0 0 rgba(52, 211, 153, 0.6);
+    transform: translateY(0);
+  }
+}
+
+.celebrate-card-glow {
+  animation: celebrate-card-glow 2400ms ease-in-out infinite;
+}
+
 [data-theme="dark"] {
   color-scheme: dark;
 }

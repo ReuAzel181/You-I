@@ -3,11 +3,6 @@ import Link from "next/link";
 export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-zinc-200 bg-[radial-gradient(circle_at_top,_#fee2e2_0,_transparent_55%),linear-gradient(to_bottom,_#ffffff,_#f4f4f5)]">
-      <div className="pointer-events-none absolute inset-0 opacity-70">
-        <div className="hero-red-glow" />
-        <div className="absolute -left-24 top-16 h-40 w-40 rounded-full bg-red-100 blur-3xl" />
-        <div className="absolute -right-16 bottom-0 h-48 w-48 rounded-full bg-emerald-100 blur-3xl" />
-      </div>
       <div className="relative min-h-screen mx-auto flex max-w-6xl flex-col gap-10 px-4 pt-6 pb-16 md:flex-row md:items-center md:gap-16 md:px-8">
         <div className="hero-intro flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">

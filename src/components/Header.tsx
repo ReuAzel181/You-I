@@ -37,8 +37,8 @@ export function Header() {
   const [codeDigits, setCodeDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [codeExpiresAt, setCodeExpiresAt] = useState<number | null>(null);
   const [codeRemainingSeconds, setCodeRemainingSeconds] = useState(0);
-  const [captchaChecked, setCaptchaChecked] = useState(false);
-  const [hasCompletedCaptcha, setHasCompletedCaptcha] = useState(false);
+  const [celebrateMode, setCelebrateMode] = useState<"signup" | "login">("signup");
+  const [isGoogleConnecting, setIsGoogleConnecting] = useState(false);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const displayName = useMemo(() => {
@@ -84,6 +84,33 @@ export function Header() {
     };
   }, [authError]);
 
+  function openAuth(mode: "login" | "signup") {
+    setAuthMode(mode);
+    setAuthStep(mode);
+    setCodeDigits(["", "", "", "", "", ""]);
+    setCodeExpiresAt(null);
+    setCodeRemainingSeconds(0);
+    setVisibleError(null);
+    setIsAuthClosing(false);
+    setIsAuthOpen(true);
+  }
+
+  function closeAuth() {
+    setIsAuthClosing(true);
+    setTimeout(() => {
+      setIsAuthOpen(false);
+      setIsAuthClosing(false);
+      setEmail("");
+      setPassword("");
+      setIsPasswordVisible(false);
+      setAuthStep("login");
+      setCodeDigits(["", "", "", "", "", ""]);
+      setCodeExpiresAt(null);
+      setCodeRemainingSeconds(0);
+      setVisibleError(null);
+    }, 180);
+  }
+
   useEffect(() => {
     if (!codeExpiresAt) {
       return;
@@ -103,37 +130,6 @@ export function Header() {
       window.clearInterval(intervalId);
     };
   }, [codeExpiresAt]);
-
-  function openAuth(mode: "login" | "signup") {
-    setAuthMode(mode);
-    setAuthStep(mode);
-    setCodeDigits(["", "", "", "", "", ""]);
-    setCodeExpiresAt(null);
-    setCodeRemainingSeconds(0);
-    setCaptchaChecked(false);
-    setHasCompletedCaptcha(false);
-    setVisibleError(null);
-    setIsAuthClosing(false);
-    setIsAuthOpen(true);
-  }
-
-  function closeAuth() {
-    setIsAuthClosing(true);
-    setTimeout(() => {
-      setIsAuthOpen(false);
-      setIsAuthClosing(false);
-      setEmail("");
-      setPassword("");
-      setIsPasswordVisible(false);
-      setAuthStep("login");
-      setCaptchaChecked(false);
-      setHasCompletedCaptcha(false);
-      setCodeDigits(["", "", "", "", "", ""]);
-      setCodeExpiresAt(null);
-      setCodeRemainingSeconds(0);
-      setVisibleError(null);
-    }, 180);
-  }
 
   function handleCodeChange(index: number, rawValue: string) {
     const value = rawValue.replace(/\D/g, "").slice(0, 1);
@@ -227,10 +223,14 @@ export function Header() {
         return;
       }
 
-      await signUpWithEmail(email, password);
+      setCelebrateMode("signup");
+      setCelebrateMode("signup");
+      const didSignUp = await signUpWithEmail(email, password);
 
-      closeAuth();
-      setIsCelebrateOpen(true);
+      if (didSignUp) {
+        closeAuth();
+        setIsCelebrateOpen(true);
+      }
 
       return;
     }
@@ -240,7 +240,13 @@ export function Header() {
     }
 
     if (authMode === "login") {
-      await signInWithEmail(email, password);
+      setCelebrateMode("login");
+      const didLogin = await signInWithEmail(email, password);
+
+      if (didLogin) {
+        closeAuth();
+        setIsCelebrateOpen(true);
+      }
 
       return;
     }
@@ -294,6 +300,16 @@ export function Header() {
 
   const isVerifyStep = authMode === "signup" && authStep === "verify";
   const isCodeExpired = codeRemainingSeconds === 0 && Boolean(codeExpiresAt);
+
+  async function handleGoogleSignInClick() {
+    if (isGoogleConnecting) {
+      return;
+    }
+
+    setIsGoogleConnecting(true);
+
+    await signInWithGoogle();
+  }
 
   return (
     <>
@@ -379,30 +395,111 @@ export function Header() {
         </div>
       </header>
       {isCelebrateOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/20 px-4 pt-24">
-          <div className="w-full max-w-sm rounded-2xl border border-emerald-200 bg-white p-5 text-center shadow-lg">
-            <p className="text-[11px] font-medium text-emerald-600">Account created</p>
-            <h2 className="mt-1 text-sm font-semibold text-zinc-900">
-              Welcome to YOU-I
-            </h2>
-            <p className="mt-2 text-[11px] text-zinc-600">
-              You are now signed in. You can start using the tools or adjust your profile in
-              settings.
-            </p>
-            <div className="mt-4 flex justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsCelebrateOpen(false)}
-                className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-3 py-1.5 text-[11px] font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
-              >
-                Close
-              </button>
-              <Link
-                href="/settings"
-                className="inline-flex items-center justify-center rounded-full bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
-              >
-                Open settings
-              </Link>
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4 modal-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsCelebrateOpen(false);
+            }
+          }}
+        >
+          <div
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 via-white to-emerald-50 shadow-2xl modal-panel"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400" />
+            <div className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
+              <Image
+                src="/icons/ribbon/ribbon-1.svg"
+                alt=""
+                width={56}
+                height={56}
+                className="absolute left-[6%] -top-10 h-11 w-11 opacity-60 celebrate-ribbon-fall-a"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-2.svg"
+                alt=""
+                width={64}
+                height={64}
+                className="absolute left-[26%] -top-12 h-12 w-12 opacity-55 celebrate-ribbon-fall-b"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-3.svg"
+                alt=""
+                width={52}
+                height={52}
+                className="absolute left-[44%] -top-8 h-10 w-10 opacity-55 celebrate-ribbon-fall-c"
+              />
+              <Image
+                src="/icons/ribbon/ribbon.svg"
+                alt=""
+                width={70}
+                height={70}
+                className="absolute left-[68%] -top-14 h-14 w-14 opacity-60 celebrate-ribbon-fall-d"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-2.svg"
+                alt=""
+                width={48}
+                height={48}
+                className="absolute left-[14%] -top-20 h-9 w-9 opacity-50 celebrate-ribbon-fall-c"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-3.svg"
+                alt=""
+                width={60}
+                height={60}
+                className="absolute left-[58%] -top-24 h-12 w-12 opacity-50 celebrate-ribbon-fall-a"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-1.svg"
+                alt=""
+                width={44}
+                height={44}
+                className="absolute left-[82%] -top-18 h-8 w-8 opacity-55 celebrate-ribbon-fall-b"
+              />
+              <Image
+                src="/icons/ribbon/ribbon.svg"
+                alt=""
+                width={54}
+                height={54}
+                className="absolute left-[36%] -top-16 h-10 w-10 opacity-50 celebrate-ribbon-fall-d"
+              />
+            </div>
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-white/65 backdrop-blur-sm" />
+            <div className="relative px-7 py-6 text-center">
+              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
+                <Image
+                  src="/icons/confetti.svg"
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="h-12 w-12"
+                />
+              </div>
+              <p className="text-[11px] font-medium text-emerald-500">Nice work</p>
+              <p className="mt-0.5 text-[11px] font-medium text-emerald-600">
+                {celebrateMode === "signup" ? "Account created" : "You're in"}
+              </p>
+              <h2 className="mt-1 text-sm font-semibold text-zinc-900">
+                {celebrateMode === "signup" ? "Welcome to YOU-I" : "Welcome back to YOU-I"}
+              </h2>
+              <p className="mt-2 text-[11px] text-zinc-600">
+                {celebrateMode === "signup"
+                  ? "You are now signed in. You can start using the tools right away."
+                  : "You are now signed in. You can jump into your tools any time."}
+              </p>
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setIsCelebrateOpen(false)}
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-1.5 text-[11px] font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -518,24 +615,6 @@ export function Header() {
                       </button>
                     </div>
                   </div>
-                  {authMode === "signup" && authStep === "signup" && !hasCompletedCaptcha && (
-                    <label className="mt-1 flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
-                      <input
-                        type="checkbox"
-                        checked={captchaChecked}
-                        onChange={(event) => {
-                          const checked = event.target.checked;
-                          setCaptchaChecked(checked);
-
-                          if (checked) {
-                            setHasCompletedCaptcha(true);
-                          }
-                        }}
-                        className="h-3.5 w-3.5 rounded border-zinc-300 text-red-500 focus:ring-red-400"
-                      />
-                      <span>I am not a robot</span>
-                    </label>
-                  )}
                 </>
               )}
               {authMode === "signup" && authStep === "verify" && (
@@ -649,16 +728,24 @@ export function Header() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => signInWithGoogle()}
-                    disabled={isLoading}
+                    onClick={handleGoogleSignInClick}
+                    disabled={isGoogleConnecting}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-60"
                   >
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white">
-                      <span className="text-[12px] font-semibold text-red-500">
-                        G
-                      </span>
+                      {isGoogleConnecting ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-zinc-300 border-t-transparent" />
+                      ) : (
+                        <Image
+                          src="/icons/google.svg"
+                          alt=""
+                          width={14}
+                          height={14}
+                          className="h-3.5 w-3.5"
+                        />
+                      )}
                     </span>
-                    <span>{isLoading ? "Connecting..." : "Continue with Google"}</span>
+                    <span>{isGoogleConnecting ? "Connecting to Google..." : "Continue with Google"}</span>
                   </button>
                 </div>
               )}

@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [profileBioDraft, setProfileBioDraft] = useState(profileBio || "");
   const [profileBannerDraft, setProfileBannerDraft] = useState(profileBannerColor);
   const { analyticsEnabled: analyticsActive, trackEvent } = useAnalytics();
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   const statusOptions = [
     { id: "online", label: "Online", dotClass: "status-dot-online" },
@@ -341,7 +342,7 @@ export default function SettingsPage() {
                         <div className="mt-3 flex justify-end">
                           <button
                             type="button"
-                            onClick={signOut}
+                            onClick={() => setIsLogoutConfirmOpen(true)}
                             className="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
                           >
                             <span>Log out</span>
@@ -674,6 +675,57 @@ export default function SettingsPage() {
         </section>
       </main>
       <Footer />
+      {isLogoutConfirmOpen && user && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsLogoutConfirmOpen(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <div className="h-1 w-full bg-gradient-to-r from-red-400 via-red-500 to-red-400" />
+            <div className="p-5 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[14px] font-semibold text-white">
+                  !
+                </div>
+              </div>
+              <p className="text-[11px] font-medium text-red-600">Confirm log out</p>
+              <h2 className="mt-1 text-sm font-semibold text-zinc-900">Are you sure you want to log out?</h2>
+              <p className="mt-2 text-[11px] text-zinc-600">
+                You can always sign back in with your email or Google account. Your workspace presets stay on this device.
+              </p>
+              <div className="mt-4 flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLogoutConfirmOpen(false)}
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-3 py-1.5 text-[11px] font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await signOut();
+                    setIsLogoutConfirmOpen(false);
+                    router.push("/");
+                  }}
+                  className="inline-flex items-center justify-center rounded-full bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
+                >
+                  Log out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,8 +10,8 @@ type AuthContextValue = {
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<boolean>;
+  signInWithEmail: (email: string, password: string) => Promise<boolean>;
   authError: string | null;
   authMessage: string | null;
 };
@@ -125,13 +125,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (error) {
         setAuthError(error.message);
-      } else {
-        setSession(data.session ?? null);
-        setUser(data.user ?? null);
-        setAuthMessage(null);
+        setIsLoading(false);
+        return false;
       }
 
+      setSession(data.session ?? null);
+      setUser(data.user ?? null);
+      setAuthMessage(null);
       setIsLoading(false);
+
+      return true;
     },
     [],
   );
@@ -151,12 +154,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (error) {
         setAuthError(error.message);
-      } else {
-        setSession(data.session ?? null);
-        setUser(data.user ?? null);
+        setIsLoading(false);
+        return false;
       }
 
+      setSession(data.session ?? null);
+      setUser(data.user ?? null);
       setIsLoading(false);
+
+      return true;
     },
     [],
   );
