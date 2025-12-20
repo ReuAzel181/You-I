@@ -24,6 +24,7 @@ export default function SettingsPage() {
     setProductUpdates,
     setTipsAndGuides,
     setAnalyticsEnabled,
+    profileEmail,
     profileUsername,
     profileBio,
     profileStatus,
@@ -36,6 +37,9 @@ export default function SettingsPage() {
     setFocusMode,
   } = useSettings();
   const [nudgeInput, setNudgeInput] = useState(String(nudgeAmount || 8));
+  const [profileUsernameDraft, setProfileUsernameDraft] = useState(profileUsername || "");
+  const [profileBioDraft, setProfileBioDraft] = useState(profileBio || "");
+  const [profileBannerDraft, setProfileBannerDraft] = useState(profileBannerColor);
   const { analyticsEnabled: analyticsActive, trackEvent } = useAnalytics();
 
   const statusOptions = [
@@ -66,6 +70,25 @@ export default function SettingsPage() {
     return user.email ?? "Account";
   }, [user]);
 
+  const isProfileDirty =
+    profileUsernameDraft !== (profileUsername || "") ||
+    profileBioDraft !== (profileBio || "") ||
+    profileBannerDraft !== profileBannerColor;
+
+  const handleProfileSave = () => {
+    const nextUsername = profileUsernameDraft.trim();
+    const nextBio = profileBioDraft.trim();
+    const nextBanner = profileBannerDraft;
+
+    setProfileUsername(nextUsername);
+    setProfileBio(nextBio);
+    setProfileBannerColor(nextBanner);
+
+    setProfileUsernameDraft(nextUsername);
+    setProfileBioDraft(nextBio);
+    setProfileBannerDraft(nextBanner);
+  };
+
   const handleNudgeSave = () => {
     const parsed = Number.parseFloat(nudgeInput);
 
@@ -79,6 +102,16 @@ export default function SettingsPage() {
   };
 
   const showAuthNotice = !user && !isLoading;
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace("/");
+    }
+  }, [isLoading, user, router]);
 
   useEffect(() => {
     if (!analyticsActive) {
@@ -125,14 +158,14 @@ export default function SettingsPage() {
                     <div className="mb-4">
                       <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
                         <div
-                          className={`relative h-24 rounded-t-2xl ${
-                            profileBannerColor === "red"
+                          className={`relative h-32 rounded-t-2xl ${
+                            profileBannerDraft === "red"
                               ? "bg-gradient-to-r from-red-500 via-red-400 to-red-600"
-                              : profileBannerColor === "emerald"
+                              : profileBannerDraft === "emerald"
                               ? "bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-600"
-                              : profileBannerColor === "violet"
+                              : profileBannerDraft === "violet"
                               ? "bg-gradient-to-r from-violet-500 via-violet-400 to-violet-600"
-                              : profileBannerColor === "amber"
+                              : profileBannerDraft === "amber"
                               ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600"
                               : "bg-gradient-to-r from-sky-500 via-sky-400 to-sky-600"
                           }`}
@@ -177,35 +210,69 @@ export default function SettingsPage() {
                   </div>
                   <div className="pt-4 mb-4">
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                      <div className="mb-4 space-y-1">
-                        <p className="text-xs font-medium text-zinc-500">Profile</p>
-                        <h2 className="text-sm font-semibold text-zinc-900">Identity</h2>
-                        <p className="text-[11px] text-zinc-500">
-                          Adjust how your name and status appear inside YOU-I.
-                        </p>
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-zinc-500">Profile</p>
+                          <h2 className="text-sm font-semibold text-zinc-900">Identity</h2>
+                          <p className="text-[11px] text-zinc-500">
+                            Adjust how your name and status appear inside YOU-I.
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {isProfileDirty && (
+                            <span className="text-[10px] font-medium text-red-500">
+                              You have unsaved changes
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleProfileSave}
+                            disabled={!isProfileDirty}
+                            className="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600 disabled:translate-y-0 disabled:bg-red-300 disabled:text-white disabled:opacity-70 disabled:hover:bg-red-300"
+                          >
+                            <span>Save</span>
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-3">
                         <div className="space-y-1">
                           <p className="text-[11px] font-medium text-zinc-600">Username</p>
                           <input
                             type="text"
-                            value={profileUsername}
-                            onChange={(event) => setProfileUsername(event.target.value)}
+                            value={profileUsernameDraft}
+                            onChange={(event) => setProfileUsernameDraft(event.target.value)}
                             placeholder="Choose a short handle"
                             className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 placeholder:text-zinc-400 focus:border-red-400 focus:ring-1 focus:ring-red-200"
                           />
                         </div>
                         <div className="space-y-1">
                           <p className="text-[11px] font-medium text-zinc-600">Email</p>
-                          <div className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900">
-                            {user?.email ?? profileEmail ?? "you@example.com"}
+                          <div className="relative">
+                            <div className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 pr-9 text-sm text-zinc-900">
+                              {user?.email ?? profileEmail ?? "you@example.com"}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const value = user?.email ?? profileEmail ?? "";
+                                if (!value) return;
+                                try {
+                                  navigator.clipboard.writeText(value);
+                                } catch {
+                                }
+                              }}
+                              className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 transition-colors hover:text-zinc-700"
+                              aria-label="Copy email address"
+                            >
+                              <Image src="/icons/copy.svg" alt="" width={14} height={14} className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[11px] font-medium text-zinc-600">Bio</p>
                           <textarea
-                            value={profileBio}
-                            onChange={(event) => setProfileBio(event.target.value)}
+                            value={profileBioDraft}
+                            onChange={(event) => setProfileBioDraft(event.target.value)}
                             placeholder="Add a short line about the type of work you do."
                             rows={3}
                             className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 placeholder:text-zinc-400 focus:border-red-400 focus:ring-1 focus:ring-red-200"
@@ -222,7 +289,7 @@ export default function SettingsPage() {
                                 { id: "violet", className: "bg-violet-500", locked: true },
                                 { id: "amber", className: "bg-amber-500", locked: true },
                               ].map((option) => {
-                                const isActive = profileBannerColor === option.id;
+                                const isActive = profileBannerDraft === option.id;
                                 const isLocked = option.locked;
 
                                 return (
@@ -231,7 +298,7 @@ export default function SettingsPage() {
                                     type="button"
                                     onClick={() => {
                                       if (isLocked) return;
-                                      setProfileBannerColor(
+                                      setProfileBannerDraft(
                                         option.id as "red" | "sky" | "emerald" | "violet" | "amber",
                                       );
                                     }}
@@ -302,7 +369,7 @@ export default function SettingsPage() {
                         }`}
                       >
                         <span className="h-1.5 w-1.5 rounded-full bg-zinc-400" />
-                        <span>System default</span>
+                        <span>Default</span>
                       </button>
                       <button
                         type="button"

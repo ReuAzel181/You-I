@@ -174,6 +174,17 @@ html {
   scroll-behavior: smooth;
 }
 
+.page-transition-root {
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.page-transition-leave .page-transition-root {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
 @keyframes float-soft {
   0%,
   100% {
@@ -201,6 +212,36 @@ html {
 
 .hero-intro {
   animation: fade-in-up 500ms ease-out both;
+}
+
+@keyframes hero-red-glow {
+  0% {
+    transform: translate3d(-12px, 4px, 0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate3d(10px, -8px, 0) scale(1.06);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(-8px, 6px, 0) scale(1);
+    opacity: 0.3;
+  }
+}
+
+.hero-red-glow {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  width: 560px;
+  height: 560px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at center, rgba(248, 113, 113, 0.9), transparent 72%);
+  filter: blur(46px);
+  transform: translateX(-50%);
+  opacity: 0.45;
+  animation: hero-red-glow 11s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
 @keyframes top-tier-glow {

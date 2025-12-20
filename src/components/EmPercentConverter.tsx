@@ -108,7 +108,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
   const [scaleRemValue, setScaleRemValue] = useState("1");
   const [previewText, setPreviewText] = useState("Hello");
   const [cssMode, setCssMode] = useState<"tailwind" | "css" | "react" | "vue" | "angular">("tailwind");
-  const { nudgeAmount, tipsAndGuides } = useSettings();
+  const { nudgeAmount } = useSettings();
 
   const effectiveNudgeAmount = Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
 

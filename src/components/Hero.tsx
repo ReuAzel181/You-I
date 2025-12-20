@@ -2,8 +2,13 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
-      <div className="min-h-screen mx-auto flex max-w-6xl flex-col gap-10 px-4 pt-0 pb-14 md:flex-row md:items-center md:gap-16 md:px-8">
+    <section className="relative overflow-hidden border-b border-zinc-200 bg-[radial-gradient(circle_at_top,_#fee2e2_0,_transparent_55%),linear-gradient(to_bottom,_#ffffff,_#f4f4f5)]">
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <div className="hero-red-glow" />
+        <div className="absolute -left-24 top-16 h-40 w-40 rounded-full bg-red-100 blur-3xl" />
+        <div className="absolute -right-16 bottom-0 h-48 w-48 rounded-full bg-emerald-100 blur-3xl" />
+      </div>
+      <div className="relative min-h-screen mx-auto flex max-w-6xl flex-col gap-10 px-4 pt-6 pb-16 md:flex-row md:items-center md:gap-16 md:px-8">
         <div className="hero-intro flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -31,22 +36,41 @@ export function Hero() {
               Explore all tools
             </Link>
           </div>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-600">
+            <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Color-safe palettes
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+              Ratio and layout helpers
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              Built-in accessibility guardrails
+            </span>
+          </div>
           <p className="text-xs text-zinc-500">
             No account required for basic tools. Optimized for designers and
             developers.
           </p>
         </div>
         <div className="flex-1">
-          <div className="hero-preview rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="hero-preview rounded-2xl border border-zinc-200 bg-white/90 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.22)] backdrop-blur sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-red-500" />
                 <span className="h-2 w-2 rounded-full bg-amber-400" />
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
               </div>
-              <span className="text-xs font-medium text-zinc-500">
-                Preview
-              </span>
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-medium text-zinc-100">
+                  Live contrast
+                </span>
+                <span className="hidden rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600 sm:inline-flex">
+                  Draft workspace
+                </span>
+              </div>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
@@ -109,6 +133,20 @@ export function Hero() {
                     Live preview overlays
                   </li>
                 </ul>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-gradient-to-r from-zinc-50 to-white px-4 py-3 text-[11px]">
+                <div className="space-y-0.5">
+                  <p className="font-medium text-zinc-800">Pinned tools sidebar</p>
+                  <p className="text-[10px] text-zinc-500">
+                    Keep your most used checks docked while you move between files.
+                  </p>
+                </div>
+                <div className="inline-flex flex-col items-end gap-1 text-[10px] text-zinc-600">
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                    Local only
+                  </span>
+                  <span>Auto-saves in your browser</span>
+                </div>
               </div>
             </div>
           </div>

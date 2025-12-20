@@ -51,6 +51,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+
+    if (!user) {
+      return;
+    }
+
+    const syncUser = async () => {
+      const email = user.email ?? null;
+
+      if (!email) {
+        return;
+      }
+
+      const isVerified = Boolean(
+        (user as { email_confirmed_at?: string | null }).email_confirmed_at,
+      );
+
+      const { error } = await supabase
+        .from("users")
+        .upsert(
+          {
+            email,
+            is_email_verified: isVerified,
+            password_hash: "managed-by-supabase",
+          },
+          { onConflict: "email" },
+        );
+
+      if (error) {
+        console.error("Failed to sync user record", error.message);
+      }
+    };
+
+    void syncUser();
+  }, [user]);
+
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabaseClient();
 
@@ -79,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setIsLoading(true);
       setAuthError(null);
-       setAuthMessage(null);
+      setAuthMessage(null);
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -91,9 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         setSession(data.session ?? null);
         setUser(data.user ?? null);
-        if (!data.session) {
-          setAuthMessage("Check your email for a verification link to complete signup.");
-        }
+        setAuthMessage(null);
       }
 
       setIsLoading(false);

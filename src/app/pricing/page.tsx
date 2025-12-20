@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics } from "@/providers/SettingsProvider";
@@ -10,6 +10,7 @@ import { useAnalytics } from "@/providers/SettingsProvider";
 export default function PricingPage() {
   const router = useRouter();
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -68,7 +69,36 @@ export default function PricingPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Starter is active by default for every account.
             </div>
-            <div className="grid items-start gap-4 md:grid-cols-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white/80 p-1 text-[11px] text-zinc-700">
+                <button
+                  type="button"
+                  onClick={() => setBillingMode("monthly")}
+                  className={`rounded-full px-3 py-1 font-medium ${
+                    billingMode === "monthly"
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-600 hover:text-zinc-900"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingMode("yearly")}
+                  className={`rounded-full px-3 py-1 font-medium ${
+                    billingMode === "yearly"
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-600 hover:text-zinc-900"
+                  }`}
+                >
+                  Yearly · save 15%
+                </button>
+              </div>
+              <p className="text-[10px] text-zinc-500">
+                Prices are placeholders; choose how you think about the commitment.
+              </p>
+            </div>
+            <div className="grid items-center gap-4 md:grid-cols-3">
               <div className="flex flex-col rounded-2xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-800">
@@ -133,7 +163,7 @@ export default function PricingPage() {
                     You&apos;re using this plan
                   </button>
                 </div>
-                <div className="flex flex-col rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[24rem] shadow-sm md:z-10">
+                <div className="flex flex-col rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[29rem] shadow-sm md:z-10">
                   <div className="flex items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
@@ -148,8 +178,8 @@ export default function PricingPage() {
                   </span>
                 </div>
                   <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-featured-amount [data-theme=dark]:text-white">
-                  $9
-                </p>
+                    {billingMode === "monthly" ? "$9" : "$90"}
+                  </p>
                   <p className="mt-1 text-xs text-zinc-700 pricing-featured-body [data-theme=dark]:text-zinc-100">
                     For weekly interface work with YOU-I next to your design tool.
                   </p>
@@ -263,7 +293,7 @@ export default function PricingPage() {
                   </div>
                   <div className="mt-2 h-0.5 w-16 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-400 to-transparent" />
                   <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-                    $19
+                    {billingMode === "monthly" ? "$19" : "$190"}
                   </p>
                   <p className="mt-1 text-xs text-violet-700">
                     For teams shipping accessible work across many products.
