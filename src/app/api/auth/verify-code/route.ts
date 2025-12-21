@@ -25,23 +25,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (result.reason === "too_many_attempts") {
-      return NextResponse.json(
-        { error: "Too many incorrect attempts. Request a new code later." },
-        { status: 429 },
-      );
-    }
-
-    if (result.reason === "not_found") {
-      return NextResponse.json(
-        {
-          error:
-            "No active code was found for this email. Request a new code and try again.",
-        },
-        { status: 400 },
-      );
-    }
-
     return NextResponse.json(
       { error: "Incorrect code. Check the digits and try again." },
       { status: 400 },

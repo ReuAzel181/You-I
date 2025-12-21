@@ -109,6 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .from("users")
         .upsert(
           {
+            id: user.id,
             email,
             is_email_verified: isVerified,
             password_hash: "managed-by-supabase",
