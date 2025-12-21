@@ -704,19 +704,19 @@ html {
 }
 
 .celebrate-ribbon-fall-a {
-  animation: celebrate-ribbon-fall-a 8.5s linear infinite;
+  animation: celebrate-ribbon-fall-a 4.2s linear infinite;
 }
 
 .celebrate-ribbon-fall-b {
-  animation: celebrate-ribbon-fall-b 10s linear infinite;
+  animation: celebrate-ribbon-fall-b 4.8s linear infinite;
 }
 
 .celebrate-ribbon-fall-c {
-  animation: celebrate-ribbon-fall-c 9.5s linear infinite;
+  animation: celebrate-ribbon-fall-c 4.4s linear infinite;
 }
 
 .celebrate-ribbon-fall-d {
-  animation: celebrate-ribbon-fall-d 11s linear infinite;
+  animation: celebrate-ribbon-fall-d 5s linear infinite;
 }
 
 @keyframes celebrate-card-glow {

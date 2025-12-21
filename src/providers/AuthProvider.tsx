@@ -65,11 +65,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
+      const storageKey = `you-i-user-known:${email}`;
+      const isBrowser = typeof window !== "undefined";
+      const hasSeenUserBefore =
+        isBrowser && window.localStorage.getItem(storageKey) === "1";
+
+      const { data: existing, error: selectError } = await supabase
+        .from("users")
+        .select("id, is_deleted")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (selectError) {
+        console.error("Failed to check user record", selectError.message);
+        return;
+      }
+
+      if (existing?.is_deleted) {
+        setAuthError(
+          "Your account has been removed. If this does not seem right, please contact us right away so we can help.",
+        );
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (!existing && hasSeenUserBefore) {
+        if (isBrowser) {
+          window.localStorage.removeItem(storageKey);
+        }
+
+        setAuthError(
+          "Your account has been removed. If this does not seem right, please contact us right away so we can help.",
+        );
+        await supabase.auth.signOut();
+        return;
+      }
+
       const isVerified = Boolean(
         (user as { email_confirmed_at?: string | null }).email_confirmed_at,
       );
 
-      const { error } = await supabase
+      const { error: upsertError } = await supabase
         .from("users")
         .upsert(
           {
@@ -80,8 +116,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           { onConflict: "email" },
         );
 
-      if (error) {
-        console.error("Failed to sync user record", error.message);
+      if (upsertError) {
+        console.error("Failed to sync user record", upsertError.message);
+        return;
+      }
+
+      if (isBrowser && !hasSeenUserBefore) {
+        window.localStorage.setItem(storageKey, "1");
       }
     };
 
@@ -129,8 +170,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return false;
       }
 
-      setSession(data.session ?? null);
-      setUser(data.user ?? null);
+      let nextSession = data.session ?? null;
+      let nextUser = data.user ?? null;
+
+      if (!nextSession) {
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+        if (!signInError) {
+          nextSession = signInData.session ?? nextSession;
+          nextUser = signInData.user ?? nextUser;
+        } else {
+          setAuthError(signInError.message);
+          setIsLoading(false);
+          return false;
+        }
+      }
+
+      if (!nextSession || !nextUser) {
+        setAuthError(
+          "We created your account, but could not sign you in. Try logging in with your email and password.",
+        );
+        setIsLoading(false);
+        return false;
+      }
+
+      setSession(nextSession);
+      setUser(nextUser);
       setAuthMessage(null);
       setIsLoading(false);
 

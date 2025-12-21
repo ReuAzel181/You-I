@@ -39,6 +39,8 @@ export function Header() {
   const [codeRemainingSeconds, setCodeRemainingSeconds] = useState(0);
   const [celebrateMode, setCelebrateMode] = useState<"signup" | "login">("signup");
   const [isGoogleConnecting, setIsGoogleConnecting] = useState(false);
+  const [isCodeSending, setIsCodeSending] = useState(false);
+  const [showLoginLinkInError, setShowLoginLinkInError] = useState(false);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const displayName = useMemo(() => {
@@ -71,7 +73,7 @@ export function Header() {
     }
 
     const showTimeoutId = window.setTimeout(() => {
-      setVisibleError("No account found");
+      setVisibleError(authError);
     }, 0);
 
     const hideTimeoutId = window.setTimeout(() => {
@@ -188,6 +190,7 @@ export function Header() {
     event.preventDefault();
 
     setVisibleError(null);
+     setShowLoginLinkInError(false);
 
     if (authMode === "signup" && authStep === "verify") {
       if (codeExpiresAt && Date.now() > codeExpiresAt) {
@@ -252,44 +255,60 @@ export function Header() {
     }
 
     if (authMode === "signup" && authStep === "signup") {
-      const response = await fetch("/api/auth/send-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      setIsCodeSending(true);
+      setShowLoginLinkInError(false);
 
-      if (!response.ok) {
-        let message = "Unable to send code. Please try again soon.";
+      try {
+        const response = await fetch("/api/auth/send-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
 
-        try {
-          const payload = (await response.json()) as {
-            error?: string;
-            retryAfterSeconds?: number;
-          };
+        if (!response.ok) {
+          let message = "Unable to send code. Please try again soon.";
+          let showLoginLink = false;
 
-          if (payload.retryAfterSeconds && response.status === 429) {
-            message = `Please wait ${payload.retryAfterSeconds} seconds before requesting another code.`;
-          } else if (typeof payload.error === "string" && payload.error.trim().length > 0) {
-            message = payload.error;
+          try {
+            const payload = (await response.json()) as {
+              error?: string;
+              retryAfterSeconds?: number;
+            };
+
+            if (payload.retryAfterSeconds && response.status === 429) {
+              message = `Please wait ${payload.retryAfterSeconds} seconds before requesting another code.`;
+            } else if (
+              response.status === 400 &&
+              typeof payload.error === "string" &&
+              payload.error.toLowerCase().includes("account already exists")
+            ) {
+              message = "An account already exists for this email. Try";
+              showLoginLink = true;
+            } else if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+              message = payload.error;
+            }
+          } catch {
           }
-        } catch {
+
+          setVisibleError(message);
+          setShowLoginLinkInError(showLoginLink);
+
+          return;
         }
 
-        setVisibleError(message);
+        setAuthStep("verify");
+        setCodeDigits(["", "", "", "", "", ""]);
+        const now = Date.now();
+        const ttlMs = 3 * 60 * 1000;
+        setCodeExpiresAt(now + ttlMs);
+        setCodeRemainingSeconds(Math.floor(ttlMs / 1000));
+        const firstInput = codeInputRefs.current[0];
 
-        return;
-      }
-
-      setAuthStep("verify");
-      setCodeDigits(["", "", "", "", "", ""]);
-      const now = Date.now();
-      const ttlMs = 3 * 60 * 1000;
-      setCodeExpiresAt(now + ttlMs);
-      setCodeRemainingSeconds(Math.floor(ttlMs / 1000));
-      const firstInput = codeInputRefs.current[0];
-
-      if (firstInput) {
-        firstInput.focus();
+        if (firstInput) {
+          firstInput.focus();
+        }
+      } finally {
+        setIsCodeSending(false);
       }
     }
   }
@@ -300,6 +319,10 @@ export function Header() {
 
   const isVerifyStep = authMode === "signup" && authStep === "verify";
   const isCodeExpired = codeRemainingSeconds === 0 && Boolean(codeExpiresAt);
+  const hasActiveCodeForEmail =
+    authMode === "signup" &&
+    codeRemainingSeconds > 0 &&
+    Boolean(codeExpiresAt);
 
   async function handleGoogleSignInClick() {
     if (isGoogleConnecting) {
@@ -308,7 +331,11 @@ export function Header() {
 
     setIsGoogleConnecting(true);
 
-    await signInWithGoogle();
+    try {
+      await signInWithGoogle();
+    } finally {
+      setIsGoogleConnecting(false);
+    }
   }
 
   return (
@@ -404,13 +431,13 @@ export function Header() {
           }}
         >
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 via-white to-emerald-50 shadow-2xl modal-panel"
+            className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50 via-white to-emerald-50 shadow-2xl modal-panel"
             onClick={(event) => {
               event.stopPropagation();
             }}
           >
             <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400" />
-            <div className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
               <Image
                 src="/icons/ribbon/ribbon-1.svg"
                 alt=""
@@ -433,7 +460,7 @@ export function Header() {
                 className="absolute left-[44%] -top-8 h-10 w-10 opacity-55 celebrate-ribbon-fall-c"
               />
               <Image
-                src="/icons/ribbon/ribbon.svg"
+                src="/icons/ribbon/ribbon-4.svg"
                 alt=""
                 width={70}
                 height={70}
@@ -461,41 +488,64 @@ export function Header() {
                 className="absolute left-[82%] -top-18 h-8 w-8 opacity-55 celebrate-ribbon-fall-b"
               />
               <Image
-                src="/icons/ribbon/ribbon.svg"
+                src="/icons/ribbon/ribbon-4.svg"
                 alt=""
                 width={54}
                 height={54}
                 className="absolute left-[36%] -top-16 h-10 w-10 opacity-50 celebrate-ribbon-fall-d"
               />
+              <Image
+                src="/icons/ribbon/ribbon-2.svg"
+                alt=""
+                width={72}
+                height={72}
+                className="absolute left-[10%] -top-28 h-16 w-16 opacity-50 celebrate-ribbon-fall-b"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-3.svg"
+                alt=""
+                width={80}
+                height={80}
+                className="absolute left-[52%] -top-32 h-20 w-20 opacity-45 celebrate-ribbon-fall-c"
+              />
+              <Image
+                src="/icons/ribbon/ribbon-1.svg"
+                alt=""
+                width={64}
+                height={64}
+                className="absolute left-[84%] -top-30 h-14 w-14 opacity-55 celebrate-ribbon-fall-a"
+              />
             </div>
-            <div className="pointer-events-none absolute inset-0 -z-10 bg-white/65 backdrop-blur-sm" />
-            <div className="relative px-7 py-6 text-center">
-              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
+            <div className="pointer-events-none absolute inset-0 z-0 bg-white/60 backdrop-blur-sm" />
+            <div className="relative z-20 px-9 py-8 text-center">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 shadow-sm celebrate-icon-pop">
                 <Image
-                  src="/icons/confetti.svg"
+                  src="/icons/partypop.svg"
                   alt=""
-                  width={48}
-                  height={48}
-                  className="h-12 w-12"
+                  width={72}
+                  height={72}
+                  className="h-16 w-16"
                 />
               </div>
-              <p className="text-[11px] font-medium text-emerald-500">Nice work</p>
-              <p className="mt-0.5 text-[11px] font-medium text-emerald-600">
-                {celebrateMode === "signup" ? "Account created" : "You're in"}
+              <p className="text-[11px] font-medium text-emerald-500">
+                {celebrateMode === "signup" ? "Nice work" : "Welcome back"}
               </p>
-              <h2 className="mt-1 text-sm font-semibold text-zinc-900">
-                {celebrateMode === "signup" ? "Welcome to YOU-I" : "Welcome back to YOU-I"}
+              <p className="mt-0.5 text-[11px] font-medium text-emerald-600">
+                {celebrateMode === "signup" ? "Your account is ready" : "You are signed in"}
+              </p>
+              <h2 className="mt-1 text-base font-semibold text-zinc-900">
+                {celebrateMode === "signup" ? "Welcome to YOU-I" : "Good to see you again"}
               </h2>
               <p className="mt-2 text-[11px] text-zinc-600">
                 {celebrateMode === "signup"
-                  ? "You are now signed in. You can start using the tools right away."
-                  : "You are now signed in. You can jump into your tools any time."}
+                  ? "You are all set. Explore the tools on the main page whenever you like."
+                  : "You are signed in. Jump back into your tools any time."}
               </p>
-              <div className="mt-4 flex justify-center">
+              <div className="mt-5 flex justify-center">
                 <button
                   type="button"
                   onClick={() => setIsCelebrateOpen(false)}
-                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-1.5 text-[11px] font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2 text-[11px] font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
                 >
                   Continue
                 </button>
@@ -545,9 +595,6 @@ export function Header() {
                   if (isVerifyStep) {
                     setAuthStep("signup");
                     setCodeDigits(["", "", "", "", "", ""]);
-                    setCodeExpiresAt(null);
-                    setCodeRemainingSeconds(0);
-                    setVisibleError(null);
                   } else {
                     closeAuth();
                   }
@@ -572,17 +619,41 @@ export function Header() {
               {!(authMode === "signup" && authStep === "verify") && (
                 <>
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-zinc-700">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-                      required
-                    />
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Email
+                      </label>
+                      {email.endsWith("@") && (
+                        <span className="text-[10px] font-medium text-emerald-500">
+                          Press Tab to Complete
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setEmail(next);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Tab" && email.endsWith("@")) {
+                            event.preventDefault();
+                            setEmail(`${email}gmail.com`);
+                          }
+                        }}
+                        placeholder="you@example.com"
+                        className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                        required
+                      />
+                      {email.endsWith("@") && (
+                        <div className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm">
+                          <span className="opacity-0">{email}</span>
+                          <span className="text-zinc-300">gmail.com</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-zinc-700">
@@ -676,6 +747,24 @@ export function Header() {
               {visibleError && (
                 <p className="rounded-md bg-red-50 px-3 py-2 text-[11px] text-red-700">
                   {visibleError}
+                  {showLoginLinkInError && (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className="font-medium underline"
+                        onClick={() => {
+                          setAuthMode("login");
+                          setAuthStep("login");
+                          setVisibleError(null);
+                          setShowLoginLinkInError(false);
+                        }}
+                      >
+                        logging in
+                      </button>
+                      {" instead."}
+                    </>
+                  )}
                 </p>
               )}
               {!visibleError && authMessage && (
@@ -688,6 +777,10 @@ export function Header() {
                   type="submit"
                   disabled={
                     isLoading ||
+                    isCodeSending ||
+                    (authMode === "signup" &&
+                      authStep === "signup" &&
+                      hasActiveCodeForEmail) ||
                     (authMode === "signup" &&
                       authStep === "verify" &&
                       (!hasFullCode || isCodeExpired))
@@ -696,13 +789,36 @@ export function Header() {
                 >
                   {isLoading
                     ? "Please wait..."
-                    : authMode === "signup"
+                      : authMode === "signup"
                       ? authStep === "signup"
-                        ? "Send code"
+                        ? isCodeSending
+                          ? "Sending code..."
+                          : hasActiveCodeForEmail
+                            ? "Code already sent"
+                            : "Send code"
                         : "Create account"
                       : "Log in"}
                 </button>
               </div>
+              {authMode === "signup" &&
+                authStep === "signup" &&
+                hasActiveCodeForEmail && (
+                  <p className="mt-1 text-center text-[10px] text-zinc-500">
+                    Already received your code?{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-red-600 hover:underline"
+                      onClick={() => {
+                        setAuthStep("verify");
+                        setVisibleError(null);
+                        setCodeDigits(["", "", "", "", "", ""]);
+                      }}
+                    >
+                      Enter it now
+                    </button>
+                    .
+                  </p>
+                )}
               {authMode === "login" && (
                 <p className="mt-3 text-center text-[11px] text-zinc-500">
                   Need an account?{" "}
@@ -719,7 +835,7 @@ export function Header() {
                   </button>
                 </p>
               )}
-              {authMode === "signup" && (
+              {authStep !== "verify" && (
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center gap-2 text-[10px] text-zinc-400">
                     <span className="h-px flex-1 bg-zinc-200" />
@@ -745,7 +861,13 @@ export function Header() {
                         />
                       )}
                     </span>
-                    <span>{isGoogleConnecting ? "Connecting to Google..." : "Continue with Google"}</span>
+                    <span>
+                      {isGoogleConnecting
+                        ? "Connecting to Google..."
+                        : authMode === "signup"
+                          ? "Continue with Google"
+                          : "Sign in with Google"}
+                    </span>
                   </button>
                 </div>
               )}

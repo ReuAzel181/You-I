@@ -163,7 +163,7 @@ export default function PricingPage() {
                     You&apos;re using this plan
                   </button>
                 </div>
-                <div className="flex flex-col rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[29rem] shadow-sm md:z-10">
+                <div className="flex flex-col justify-center rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[29rem] shadow-sm md:z-10">
                   <div className="flex items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-red-700">

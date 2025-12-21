@@ -51,7 +51,7 @@ export function Hero() {
           </p>
         </div>
         <div className="flex-1">
-          <div className="hero-preview rounded-2xl border border-zinc-200 bg-white/90 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.22)] backdrop-blur sm:p-6">
+          <div className="hero-preview rounded-2xl border border-zinc-200 bg-white/90 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] backdrop-blur sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-red-500" />
