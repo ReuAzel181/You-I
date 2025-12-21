@@ -178,7 +178,7 @@ export default function PricingPage() {
                   </span>
                 </div>
                   <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-featured-amount [data-theme=dark]:text-white">
-                    {billingMode === "monthly" ? "$9" : "$90"}
+                    {billingMode === "monthly" ? "$3" : "$10"}
                   </p>
                   <p className="mt-1 text-xs text-zinc-700 pricing-featured-body [data-theme=dark]:text-zinc-100">
                     For weekly interface work with YOU-I next to your design tool.
