@@ -1,14 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics } from "@/providers/SettingsProvider";
+import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 export default function ResourcesPage() {
-  const router = useRouter();
   const { analyticsEnabled, trackEvent } = useAnalytics();
 
   useEffect(() => {
@@ -38,13 +36,12 @@ export default function ResourcesPage() {
                 content structure while you design.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push("/")}
+            <PageTransitionLink
+              href="/"
               className="inline-flex h-8 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
             >
-              <span>Back to tools</span>
-            </button>
+              <span>Back</span>
+            </PageTransitionLink>
           </div>
         </section>
         <section className="py-8 md:py-10">
@@ -63,9 +60,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       Start by checking your primary text on its most common background using the{" "}
-                      <Link href="/tools/color-contrast-checker" className="font-medium text-red-600 hover:text-red-700">
+                      <PageTransitionLink
+                        href="/tools/color-contrast-checker"
+                        className="font-medium text-red-600 hover:text-red-700"
+                      >
                         color contrast checker
-                      </Link>
+                      </PageTransitionLink>
                       . Aim for at least 4.5&nbsp;:&nbsp;1 for body text and 3&nbsp;:&nbsp;1 for
                       large headings.
                     </span>
@@ -81,9 +81,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       When exploring palettes, pin color combinations that pass AA/AAA in your{" "}
-                      <Link href="/pinned-tools" className="font-medium text-red-600 hover:text-red-700">
+                      <PageTransitionLink
+                        href="/pinned-tools"
+                        className="font-medium text-red-600 hover:text-red-700"
+                      >
                         workspace
-                      </Link>{" "}
+                      </PageTransitionLink>{" "}
                       so you can reuse them across projects.
                     </span>
                   </li>
@@ -117,9 +120,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       Use the{" "}
-                      <Link href="/tools/ratio-calculator" className="font-medium text-red-600 hover:text-red-700">
+                      <PageTransitionLink
+                        href="/tools/ratio-calculator"
+                        className="font-medium text-red-600 hover:text-red-700"
+                      >
                         ratio calculator
-                      </Link>{" "}
+                      </PageTransitionLink>{" "}
                       to keep heading and body sizes related. Try keeping line-heights between 1.4
                       and 1.6 for long-form text.
                     </span>
@@ -128,12 +134,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       Convert EM and percent values with the{" "}
-                      <Link
+                      <PageTransitionLink
                         href="/tools/em-to-percent-converter"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
                         EM to percent converter
-                      </Link>{" "}
+                      </PageTransitionLink>{" "}
                       before handing off specs so spacing behaves as expected in code.
                     </span>
                   </li>
@@ -141,12 +147,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       When pairing fonts in the{" "}
-                      <Link
+                      <PageTransitionLink
                         href="/tools/google-font-explorer"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
                         Google font explorer
-                      </Link>
+                      </PageTransitionLink>
                       , test headings at real viewport widths instead of only looking at specimen
                       rows.
                     </span>
@@ -154,7 +160,7 @@ export default function ResourcesPage() {
                 </ul>
               </div>
             </div>
-            <div className="w-full md:w-[320px] space-y-4">
+            <div className="w-full space-y-4 md:w-[320px]">
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="text-sm font-semibold text-zinc-900">
                   Copy and placeholder content
@@ -167,12 +173,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       Generate titles, definitions, and lists with the{" "}
-                      <Link
+                      <PageTransitionLink
                         href="/tools/lorem-placeholder-generator"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
                         lorem placeholder generator
-                      </Link>{" "}
+                      </PageTransitionLink>{" "}
                       so each block hints at the real content type.
                     </span>
                   </li>
@@ -187,9 +193,12 @@ export default function ResourcesPage() {
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500" />
                     <span>
                       Keep presets for quotes, definitions, and title-plus-list patterns in your{" "}
-                      <Link href="/pinned-tools" className="font-medium text-red-600 hover:text-red-700">
+                      <PageTransitionLink
+                        href="/pinned-tools"
+                        className="font-medium text-red-600 hover:text-red-700"
+                      >
                         workspace
-                      </Link>{" "}
+                      </PageTransitionLink>{" "}
                       so writers and designers start from the same structures.
                     </span>
                   </li>
@@ -213,4 +222,3 @@ export default function ResourcesPage() {
     </div>
   );
 }
-

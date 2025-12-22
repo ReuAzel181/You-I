@@ -1,15 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useAnalytics } from "@/providers/SettingsProvider";
+import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
+import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 export default function PricingPage() {
-  const router = useRouter();
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const { profileCountry } = useSettings();
   const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
@@ -19,6 +19,44 @@ export default function PricingPage() {
 
     trackEvent("view_pricing", { path: "/pricing" });
   }, [analyticsEnabled, trackEvent]);
+
+  const currencyConfig = (() => {
+    switch (profileCountry) {
+      case "GB":
+        return { code: "GBP", rate: 0.8, label: "United Kingdom" };
+      case "EU":
+        return { code: "EUR", rate: 0.9, label: "Euro area" };
+      case "IN":
+        return { code: "INR", rate: 83, label: "India" };
+      case "JP":
+        return { code: "JPY", rate: 150, label: "Japan" };
+      case "US":
+      default:
+        return { code: "USD", rate: 1, label: "United States" };
+    }
+  })();
+
+  const formatPrice = (usdAmount: number) => {
+    const rawValue = usdAmount * currencyConfig.rate;
+    const value = Math.round(rawValue);
+
+    if (typeof Intl === "undefined") {
+      return `${currencyConfig.code} ${value.toString()}`;
+    }
+
+    try {
+      const formatter = new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: currencyConfig.code,
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+      });
+
+      return formatter.format(value);
+    } catch {
+      return `${currencyConfig.code} ${value.toString()}`;
+    }
+  };
 
   return (
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
@@ -45,9 +83,8 @@ export default function PricingPage() {
                   commitment to your own workflow than a traditional subscription.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => router.push("/")}
+              <PageTransitionLink
+                href="/"
                 className="inline-flex h-7 items-center gap-1 self-start rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
                 aria-label="Back to main page"
               >
@@ -59,7 +96,7 @@ export default function PricingPage() {
                   className="h-3 w-3"
                 />
                 <span>Back</span>
-              </button>
+              </PageTransitionLink>
             </div>
           </div>
         </section>
@@ -68,6 +105,30 @@ export default function PricingPage() {
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Starter is active by default for every account.
+            </div>
+            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3 py-3 text-[11px] text-red-900 shadow-sm">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                  Have a voucher?
+                </p>
+                <p className="mt-1 text-[11px] text-red-900/80">
+                  Enter a code to unlock amazing gifts.
+                </p>
+              </div>
+              <div className="flex w-full gap-2 sm:w-auto sm:min-w-[220px]">
+                <input
+                  type="text"
+                  inputMode="text"
+                  placeholder="Enter voucher code"
+                  className="h-8 flex-1 rounded-lg border border-red-200 bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+                />
+                <button
+                  type="button"
+                  className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
+                >
+                  Apply
+                </button>
+              </div>
             </div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white/80 p-1 text-[11px] text-zinc-700">
@@ -94,9 +155,11 @@ export default function PricingPage() {
                   Yearly · save 15%
                 </button>
               </div>
-              <p className="text-[10px] text-zinc-500">
-                Prices are placeholders; choose how you think about the commitment.
-              </p>
+              <div className="text-right text-[10px] text-zinc-500">
+                <p className="mt-0.5">
+                  Showing prices in {currencyConfig.code} based on your profile country.
+                </p>
+              </div>
             </div>
             <div className="grid items-center gap-4 md:grid-cols-3">
               <div className="flex flex-col rounded-2xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
@@ -108,7 +171,9 @@ export default function PricingPage() {
                       Current plan
                     </span>
                   </div>
-                  <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">$0</p>
+                  <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
+                    {formatPrice(0)}
+                  </p>
                   <p className="mt-1 text-xs text-zinc-600">
                     Try YOU-I on solo work with your own pace.
                   </p>
@@ -177,8 +242,11 @@ export default function PricingPage() {
                     Recommended
                   </span>
                 </div>
-                  <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-featured-amount [data-theme=dark]:text-white">
-                    {billingMode === "monthly" ? "$5" : "$50"}
+                  <p
+                    key={billingMode}
+                    className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-featured-amount pricing-amount-animate [data-theme=dark]:text-white"
+                  >
+                    {formatPrice(billingMode === "monthly" ? 5 : 50)}
                   </p>
                   <p className="mt-1 text-xs text-zinc-700 pricing-featured-body [data-theme=dark]:text-zinc-100">
                     For weekly interface work with YOU-I next to your design tool.
@@ -292,8 +360,11 @@ export default function PricingPage() {
                     </span>
                   </div>
                   <div className="mt-2 h-0.5 w-16 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-400 to-transparent" />
-                  <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-                    {billingMode === "monthly" ? "$10" : "$100"}
+                  <p
+                    key={billingMode === "monthly" ? "top-monthly" : "top-yearly"}
+                    className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-amount-animate"
+                  >
+                    {formatPrice(billingMode === "monthly" ? 10 : 100)}
                   </p>
                   <p className="mt-1 text-xs text-violet-700">
                     For teams shipping accessible work across many products.

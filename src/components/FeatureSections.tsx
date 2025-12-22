@@ -40,9 +40,18 @@ export function FeatureSections() {
             Built around your daily interface work
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            From quick checks on a color pair to exploring whole font families, YOU-I keeps the most
-            useful tools one pin away.
+            From quick checks on a color pair to exploring whole font families, YOU-I keeps the
+            most useful tools one pin away.
           </p>
+          <div className="mt-5 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs leading-relaxed text-emerald-900 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-900">
+              NO ADS · NO LOGIN
+            </p>
+            <p className="mt-1 text-[11px] text-emerald-900/90">
+              Core tools are ready the moment you arrive, so you can run contrast and type checks
+              without creating an account.
+            </p>
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {personas.map((persona) => (

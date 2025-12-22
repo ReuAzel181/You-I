@@ -244,6 +244,64 @@ html {
   pointer-events: none;
 }
 
+@keyframes hero-liquid-blob {
+  0% {
+    transform: translate3d(-35%, -40%, 0) scale(0.85);
+  }
+  33% {
+    transform: translate3d(10%, -10%, 0) scale(1.05);
+  }
+  66% {
+    transform: translate3d(-5%, 20%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(30%, 10%, 0) scale(0.9);
+  }
+}
+
+@keyframes hero-liquid-blob-alt {
+  0% {
+    transform: translate3d(40%, -30%, 0) scale(0.9);
+  }
+  33% {
+    transform: translate3d(5%, 10%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-15%, 25%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-35%, -5%, 0) scale(0.92);
+  }
+}
+
+.hero-liquid-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-liquid-blob {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 720px;
+  height: 720px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at center, rgba(248, 113, 113, 0.7), transparent 70%);
+  filter: blur(72px);
+  opacity: 0.35;
+  animation: hero-liquid-blob 18s ease-in-out infinite alternate;
+}
+
+.hero-liquid-blob-secondary {
+  top: -25%;
+  right: -25%;
+  background: radial-gradient(circle at center, rgba(248, 181, 181, 0.6), transparent 70%);
+  opacity: 0.3;
+  animation: hero-liquid-blob-alt 20s ease-in-out infinite alternate;
+}
+
 @keyframes top-tier-glow {
   0% {
     box-shadow:
@@ -873,4 +931,25 @@ html {
 [data-theme="dark"] .pricing-featured-card .text-zinc-700,
 [data-theme="dark"] .pricing-featured-card .pricing-featured-body {
   color: #fecaca;
+}
+
+@keyframes pricing-amount-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.06);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pricing-amount-animate {
+  animation: pricing-amount-pop 260ms ease-out;
 }

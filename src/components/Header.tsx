@@ -9,8 +9,8 @@ import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 const navItems = [
   { label: "Workspace", href: "/pinned-tools" },
-  { label: "Solutions", href: "#" },
-  { label: "Resources", href: "#" },
+  { label: "Solutions", href: "/solutions" },
+  { label: "Resources", href: "/resources" },
   { label: "Pricing", href: "/pricing" },
 ];
 
@@ -28,6 +28,7 @@ export function Header() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAuthClosing, setIsAuthClosing] = useState(false);
   const [isCelebrateOpen, setIsCelebrateOpen] = useState(false);
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +61,10 @@ export function Header() {
 
     return user.email ?? "Account";
   }, [user]);
+
+  useEffect(() => {
+    setIsNavOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!authError) {
@@ -185,6 +190,10 @@ export function Header() {
       }
     }
   }
+
+  const navigationItems = user
+    ? [...navItems, { label: "Analytics", href: "/analytics" }]
+    : navItems;
 
   async function handleAuthSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -353,21 +362,8 @@ export function Header() {
             </div>
           </PageTransitionLink>
           <nav className="hidden items-center gap-6 md:flex">
-            {navItems.map((item) => {
-              const isActive =
-                item.href !== "#" && pathname && pathname.startsWith(item.href);
-
-              if (item.href === "#") {
-                return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className="relative inline-flex items-center gap-1 text-[13px] font-medium text-zinc-600"
-                  >
-                    {item.label}
-                  </button>
-                );
-              }
+            {navigationItems.map((item) => {
+              const isActive = pathname && pathname.startsWith(item.href);
 
               return (
                 <PageTransitionLink
@@ -387,7 +383,7 @@ export function Header() {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                <Link
+                <PageTransitionLink
                   href="/settings"
                   className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
                 >
@@ -398,7 +394,7 @@ export function Header() {
                     {displayName}
                   </span>
                   <span className="inline text-[11px] text-zinc-400 md:hidden">Settings</span>
-                </Link>
+                </PageTransitionLink>
               </>
             ) : (
               <>
@@ -418,9 +414,64 @@ export function Header() {
                 </button>
               </>
             )}
+            <button
+              type="button"
+              onClick={() => setIsNavOpen((current) => !current)}
+              className={`inline-flex h-9 w-9 flex-col items-center justify-center gap-[3px] rounded-full border text-zinc-700 transition-colors md:hidden ${
+                isNavOpen
+                  ? "border-red-200 bg-red-50 text-red-600"
+                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              }`}
+              aria-label="Toggle navigation"
+            >
+              <span
+                className={`block h-0.5 w-3.5 rounded-full bg-current transition-transform ${
+                  isNavOpen ? "translate-y-[2px] rotate-45" : ""
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-3.5 rounded-full bg-current transition-opacity ${
+                  isNavOpen ? "opacity-0" : "opacity-100"
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-3.5 rounded-full bg-current transition-transform ${
+                  isNavOpen ? "-translate-y-[2px] -rotate-45" : ""
+                }`}
+              />
+            </button>
           </div>
         </div>
       </header>
+      <div
+        className={`fixed inset-x-0 top-17 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur transition-all duration-200 md:hidden ${
+          isNavOpen
+            ? "pointer-events-auto opacity-100 translate-y-0"
+            : "pointer-events-none opacity-0 -translate-y-2"
+        }`}
+      >
+        <div className="mx-auto max-w-6xl px-4 py-3">
+          <nav className="flex flex-col gap-1.5">
+            {navigationItems.map((item) => {
+              const isActive = pathname && pathname.startsWith(item.href);
+
+              return (
+                <PageTransitionLink
+                  key={item.label}
+                  href={item.href}
+                  className={`flex items-center justify-between rounded-full px-3 py-1.5 text-[13px] ${
+                    isActive
+                      ? "bg-red-50 font-semibold text-red-600"
+                      : "text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  <span>{item.label}</span>
+                </PageTransitionLink>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
       {isCelebrateOpen && (
         <div
           className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4 modal-backdrop"

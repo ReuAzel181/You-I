@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
+import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function SettingsPage() {
     profileUsername,
     profileBio,
     profileStatus,
+    profileCountry,
     profileBannerColor,
     subscriptionMode,
     focusMode,
@@ -75,6 +77,24 @@ export default function SettingsPage() {
     profileUsernameDraft !== (profileUsername || "") ||
     profileBioDraft !== (profileBio || "") ||
     profileBannerDraft !== profileBannerColor;
+
+  const effectiveCountry = profileCountry || "US";
+
+  const countryConfig = (() => {
+    switch (effectiveCountry) {
+      case "GB":
+        return { code: "GB", label: "United Kingdom · GBP", flag: "🇬🇧" };
+      case "EU":
+        return { code: "EU", label: "Euro area · EUR", flag: "🇪🇺" };
+      case "IN":
+        return { code: "IN", label: "India · INR", flag: "🇮🇳" };
+      case "JP":
+        return { code: "JP", label: "Japan · JPY", flag: "🇯🇵" };
+      case "US":
+      default:
+        return { code: "US", label: "United States · USD", flag: "🇺🇸" };
+    }
+  })();
 
   const handleProfileSave = () => {
     const nextUsername = profileUsernameDraft.trim();
@@ -141,13 +161,12 @@ export default function SettingsPage() {
                 toolkit.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push("/")}
+            <PageTransitionLink
+              href="/"
               className="inline-flex h-8 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
             >
-              <span>Back to tools</span>
-            </button>
+              <span>Back</span>
+            </PageTransitionLink>
           </div>
         </section>
         <section className="py-8 md:py-10">
@@ -278,6 +297,16 @@ export default function SettingsPage() {
                             rows={3}
                             className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 placeholder:text-zinc-400 focus:border-red-400 focus:ring-1 focus:ring-red-200"
                           />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-medium text-zinc-600">Country</p>
+                          <div className="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900">
+                            <span className="text-base">{countryConfig.flag}</span>
+                            <span>{countryConfig.label}</span>
+                          </div>
+                          <p className="text-[10px] text-zinc-500">
+                            Based on where you first signed in and not editable.
+                          </p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[11px] font-medium text-zinc-600">Banner color</p>

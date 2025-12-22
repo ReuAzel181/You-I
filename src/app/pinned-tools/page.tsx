@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { tools as allTools } from "@/components/ToolGrid";
+import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 type WorkspacePreset = {
   id: string;
@@ -18,7 +18,6 @@ type WorkspacePreset = {
 const WORKSPACE_PRESETS_STORAGE_KEY = "you-i-workspace-presets";
 
 export default function PinnedToolsPage() {
-  const router = useRouter();
   const [presets, setPresets] = useState<WorkspacePreset[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -145,13 +144,12 @@ export default function PinnedToolsPage() {
                 pairs, ratios, or font setups later.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="inline-flex h-8 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
+            <PageTransitionLink
+              href="/"
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 whitespace-nowrap transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
             >
-              <span>Back to tools</span>
-            </button>
+              <span>Back</span>
+            </PageTransitionLink>
           </div>
         </section>
         <section className="py-8 md:py-10">

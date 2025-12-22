@@ -17,6 +17,7 @@ type SettingsState = {
   profileUsername: string;
   profileBio: string;
   profileStatus: string;
+  profileCountry: string;
   subscriptionMode: SubscriptionMode;
   focusMode: boolean;
   profileBannerColor: "red" | "sky" | "emerald" | "violet" | "amber";
@@ -33,10 +34,58 @@ type SettingsContextValue = SettingsState & {
   setProfileUsername: (value: string) => void;
   setProfileBio: (value: string) => void;
   setProfileStatus: (value: string) => void;
+  setProfileCountry: (value: string) => void;
   setSubscriptionMode: (mode: SubscriptionMode) => void;
   setFocusMode: (value: boolean) => void;
   setProfileBannerColor: (value: SettingsState["profileBannerColor"]) => void;
 };
+
+function getDefaultCountryCode() {
+  if (typeof window === "undefined") {
+    return "US";
+  }
+
+  try {
+    const language = window.navigator.language || "";
+    const lower = language.toLowerCase();
+
+    if (lower.includes("us")) {
+      return "US";
+    }
+
+    if (lower.includes("gb") || lower.includes("uk")) {
+      return "GB";
+    }
+
+    if (
+      lower.includes("de") ||
+      lower.includes("fr") ||
+      lower.includes("es") ||
+      lower.includes("it") ||
+      lower.includes("nl")
+    ) {
+      return "EU";
+    }
+
+    if (lower.includes("in")) {
+      return "IN";
+    }
+
+    if (lower.includes("jp")) {
+      return "JP";
+    }
+
+    const match = language.match(/-([A-Za-z]{2})$/);
+
+    if (match) {
+      return match[1]?.toUpperCase() ?? "US";
+    }
+
+    return "US";
+  } catch {
+    return "US";
+  }
+}
 
 const defaultSettings: SettingsState = {
   appearance: "system",
@@ -49,6 +98,7 @@ const defaultSettings: SettingsState = {
   profileUsername: "",
   profileBio: "",
   profileStatus: "online",
+  profileCountry: "US",
   subscriptionMode: "starter",
   focusMode: false,
   profileBannerColor: "red",
@@ -113,6 +163,10 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           parsed.profileStatus === "offline"
             ? parsed.profileStatus
             : defaultSettings.profileStatus,
+        profileCountry:
+          typeof parsed.profileCountry === "string"
+            ? parsed.profileCountry
+            : getDefaultCountryCode(),
         subscriptionMode:
           parsed.subscriptionMode === "free" ||
           parsed.subscriptionMode === "starter" ||
@@ -240,6 +294,13 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }));
   };
 
+  const setProfileCountry = (value: string) => {
+    setSettings((current) => ({
+      ...current,
+      profileCountry: value,
+    }));
+  };
+
   const setProfileBannerColor = (value: SettingsState["profileBannerColor"]) => {
     setSettings((current) => ({
       ...current,
@@ -273,6 +334,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setProfileUsername,
     setProfileBio,
     setProfileStatus,
+    setProfileCountry,
     setSubscriptionMode,
     setFocusMode,
     setProfileBannerColor,

@@ -112,10 +112,10 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                         </p>
                       </div>
                       {tool.href && (
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div className="flex flex-row flex-wrap items-center gap-3">
                           <Link
                             href={tool.href}
-                            className="inline-flex items-center justify-center rounded-full bg-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+                            className="inline-flex flex-1 items-center justify-center rounded-full bg-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600 sm:flex-none"
                           >
                             Open full tool
                           </Link>
