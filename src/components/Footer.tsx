@@ -21,9 +21,9 @@ const columns = [
   {
     title: "Learn",
     links: [
-      { label: "WCAG contrast basics", href: "#" },
-      { label: "Design handoff tips", href: "#" },
-      { label: "Release notes", href: "#" },
+      { label: "WCAG contrast basics", href: "/learn#contrast-basics" },
+      { label: "Design handoff tips", href: "/learn#design-handoff" },
+      { label: "Release notes", href: "/learn#release-notes" },
     ],
   },
 ];

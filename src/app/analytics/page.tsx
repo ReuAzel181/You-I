@@ -130,12 +130,7 @@ export default function AnalyticsPage() {
         return "settings";
       }
 
-      if (
-        path === "/" ||
-        path === "/solutions" ||
-        path === "/resources" ||
-        path === "/pricing"
-      ) {
+      if (path === "/" || path === "/resources" || path === "/pricing") {
         return "marketing";
       }
 

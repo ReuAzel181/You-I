@@ -1,0 +1,219 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { useAnalytics } from "@/providers/SettingsProvider";
+
+export default function ContactPage() {
+  const { analyticsEnabled, trackEvent } = useAnalytics();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [teamSize, setTeamSize] = useState("");
+  const [topic, setTopic] = useState("pricing");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitState, setSubmitState] = useState<"idle" | "success" | "error">("idle");
+
+  useEffect(() => {
+    if (!analyticsEnabled) {
+      return;
+    }
+
+    trackEvent("view_contact", { path: "/contact" });
+  }, [analyticsEnabled, trackEvent]);
+
+  return (
+    <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
+      <Header />
+      <main>
+        <section className="border-b border-zinc-200 bg-white/80">
+          <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[11px] font-medium text-red-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Contact
+                </div>
+                <h1 className="text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
+                  Questions about pricing or using YOU-I?
+                </h1>
+                <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                  Reach out with questions about plans, workflows, or how YOU-I fits into your
+                  team&apos;s design process. We keep replies focused on real interface work, not
+                  sales scripts.
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-2 text-[11px] text-zinc-600 md:w-64">
+                <p>
+                  Wondering which plan to pick, or how a feature works in your setup? Start with a
+                  short note including your team size and tools.
+                </p>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                >
+                  View pricing again
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-8 md:py-10">
+          <div className="mx-auto max-w-6xl px-4 md:px-8">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1.6fr),minmax(0,1.4fr)]">
+              <article className="rounded-2xl border border-zinc-200 bg-white p-5 text-left shadow-sm sm:p-6">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-red-500">
+                  Talk to us
+                </p>
+                <h2 className="mt-1 text-sm font-semibold text-zinc-900">
+                  Share what you&apos;re designing and what you need from YOU-I
+                </h2>
+                <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
+                  The more context you share, the more specific we can be in our reply. Include the
+                  tools you use today, how often you run accessibility checks, and where YOU-I would
+                  sit in your workflow.
+                </p>
+                <form
+                  className="mt-4 space-y-3 text-[11px] text-zinc-700"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+
+                    if (isSubmitting) {
+                      return;
+                    }
+
+                    setIsSubmitting(true);
+                    setSubmitState("idle");
+
+                    window.setTimeout(() => {
+                      setIsSubmitting(false);
+                      setSubmitState("success");
+                    }, 800);
+                  }}
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label htmlFor="contact-name" className="font-medium text-zinc-800">
+                        Name
+                      </label>
+                      <input
+                        id="contact-name"
+                        type="text"
+                        value={fullName}
+                        onChange={(event) => setFullName(event.target.value)}
+                        autoComplete="name"
+                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                        placeholder="Your name"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="contact-email" className="font-medium text-zinc-800">
+                        Work email
+                      </label>
+                      <input
+                        id="contact-email"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        autoComplete="email"
+                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label htmlFor="contact-team-size" className="font-medium text-zinc-800">
+                        Team size
+                      </label>
+                      <input
+                        id="contact-team-size"
+                        type="text"
+                        value={teamSize}
+                        onChange={(event) => setTeamSize(event.target.value)}
+                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                        placeholder="Just you, 2–5, 6–15, etc."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="contact-topic" className="font-medium text-zinc-800">
+                        Topic
+                      </label>
+                      <select
+                        id="contact-topic"
+                        value={topic}
+                        onChange={(event) => setTopic(event.target.value)}
+                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                      >
+                        <option value="pricing">Pricing and plans</option>
+                        <option value="workflow">Workflow and tools</option>
+                        <option value="accessibility">Accessibility questions</option>
+                        <option value="other">Something else</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="contact-message" className="font-medium text-zinc-800">
+                      What are you working on?
+                    </label>
+                    <textarea
+                      id="contact-message"
+                      value={message}
+                      onChange={(event) => setMessage(event.target.value)}
+                      rows={5}
+                      className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                      placeholder="Share a short note about your product, your current accessibility checks, and what you hope YOU-I can help with."
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSubmitting ? "Sending…" : "Send message"}
+                    </button>
+                    <p className="text-[10px] text-zinc-500">
+                      We typically reply within one business day. No mailing lists, just a direct
+                      response.
+                    </p>
+                  </div>
+                  {submitState === "success" && (
+                    <p className="mt-2 text-[10px] font-medium text-emerald-600">
+                      Thanks for reaching out — we&apos;ll get back to you shortly.
+                    </p>
+                  )}
+                  {submitState === "error" && (
+                    <p className="mt-2 text-[10px] font-medium text-red-600">
+                      Something went wrong sending your message. Try again in a moment.
+                    </p>
+                  )}
+                </form>
+              </article>
+
+              <aside className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-[11px] leading-relaxed text-zinc-600 sm:px-5 sm:py-5">
+                <p className="font-medium text-zinc-800">Typical questions we can help with</p>
+                <ul className="mt-2 space-y-1.5">
+                  <li>Choosing between free and paid plans for a small team.</li>
+                  <li>Making sure pinned tools and presets fit your files and workflows.</li>
+                  <li>Understanding how analytics and privacy settings work in YOU-I.</li>
+                </ul>
+                <p className="mt-3">
+                  If something is blocking you from adopting more accessible patterns, let us know.
+                  We use feedback here to shape future tools and pricing.
+                </p>
+              </aside>
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}

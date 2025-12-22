@@ -259,6 +259,20 @@ html {
   }
 }
 
+@keyframes no-ads-slide {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(8px);
+  }
+}
+
+.no-ads-slide {
+  animation: no-ads-slide 7s ease-in-out infinite;
+}
+
 @keyframes hero-liquid-blob-alt {
   0% {
     transform: translate3d(40%, -30%, 0) scale(0.9);

@@ -9,9 +9,9 @@ import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 const navItems = [
   { label: "Workspace", href: "/pinned-tools" },
-  { label: "Solutions", href: "/solutions" },
   { label: "Resources", href: "/resources" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export function Header() {
