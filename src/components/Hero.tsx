@@ -122,7 +122,7 @@ export function Hero() {
                     Brand contrast audit
                   </li>
                   <li className="rounded-lg bg-white px-2.5 py-2">
-                    Accessible gradients
+                    Placeholder Generator
                   </li>
                   <li className="rounded-lg bg-white px-2.5 py-2">
                     Live preview overlays

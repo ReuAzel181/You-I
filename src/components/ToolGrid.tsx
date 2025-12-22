@@ -29,8 +29,9 @@ export const tools: Tool[] = [
     href: "/tools/google-font-explorer",
   },
   {
-    name: "Accessible gradients",
-    description: "Design gradients that stay readable across sections.",
+    name: "Placeholder Generator",
+    description: "Create lorem ipsum placeholders with adjustable length and casing.",
+    href: "/tools/lorem-placeholder-generator",
   },
   {
     name: "Export presets",

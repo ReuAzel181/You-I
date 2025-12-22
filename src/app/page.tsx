@@ -13,6 +13,7 @@ import { ColorContrastChecker } from "@/components/ColorContrastChecker";
 import { RatioCalculator } from "@/components/RatioCalculator";
 import { EmPercentConverter } from "@/components/EmPercentConverter";
 import { GoogleFontExplorer } from "@/components/GoogleFontExplorer";
+import { LoremPlaceholderGenerator } from "@/components/LoremPlaceholderGenerator";
 import { useAnalytics } from "@/providers/SettingsProvider";
 
 type PinnedToolHeroProps = {
@@ -51,10 +52,10 @@ function getPinnedToolIcon(toolName: string) {
     };
   }
 
-  if (toolName === "Accessible gradients") {
+  if (toolName === "Placeholder Generator") {
     return {
       src: "/icons/accessible-gradients.svg",
-      alt: "Accessible gradients",
+      alt: "Placeholder Generator",
     };
   }
 
@@ -173,6 +174,13 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                       <div className="mt-6 flex-1 md:mt-0">
                         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
                           <GoogleFontExplorer variant="preview" />
+                        </div>
+                      </div>
+                    )}
+                    {tool.href === "/tools/lorem-placeholder-generator" && (
+                      <div className="mt-6 flex-1 md:mt-0">
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                          <LoremPlaceholderGenerator variant="hero" />
                         </div>
                       </div>
                     )}

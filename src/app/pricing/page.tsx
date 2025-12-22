@@ -178,7 +178,7 @@ export default function PricingPage() {
                   </span>
                 </div>
                   <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-featured-amount [data-theme=dark]:text-white">
-                    {billingMode === "monthly" ? "$3" : "$10"}
+                    {billingMode === "monthly" ? "$5" : "$50"}
                   </p>
                   <p className="mt-1 text-xs text-zinc-700 pricing-featured-body [data-theme=dark]:text-zinc-100">
                     For weekly interface work with YOU-I next to your design tool.
@@ -293,7 +293,7 @@ export default function PricingPage() {
                   </div>
                   <div className="mt-2 h-0.5 w-16 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-400 to-transparent" />
                   <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-                    {billingMode === "monthly" ? "$19" : "$190"}
+                    {billingMode === "monthly" ? "$10" : "$100"}
                   </p>
                   <p className="mt-1 text-xs text-violet-700">
                     For teams shipping accessible work across many products.
