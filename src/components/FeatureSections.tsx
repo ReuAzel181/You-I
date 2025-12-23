@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const personas = [
   {
     title: "Designers",
@@ -75,9 +77,13 @@ export function FeatureSections() {
                     Tools first, every time
                   </div>
                 </div>
-                <div className="no-ads-slide hidden h-16 w-28 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-[11px] font-semibold tracking-[0.22em] text-zinc-500 sm:flex">
-                  NO ADS
-                </div>
+                <Image
+                  src="/images/no-ads.png"
+                  alt="No ads badge"
+                  width={96}
+                  height={96}
+                  className="no-ads-slide hidden h-24 w-24 object-contain sm:block"
+                />
               </div>
             </div>
           </div>

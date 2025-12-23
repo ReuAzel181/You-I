@@ -14,6 +14,7 @@ import { RatioCalculator } from "@/components/RatioCalculator";
 import { EmPercentConverter } from "@/components/EmPercentConverter";
 import { GoogleFontExplorer } from "@/components/GoogleFontExplorer";
 import { LoremPlaceholderGenerator } from "@/components/LoremPlaceholderGenerator";
+import { TypeScaleGenerator } from "@/components/TypeScaleGenerator";
 import { useAnalytics } from "@/providers/SettingsProvider";
 
 type PinnedToolHeroProps = {
@@ -59,10 +60,10 @@ function getPinnedToolIcon(toolName: string) {
     };
   }
 
-  if (toolName === "Export presets") {
+  if (toolName === "Type scale") {
     return {
       src: "/icons/export-presets.svg",
-      alt: "Export presets",
+      alt: "Type scale",
     };
   }
 
@@ -181,6 +182,13 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                       <div className="mt-6 flex-1 md:mt-0">
                         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
                           <LoremPlaceholderGenerator variant="hero" />
+                        </div>
+                      </div>
+                    )}
+                    {tool.href === "/tools/type-scale" && (
+                      <div className="mt-6 flex-1 md:mt-0">
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                          <TypeScaleGenerator variant="hero" />
                         </div>
                       </div>
                     )}

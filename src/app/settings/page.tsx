@@ -9,6 +9,54 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
 
+type AnalyticsEntry = {
+  name: string;
+  properties: Record<string, unknown>;
+  timestamp: string;
+};
+
+type TimelinePoint = {
+  dateKey: string;
+  label: string;
+  count: number;
+};
+
+type AnalyticsCategory =
+  | "tools"
+  | "workspace"
+  | "settings"
+  | "marketing"
+  | "analytics"
+  | "other";
+
+type CategorySummaryItem = {
+  id: AnalyticsCategory;
+  label: string;
+  count: number;
+  color: string;
+};
+
+type ToolSummaryItem = {
+  id: string;
+  label: string;
+  count: number;
+};
+
+type ToolTimelineSeries = {
+  id: string;
+  label: string;
+  color: string;
+  points: TimelinePoint[];
+};
+
+const TOOL_CHART_WIDTH = 320;
+const TOOL_CHART_HEIGHT = 160;
+const TOOL_CHART_PADDING_X = 8;
+const TOOL_CHART_PADDING_Y = 8;
+const TOOL_CHART_Y_AXIS_LABEL_WIDTH = 34;
+const TOOL_CHART_GRID_FRACTIONS = [0.2, 0.4, 0.6, 0.8];
+const TOOL_CHART_MAX_VALUE = 100;
+
 export default function SettingsPage() {
   const router = useRouter();
   const { user, isLoading, signOut } = useAuth();
@@ -44,6 +92,364 @@ export default function SettingsPage() {
   const [profileBannerDraft, setProfileBannerDraft] = useState(profileBannerColor);
   const { analyticsEnabled: analyticsActive, trackEvent } = useAnalytics();
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+
+  const analyticsEntries: AnalyticsEntry[] = (() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const raw = window.localStorage.getItem("you-i-analytics-log");
+
+      if (!raw) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw) as unknown[];
+
+      return parsed
+        .filter(
+          (item): item is AnalyticsEntry =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as { name?: unknown }).name === "string" &&
+            typeof (item as { timestamp?: unknown }).timestamp === "string" &&
+            typeof (item as { properties?: unknown }).properties === "object" &&
+            (item as { properties?: unknown }).properties !== null,
+        )
+        .slice(-200)
+        .reverse();
+    } catch {
+      return [];
+    }
+  })();
+
+  const totalAnalyticsEvents = analyticsEntries.length;
+
+  const analyticsCategorySummary = useMemo<CategorySummaryItem[]>(() => {
+    const counts = new Map<AnalyticsCategory, number>();
+
+    const getCategory = (entry: AnalyticsEntry): AnalyticsCategory => {
+      const rawPath = entry.properties.path;
+      const path = typeof rawPath === "string" ? rawPath : "";
+
+      if (path.startsWith("/tools/")) {
+        return "tools";
+      }
+
+      if (path === "/pinned-tools") {
+        return "workspace";
+      }
+
+      if (path === "/settings") {
+        return "settings";
+      }
+
+      if (path === "/" || path === "/resources" || path === "/pricing") {
+        return "marketing";
+      }
+
+      if (path === "/analytics") {
+        return "analytics";
+      }
+
+      return "other";
+    };
+
+    for (const entry of analyticsEntries) {
+      const category = getCategory(entry);
+      counts.set(category, (counts.get(category) ?? 0) + 1);
+    }
+
+    const palette: Record<AnalyticsCategory, { label: string; color: string }> = {
+      tools: { label: "Tools", color: "#f97316" },
+      workspace: { label: "Workspace", color: "#22c55e" },
+      settings: { label: "Settings", color: "#6366f1" },
+      marketing: { label: "Marketing pages", color: "#ef4444" },
+      analytics: { label: "Analytics", color: "#0ea5e9" },
+      other: { label: "Other", color: "#a1a1aa" },
+    };
+
+    return (Object.keys(palette) as AnalyticsCategory[])
+      .map((key) => ({
+        id: key,
+        label: palette[key].label,
+        color: palette[key].color,
+        count: counts.get(key) ?? 0,
+      }))
+      .filter((item) => item.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }, [analyticsEntries]);
+
+  const analyticsToolSummary = useMemo<ToolSummaryItem[]>(() => {
+    const counts = new Map<string, number>();
+
+    for (const entry of analyticsEntries) {
+      const rawPath = entry.properties.path;
+      const path = typeof rawPath === "string" ? rawPath : "";
+
+      if (!path.startsWith("/tools/")) {
+        continue;
+      }
+
+      counts.set(path, (counts.get(path) ?? 0) + 1);
+    }
+
+    const labelForPath = (path: string) => {
+      if (path === "/tools/color-contrast-checker") {
+        return "Color contrast checker";
+      }
+
+      if (path === "/tools/ratio-calculator") {
+        return "Ratio calculator";
+      }
+
+      if (path === "/tools/em-to-percent-converter") {
+        return "EM to percent converter";
+      }
+
+      if (path === "/tools/lorem-placeholder-generator") {
+        return "Placeholder generator";
+      }
+
+      const segments = path.split("/");
+      const slug = segments[segments.length - 1] ?? "";
+
+      if (!slug) {
+        return path;
+      }
+
+      const spaced = slug.replace(/-/g, " ");
+      return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+    };
+
+    return Array.from(counts.entries())
+      .map(([path, count]) => ({
+        id: path,
+        label: labelForPath(path),
+        count,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }, [analyticsEntries]);
+
+  const analyticsToolTimeline = (() => {
+    const dateBuckets = new Map<string, Map<string, number>>();
+
+    for (const entry of analyticsEntries) {
+      const rawPath = entry.properties.path;
+      const path = typeof rawPath === "string" ? rawPath : "";
+
+      if (!path.startsWith("/tools/")) {
+        continue;
+      }
+
+      const dateKey = entry.timestamp.slice(0, 10);
+      let toolMap = dateBuckets.get(dateKey);
+
+      if (!toolMap) {
+        toolMap = new Map<string, number>();
+        dateBuckets.set(dateKey, toolMap);
+      }
+
+      toolMap.set(path, (toolMap.get(path) ?? 0) + 1);
+    }
+
+    if (dateBuckets.size === 0 || analyticsToolSummary.length === 0) {
+      return {
+        dateKeys: [] as string[],
+        dateLabels: [] as string[],
+        series: [] as ToolTimelineSeries[],
+        maxCount: 0,
+      };
+    }
+
+    const sortedDates = Array.from(dateBuckets.keys()).sort();
+    const recentDates = sortedDates.slice(-10);
+
+    const formatter =
+      typeof Intl !== "undefined"
+        ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" })
+        : null;
+
+    const dateLabels = recentDates.map((key) => {
+      const date = new Date(`${key}T00:00:00Z`);
+      return formatter ? formatter.format(date) : key;
+    });
+
+    const palette = ["#ef4444", "#0ea5e9", "#22c55e", "#a855f7"];
+    const topTools = analyticsToolSummary.slice(0, 4);
+
+    const series: ToolTimelineSeries[] = topTools.map((tool, toolIndex) => {
+      const points: TimelinePoint[] = recentDates.map((key, labelIndex) => {
+        const toolMap = dateBuckets.get(key);
+        const count = toolMap?.get(tool.id) ?? 0;
+
+        return {
+          dateKey: key,
+          label: dateLabels[labelIndex],
+          count,
+        };
+      });
+
+      return {
+        id: tool.id,
+        label: tool.label,
+        color: palette[toolIndex % palette.length],
+        points,
+      };
+    });
+
+    const maxCount = series.reduce((outerMax, current) => {
+      const seriesMax = current.points.reduce(
+        (innerMax, point) => (point.count > innerMax ? point.count : innerMax),
+        0,
+      );
+
+      return seriesMax > outerMax ? seriesMax : outerMax;
+    }, 0);
+
+    return {
+      dateKeys: recentDates,
+      dateLabels,
+      series,
+      maxCount,
+    };
+  })();
+
+  const analyticsToolTimelineCoordinates = (() => {
+    if (analyticsToolTimeline.series.length === 0 || analyticsToolTimeline.maxCount === 0) {
+      return [];
+    }
+
+    const innerWidth =
+      TOOL_CHART_WIDTH - TOOL_CHART_Y_AXIS_LABEL_WIDTH - TOOL_CHART_PADDING_X;
+    const innerHeight = TOOL_CHART_HEIGHT - TOOL_CHART_PADDING_Y * 2;
+
+    if (innerWidth <= 0 || innerHeight <= 0) {
+      return [];
+    }
+
+    const step =
+      analyticsToolTimeline.dateKeys.length === 1
+        ? 0
+        : innerWidth / (analyticsToolTimeline.dateKeys.length - 1);
+
+    const chartMax = TOOL_CHART_MAX_VALUE;
+
+    return analyticsToolTimeline.series.map((series) => {
+      const coordinates = series.points.map((point, index) => {
+        const x = TOOL_CHART_Y_AXIS_LABEL_WIDTH + step * index;
+        const rawRatio =
+          chartMax > 0 ? Math.min(point.count / chartMax, 1) : 0;
+        const ratio = Math.max(0, rawRatio);
+        const y = TOOL_CHART_PADDING_Y + (1 - ratio) * innerHeight;
+
+        return {
+          x,
+          y,
+          dateKey: point.dateKey,
+          label: point.label,
+          count: point.count,
+        };
+      });
+
+      return {
+        id: series.id,
+        label: series.label,
+        color: series.color,
+        coordinates,
+      };
+    });
+  })();
+
+  const analyticsToolTimelineGridLines = (() => {
+    if (analyticsToolTimeline.series.length === 0 || analyticsToolTimeline.maxCount === 0) {
+      return [];
+    }
+
+    const innerHeight = TOOL_CHART_HEIGHT - TOOL_CHART_PADDING_Y * 2;
+
+    if (innerHeight <= 0) {
+      return [];
+    }
+
+    return TOOL_CHART_GRID_FRACTIONS.map(
+      (fraction) => TOOL_CHART_PADDING_Y + innerHeight * fraction,
+    );
+  })();
+
+  const analyticsToolTimelineGridLineValues = (() => {
+    if (analyticsToolTimeline.series.length === 0 || analyticsToolTimeline.maxCount === 0) {
+      return [];
+    }
+
+    return TOOL_CHART_GRID_FRACTIONS.map((fraction) =>
+      Math.round(TOOL_CHART_MAX_VALUE * (1 - fraction)),
+    );
+  })();
+
+  const analyticsToolTimelineXAxisTicks = (() => {
+    if (analyticsToolTimeline.series.length === 0 || analyticsToolTimeline.maxCount === 0) {
+      return [];
+    }
+
+    const innerWidth =
+      TOOL_CHART_WIDTH - TOOL_CHART_Y_AXIS_LABEL_WIDTH - TOOL_CHART_PADDING_X;
+
+    if (innerWidth <= 0) {
+      return [];
+    }
+
+    const count = analyticsToolTimeline.dateKeys.length;
+
+    if (count === 0) {
+      return [];
+    }
+
+    const step = count === 1 ? 0 : innerWidth / (count - 1);
+
+    return analyticsToolTimeline.dateKeys.map(
+      (_, index) => TOOL_CHART_Y_AXIS_LABEL_WIDTH + step * index,
+    );
+  })();
+
+  const analyticsMaxToolCount = analyticsToolSummary.reduce(
+    (max, item) => (item.count > max ? item.count : max),
+    0,
+  );
+
+  const analyticsTotalToolEvents = analyticsToolSummary.reduce(
+    (sum, item) => sum + item.count,
+    0,
+  );
+
+  const analyticsPieStyle = (() => {
+    if (analyticsCategorySummary.length === 0 || totalAnalyticsEvents === 0) {
+      return {};
+    }
+
+    let currentAngle = 0;
+    const segments: string[] = [];
+    const lastIndex = analyticsCategorySummary.length - 1;
+
+    analyticsCategorySummary.forEach((item, index) => {
+      const share = item.count / totalAnalyticsEvents;
+      const start = currentAngle;
+      const end = index === lastIndex ? 360 : currentAngle + share * 360;
+
+      segments.push(
+        `${item.color} ${start.toFixed(2)}deg ${end.toFixed(2)}deg`,
+      );
+      currentAngle = end;
+    });
+
+    return {
+      backgroundImage: `conic-gradient(${segments.join(", ")})`,
+    } as const;
+  })();
+
+  const hasAnalyticsData = analyticsEntries.length > 0;
 
   const statusOptions = [
     { id: "online", label: "Online", dotClass: "status-dot-online" },
@@ -171,7 +577,7 @@ export default function SettingsPage() {
         </section>
         <section className="py-8 md:py-10">
           <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 md:flex-row md:px-8">
-            <div className="flex-1">
+            <div className="flex-1 space-y-6">
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
                 <div className="space-y-6 divide-y divide-zinc-100">
                   <div className="mb-0">
@@ -412,42 +818,6 @@ export default function SettingsPage() {
                       >
                         <span className="h-3 w-3 rounded-full bg-zinc-900" />
                         <span>Dark</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="pt-4 mb-4">
-                    <div className="mb-4 space-y-1">
-                      <p className="text-xs font-medium text-zinc-500">Analytics</p>
-                      <h2 className="text-sm font-semibold text-zinc-900">Usage and diagnostics</h2>
-                      <p className="text-[11px] text-zinc-500">
-                        Control whether basic, anonymous usage events are recorded while you work.
-                      </p>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <button
-                        type="button"
-                        onClick={() => setAnalyticsEnabled(!analyticsEnabled)}
-                        className="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-left text-[11px] text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
-                      >
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <p className="font-medium">Allow basic usage analytics</p>
-                          <p className="text-[11px] text-zinc-500">
-                            When enabled, tools log simple events like which screens are opened.
-                          </p>
-                        </div>
-                        <span
-                          className={`settings-toggle-track ml-2 inline-flex h-5 w-9 shrink-0 items-center rounded-full border ${
-                            analyticsEnabled
-                              ? "border-red-400 bg-red-500 [data-theme=dark]:border-red-500 [data-theme=dark]:bg-red-600"
-                              : "border-zinc-300 bg-white [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-slate-900"
-                          }`}
-                        >
-                          <span
-                            className={`settings-toggle-thumb h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                              analyticsEnabled ? "translate-x-4" : "translate-x-0"
-                            }`}
-                          />
-                        </span>
                       </button>
                     </div>
                   </div>
@@ -698,6 +1068,283 @@ export default function SettingsPage() {
                   for privacy, integrations, and keyboard shortcuts will appear here as the toolkit
                   grows.
                 </p>
+              </div>
+            </div>
+          </div>
+          <div className="mx-auto mt-8 max-w-6xl px-4 md:px-8">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                <span>Analytics</span>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.35fr)]">
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="mb-3 space-y-1">
+                      <p className="text-xs font-medium text-zinc-500">Usage and diagnostics</p>
+                      <h2 className="text-sm font-semibold text-zinc-900">Analytics controls</h2>
+                      <p className="text-[11px] text-zinc-500">
+                        Control whether basic, anonymous usage events are recorded while you work.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAnalyticsEnabled(!analyticsEnabled)}
+                      className="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-left text-[11px] text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
+                    >
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="font-medium">
+                          {analyticsEnabled ? "Analytics enabled" : "Enable basic usage analytics"}
+                        </p>
+                        <p className="text-[11px] text-zinc-500">
+                          When enabled, tools log simple events like which screens are opened.
+                        </p>
+                      </div>
+                      <span
+                        className={`settings-toggle-track ml-2 inline-flex h-5 w-9 shrink-0 items-center rounded-full border ${
+                          analyticsEnabled
+                            ? "border-red-400 bg-red-500 [data-theme=dark]:border-red-500 [data-theme=dark]:bg-red-600"
+                            : "border-zinc-300 bg-white [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-slate-900"
+                        }`}
+                      >
+                        <span
+                          className={`settings-toggle-thumb h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                            analyticsEnabled ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </span>
+                    </button>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-zinc-500">Events</p>
+                        <h2 className="text-sm font-semibold text-zinc-900">Event overview</h2>
+                      </div>
+                      <p className="text-[11px] text-zinc-500">
+                        {totalAnalyticsEvents > 0
+                          ? `${totalAnalyticsEvents} events from this browser`
+                          : "No events recorded yet"}
+                      </p>
+                    </div>
+                    {!hasAnalyticsData && (
+                      <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
+                        Use tools while analytics is enabled to see an overview of activity.
+                      </p>
+                    )}
+                    {hasAnalyticsData && (
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <div className="flex items-center justify-center">
+                          <div
+                            className="flex h-24 w-24 items-center justify-center rounded-full border border-zinc-200 bg-white"
+                            style={analyticsPieStyle}
+                          >
+                            <div className="h-14 w-14 rounded-full bg-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          {analyticsCategorySummary.map((item) => {
+                            const share =
+                              totalAnalyticsEvents > 0
+                                ? Math.round((item.count / totalAnalyticsEvents) * 100)
+                                : 0;
+
+                            return (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between text-[11px] text-zinc-700"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{ backgroundColor: item.color }}
+                                  />
+                                  <span className="font-medium">{item.label}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                                  <span>{item.count}</span>
+                                  <span>·</span>
+                                  <span>{share}%</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="mb-3 space-y-1">
+                      <p className="text-xs font-medium text-zinc-500">Timeline</p>
+                      <h2 className="text-sm font-semibold text-zinc-900">Tool usage over time</h2>
+                      <p className="text-[11px] text-zinc-500">
+                        See how often top tools have been opened in recent days.
+                      </p>
+                    </div>
+                    {(!hasAnalyticsData || analyticsToolTimelineCoordinates.length === 0) && (
+                      <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
+                        Open tools across a few days to see trends in this chart.
+                      </p>
+                    )}
+                    {hasAnalyticsData && analyticsToolTimelineCoordinates.length > 0 && (
+                      <div className="overflow-x-auto">
+                        <svg
+                          width={TOOL_CHART_WIDTH}
+                          height={TOOL_CHART_HEIGHT}
+                          className="min-w-[260px]"
+                        >
+                          <rect
+                            x={0}
+                            y={0}
+                            width={TOOL_CHART_WIDTH}
+                            height={TOOL_CHART_HEIGHT}
+                            fill="white"
+                          />
+                          {analyticsToolTimelineGridLines.map((y, index) => (
+                            <g key={y}>
+                              <line
+                                x1={TOOL_CHART_Y_AXIS_LABEL_WIDTH}
+                                x2={TOOL_CHART_WIDTH - TOOL_CHART_PADDING_X}
+                                y1={y}
+                                y2={y}
+                                stroke="#e5e7eb"
+                                strokeWidth={1}
+                              />
+                              {analyticsToolTimelineGridLineValues[index] !== undefined && (
+                                <text
+                                  x={TOOL_CHART_Y_AXIS_LABEL_WIDTH - 6}
+                                  y={y + 3}
+                                  fontSize={9}
+                                  textAnchor="end"
+                                  fill="#6b7280"
+                                >
+                                  {analyticsToolTimelineGridLineValues[index]}
+                                </text>
+                              )}
+                            </g>
+                          ))}
+                          {analyticsToolTimelineXAxisTicks.map((x) => (
+                            <line
+                              key={x}
+                              x1={x}
+                              x2={x}
+                              y1={TOOL_CHART_HEIGHT - TOOL_CHART_PADDING_Y}
+                              y2={TOOL_CHART_HEIGHT - TOOL_CHART_PADDING_Y + 4}
+                              stroke="#d4d4d8"
+                              strokeWidth={1}
+                            />
+                          ))}
+                          {analyticsToolTimelineCoordinates.map((series) => {
+                            if (series.coordinates.length === 0) {
+                              return null;
+                            }
+
+                            const pathD = series.coordinates
+                              .map((point, index) =>
+                                index === 0
+                                  ? `M ${point.x} ${point.y}`
+                                  : `L ${point.x} ${point.y}`,
+                              )
+                              .join(" ");
+
+                            return (
+                              <g key={series.id}>
+                                <path
+                                  d={pathD}
+                                  fill="none"
+                                  stroke={series.color}
+                                  strokeWidth={1.5}
+                                />
+                                {series.coordinates.map((point) => (
+                                  <circle
+                                    key={`${series.id}-${point.dateKey}`}
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r={2}
+                                    fill={series.color}
+                                  />
+                                ))}
+                              </g>
+                            );
+                          })}
+                        </svg>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {analyticsToolTimeline.series.map((series) => (
+                            <div
+                              key={series.id}
+                              className="inline-flex items-center gap-1 rounded-full bg-zinc-50 px-2 py-1 text-[10px] text-zinc-600"
+                            >
+                              <span
+                                className="h-2 w-2 rounded-full"
+                                style={{ backgroundColor: series.color }}
+                              />
+                              <span>{series.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-1 flex justify-between text-[9px] text-zinc-400">
+                          <span>Recent days</span>
+                          <span>Top tools only</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="mb-3 space-y-1">
+                      <p className="text-xs font-medium text-zinc-500">Tool analytics</p>
+                      <h2 className="text-sm font-semibold text-zinc-900">Per-tool usage</h2>
+                      <p className="text-[11px] text-zinc-500">
+                        See how often each tool has been opened recently from this browser.
+                      </p>
+                    </div>
+                    {analyticsToolSummary.length === 0 && (
+                      <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
+                        Open any tool to see its usage appear here.
+                      </p>
+                    )}
+                    {analyticsToolSummary.length > 0 && (
+                      <div className="space-y-1.5">
+                        {analyticsToolSummary.map((item) => {
+                          const share =
+                            analyticsMaxToolCount > 0 ? item.count / analyticsMaxToolCount : 0;
+                          const percent =
+                            analyticsTotalToolEvents > 0
+                              ? Math.round((item.count / analyticsTotalToolEvents) * 100)
+                              : 0;
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="space-y-1 rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-1.5"
+                            >
+                              <div className="flex items-center justify-between text-[11px] text-zinc-700">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex h-4 min-w-[20px] items-center justify-center rounded-full bg-zinc-900 text-[9px] font-semibold text-white">
+                                    {item.count}
+                                  </span>
+                                  <span className="font-medium">{item.label}</span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500">{percent}%</span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-zinc-200">
+                                <div
+                                  className="h-1.5 rounded-full bg-red-500"
+                                  style={{
+                                    width: `${
+                                      share > 0 ? Math.max(8, Math.round(share * 100)) : 0
+                                    }%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

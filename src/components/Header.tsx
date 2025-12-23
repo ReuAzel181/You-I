@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -191,9 +190,7 @@ export function Header() {
     }
   }
 
-  const navigationItems = user
-    ? [...navItems, { label: "Analytics", href: "/analytics" }]
-    : navItems;
+  const navigationItems = navItems;
 
   async function handleAuthSubmit(event: React.FormEvent) {
     event.preventDefault();

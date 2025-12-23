@@ -34,8 +34,9 @@ export const tools: Tool[] = [
     href: "/tools/lorem-placeholder-generator",
   },
   {
-    name: "Export presets",
-    description: "Share color tokens with designers and developers in one click.",
+    name: "Type scale",
+    description: "Generate a typography scale from a base size and ratio.",
+    href: "/tools/type-scale",
   },
 ];
 
@@ -69,7 +70,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
             return (
               <div
                 key={tool.name}
-                className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-transform transition-colors hover:-translate-y-1 hover:border-red-200 hover:bg-red-50 hover:shadow-sm cursor-pointer"
+                className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-transform transition-colors hover:-translate-y-1 hover:border-red-200 hover:bg-red-50 hover:shadow-sm cursor-pointer [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-zinc-900/40 [data-theme=dark]:hover:border-red-400 [data-theme=dark]:hover:bg-red-500/20"
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

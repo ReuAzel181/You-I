@@ -446,7 +446,7 @@ export function LoremPlaceholderGenerator({ variant = "default" }: LoremPlacehol
             </button>
           </div>
         </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-4">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="space-y-0.5">
               <p className="text-xs font-semibold text-zinc-900">Generated placeholder</p>
