@@ -43,7 +43,13 @@ export default function TypeScalePage() {
               </div>
               <button
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/");
+                  }
+                }}
                 className="inline-flex h-7 items-center gap-1 rounded-full border border-zinc-300 px-3 text-[11px] font-medium text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800"
                 aria-label="Back to main page"
               >
@@ -69,4 +75,3 @@ export default function TypeScalePage() {
     </div>
   );
 }
-

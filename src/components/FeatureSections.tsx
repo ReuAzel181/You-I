@@ -47,8 +47,15 @@ export function FeatureSections() {
               most useful tools one pin away.
             </p>
           </div>
-          <div className="mx-auto max-w-5xl rounded-2xl border border-zinc-200 bg-white/90 px-5 py-4 text-left shadow-sm ring-1 ring-zinc-900/5 sm:px-6 sm:py-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 bg-white/90 px-5 py-5 text-left shadow-sm ring-1 ring-zinc-900/5 sm:px-6 sm:py-6">
+            <Image
+              src="/images/no-ads.png"
+              alt="No ads badge"
+              width={320}
+              height={320}
+              className="pointer-events-none absolute -right-20 top-1/2 hidden h-72 w-72 -translate-y-1/2 opacity-50 sm:block"
+            />
+            <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
                 <p className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-700">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -61,29 +68,6 @@ export function FeatureSections() {
                   YOU-I keeps contrast, ratio, and type tools open in a clean surface so you can
                   focus on interface decisions—not dismissing prompts.
                 </p>
-              </div>
-              <div className="flex flex-1 items-center justify-end gap-3 md:gap-4">
-                <div className="flex flex-col gap-2 text-[9px] text-zinc-700">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    No banners
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    No tracking walls
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2 py-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Tools first, every time
-                  </div>
-                </div>
-                <Image
-                  src="/images/no-ads.png"
-                  alt="No ads badge"
-                  width={96}
-                  height={96}
-                  className="no-ads-slide hidden h-24 w-24 object-contain sm:block"
-                />
               </div>
             </div>
           </div>

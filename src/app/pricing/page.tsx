@@ -64,7 +64,7 @@ export default function PricingPage() {
       <Header />
       <main>
         <section>
-          <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-10">
+          <div className="mx-auto max-w-6xl px-4 pt-12 pb-6 md:px-8 ">
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
@@ -75,19 +75,13 @@ export default function PricingPage() {
                   Pricing plans for every stage
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                  Start free, then grow into more guidance and collaboration when you need it. All
-                  plans keep your settings and pinned tools in your browser, so your workspace feels
-                  the same every time you open YOU-I.
-                </p>
-                <p className="max-w-2xl text-[11px] leading-relaxed text-zinc-500">
-                  YOU-I is designed to sit next to your design tool. Use pricing more like a
-                  commitment to your own workflow than a traditional subscription.
+                  Start free, upgrade anytime. Your settings and pinned tools stay the same.
                 </p>
               </div>
               <PageTransitionLink
                 href="/"
                 className="inline-flex h-7 items-center gap-1 self-start rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
-                aria-label="Back to main page"
+                aria-label="Back to homepage"
               >
                 <Image
                   src="/icons/chevron.svg"
@@ -103,34 +97,6 @@ export default function PricingPage() {
         </section>
         <section className="bg-[var(--background)]">
           <div className="mx-auto max-w-6xl px-4 pb-12 md:px-8">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Starter is active by default for every account.
-            </div>
-            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3 py-3 text-[11px] text-red-900 shadow-sm">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700">
-                  Have a voucher?
-                </p>
-                <p className="mt-1 text-[11px] text-red-900/80">
-                  Enter a code to unlock amazing gifts.
-                </p>
-              </div>
-              <div className="flex w-full gap-2 sm:w-auto sm:min-w-[220px]">
-                <input
-                  type="text"
-                  inputMode="text"
-                  placeholder="Enter voucher code"
-                  className="h-8 flex-1 rounded-lg border border-red-200 bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
-                />
-                <button
-                  type="button"
-                  className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white/80 p-1 text-[11px] text-zinc-700">
                 <button
@@ -162,7 +128,7 @@ export default function PricingPage() {
                 </p>
               </div>
             </div>
-            <div className="grid items-center gap-4 md:grid-cols-3">
+            <div className="grid items-center pb-6 gap-4 md:grid-cols-3">
               <div className="flex flex-col rounded-2xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-800">
@@ -222,14 +188,18 @@ export default function PricingPage() {
                       </span>
                     </li>
                   </ul>
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Starter is active by default for every account.
+                  </div>
                   <button
-                    className="mt-6 inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-[11px] font-semibold text-zinc-500"
+                    className="mt-4 inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-[11px] font-semibold text-zinc-500"
                     aria-disabled="true"
                   >
                     You&apos;re using this plan
                   </button>
                 </div>
-                <div className="flex flex-col justify-center rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[29rem] shadow-sm md:z-10">
+                <div className="flex flex-col justify-center rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[26rem] shadow-sm md:z-10">
                   <div className="flex items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
@@ -355,8 +325,8 @@ export default function PricingPage() {
                     .
                   </p>
                 </div>
-              <div className="top-tier-glow mx-auto">
-                <div className="violet-inner-ring relative flex flex-col overflow-hidden rounded-2xl border-2 border-violet-500 bg-gradient-to-b from-violet-50 to-violet-100 p-3 sm:p-4 shadow-sm">
+              <div className="top-tier-glow">
+                <div className="violet-inner-ring relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-violet-500 bg-gradient-to-b from-violet-50 to-violet-100 p-3 sm:p-4 shadow-sm">
                   <div
                     className="pointer-events-none absolute inset-x-[-40%] top-0 h-24 bg-gradient-to-b from-white/70 via-violet-50/40 to-transparent opacity-90 mix-blend-screen blur-md animate-pulse"
                     aria-hidden="true"
@@ -487,6 +457,30 @@ export default function PricingPage() {
                     Talk to us
                   </button>
                 </div>
+              </div>
+            </div>
+            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3 py-3 text-[11px] text-red-900 shadow-sm">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                  Have a voucher?
+                </p>
+                <p className="mt-1 text-[11px] text-red-900/80">
+                  Enter a code to unlock amazing gifts.
+                </p>
+              </div>
+              <div className="flex w-full gap-2 sm:w-auto sm:min-w-[220px]">
+                <input
+                  type="text"
+                  inputMode="text"
+                  placeholder="Enter voucher code"
+                  className="h-8 flex-1 rounded-lg border border-red-200 bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+                />
+                <button
+                  type="button"
+                  className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
+                >
+                  Apply
+                </button>
               </div>
             </div>
             <div className="mt-6 grid gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[11px] text-zinc-600 md:grid-cols-3">

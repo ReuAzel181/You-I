@@ -1,10 +1,12 @@
 import Image from "next/image";
+import { useState } from "react";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 export type Tool = {
   name: string;
   description: string;
   href?: string;
+  isLocked?: boolean;
 };
 
 export const tools: Tool[] = [
@@ -43,6 +45,16 @@ export const tools: Tool[] = [
     description: "Create responsive SVG wave backgrounds for hero sections and page breaks.",
     href: "/tools/svg-wave-generator",
   },
+  {
+    name: "Gradient color",
+    description: "Stay tuned for gradient presets designed for accessible interface work.",
+    isLocked: true,
+  },
+  {
+    name: "Background pattern",
+    description: "Stay tuned for background patterns that work with your color system.",
+    isLocked: true,
+  },
 ];
 
 type ToolGridProps = {
@@ -51,6 +63,57 @@ type ToolGridProps = {
 };
 
 export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
+  const [orderedTools, setOrderedTools] = useState(tools);
+  const [dragToolName, setDragToolName] = useState<string | null>(null);
+  const [dropTargetName, setDropTargetName] = useState<string | null>(null);
+
+  function handleDragStart(toolName: string) {
+    setDragToolName(toolName);
+    setDropTargetName(toolName);
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLDivElement>, targetName: string) {
+    event.preventDefault();
+
+    if (!dragToolName || dragToolName === targetName) {
+      return;
+    }
+
+    setDropTargetName(targetName);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLDivElement>, targetName: string) {
+    event.preventDefault();
+
+    if (!dragToolName || dragToolName === targetName) {
+      setDragToolName(null);
+      setDropTargetName(null);
+      return;
+    }
+
+    setOrderedTools((current) => {
+      const fromIndex = current.findIndex((tool) => tool.name === dragToolName);
+      const toIndex = current.findIndex((tool) => tool.name === targetName);
+
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return current;
+      }
+
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+
+    setDragToolName(null);
+    setDropTargetName(null);
+  }
+
+  function handleDragEnd() {
+    setDragToolName(null);
+    setDropTargetName(null);
+  }
+
   return (
     <section id="tools" className="border-b border-zinc-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
@@ -68,25 +131,55 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
           <p className="text-xs text-zinc-500">More tools are coming soon as the platform grows.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tools.map((tool) => {
+          {orderedTools.map((tool) => {
             const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
-            const hasHref = Boolean(tool.href);
+            const hasHref = Boolean(tool.href) && !tool.isLocked;
+            const isDragging = dragToolName === tool.name;
+            const isDropTarget =
+              dropTargetName === tool.name && dragToolName !== null && dragToolName !== tool.name;
 
             return (
-              <div
-                key={tool.name}
-                className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-transform transition-colors hover:-translate-y-1 hover:border-red-200 hover:bg-red-50 hover:shadow-sm cursor-pointer [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-zinc-900/40 [data-theme=dark]:hover:border-red-400 [data-theme=dark]:hover:bg-red-500/20"
-              >
+                <div
+                  key={tool.name}
+                  draggable
+                  onDragStart={() => handleDragStart(tool.name)}
+                  onDragOver={(event) => handleDragOver(event, tool.name)}
+                  onDrop={(event) => handleDrop(event, tool.name)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-transform transition-colors transition-shadow hover:-translate-y-1 hover:border-red-200 hover:bg-red-50 hover:shadow-sm cursor-move [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-zinc-900/40 [data-theme=dark]:hover:border-red-400 [data-theme=dark]:hover:bg-red-500/20 ${
+                    isDragging ? "z-10 scale-[1.03] shadow-lg ring-1 ring-red-200" : ""
+                  }`}
+                >
+                {isDropTarget && (
+                  <div className="mb-2 h-0.5 w-full rounded-full bg-gradient-to-r from-red-200 via-red-400 to-red-200 opacity-80 animate-pulse" />
+                )}
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-xs font-semibold text-white">
-                      UI
+                      {tool.isLocked ? (
+                        <Image
+                          src="/icons/lock.svg"
+                          alt=""
+                          width={14}
+                          height={14}
+                          className="h-3.5 w-3.5"
+                        />
+                      ) : (
+                        "UI"
+                      )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-zinc-900">{tool.name}</h3>
+                      <h3 className="text-sm font-semibold text-zinc-900">
+                        {tool.name}
+                        {tool.isLocked && (
+                          <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
+                            Coming soon
+                          </span>
+                        )}
+                      </h3>
                     </div>
                   </div>
-                  {onPinTool && (
+                  {onPinTool && !tool.isLocked && (
                     <button
                       type="button"
                       onClick={(event) => {
@@ -129,7 +222,9 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                     {tool.description}
                   </PageTransitionLink>
                 ) : (
-                  <p className="mt-1 text-xs leading-relaxed text-zinc-600">{tool.description}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                    {tool.description}
+                  </p>
                 )}
               </div>
             );

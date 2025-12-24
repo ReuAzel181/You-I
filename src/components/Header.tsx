@@ -7,6 +7,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 const navItems = [
+  { label: "Home", href: "/" },
   { label: "Workspace", href: "/pinned-tools" },
   { label: "Resources", href: "/resources" },
   { label: "Pricing", href: "/pricing" },
@@ -360,7 +361,10 @@ export function Header() {
           </PageTransitionLink>
           <nav className="hidden items-center gap-6 md:flex">
             {navigationItems.map((item) => {
-              const isActive = pathname && pathname.startsWith(item.href);
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : Boolean(pathname && pathname.startsWith(item.href));
 
               return (
                 <PageTransitionLink
@@ -450,7 +454,10 @@ export function Header() {
         <div className="mx-auto max-w-6xl px-4 py-3">
           <nav className="flex flex-col gap-1.5">
             {navigationItems.map((item) => {
-              const isActive = pathname && pathname.startsWith(item.href);
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : Boolean(pathname && pathname.startsWith(item.href));
 
               return (
                 <PageTransitionLink

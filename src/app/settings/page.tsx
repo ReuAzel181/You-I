@@ -7,7 +7,6 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
-import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 type AnalyticsEntry = {
   name: string;
@@ -92,6 +91,7 @@ export default function SettingsPage() {
   const [profileBannerDraft, setProfileBannerDraft] = useState(profileBannerColor);
   const { analyticsEnabled: analyticsActive, trackEvent } = useAnalytics();
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const analyticsEntries: AnalyticsEntry[] = (() => {
     if (typeof window === "undefined") {
@@ -530,6 +530,28 @@ export default function SettingsPage() {
 
   const showAuthNotice = !user && !isLoading;
 
+  function handleBackClick() {
+    if (typeof window === "undefined" || isLeaving) {
+      return;
+    }
+
+    setIsLeaving(true);
+    document.documentElement.classList.add("page-transition-leave");
+
+    window.setTimeout(() => {
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.push("/");
+      }
+
+      window.setTimeout(() => {
+        document.documentElement.classList.remove("page-transition-leave");
+        setIsLeaving(false);
+      }, 220);
+    }, 160);
+  }
+
   useEffect(() => {
     if (isLoading) {
       return;
@@ -567,12 +589,13 @@ export default function SettingsPage() {
                 toolkit.
               </p>
             </div>
-            <PageTransitionLink
-              href="/"
+            <button
+              type="button"
+              onClick={handleBackClick}
               className="inline-flex h-8 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
             >
               <span>Back</span>
-            </PageTransitionLink>
+            </button>
           </div>
         </section>
         <section className="py-8 md:py-10">

@@ -44,7 +44,13 @@ export default function LoremPlaceholderGeneratorPage() {
               </div>
               <button
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/");
+                  }
+                }}
                 className="inline-flex h-7 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
                 aria-label="Back to main page"
               >
@@ -70,4 +76,3 @@ export default function LoremPlaceholderGeneratorPage() {
     </div>
   );
 }
-

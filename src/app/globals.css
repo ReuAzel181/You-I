@@ -339,7 +339,6 @@ html {
 .top-tier-glow {
   display: inline-flex;
   border-radius: 1.25rem;
-  padding: 3px;
   box-shadow:
     0 0 0 1px rgba(139, 92, 246, 0.8),
     0 0 32px rgba(139, 92, 246, 0.9);
