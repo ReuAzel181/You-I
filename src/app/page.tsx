@@ -15,6 +15,7 @@ import { EmPercentConverter } from "@/components/EmPercentConverter";
 import { GoogleFontExplorer } from "@/components/GoogleFontExplorer";
 import { LoremPlaceholderGenerator } from "@/components/LoremPlaceholderGenerator";
 import { TypeScaleGenerator } from "@/components/TypeScaleGenerator";
+import { SvgWaveGenerator } from "@/components/SvgWaveGenerator";
 import { useAnalytics } from "@/providers/SettingsProvider";
 
 type PinnedToolHeroProps = {
@@ -64,6 +65,13 @@ function getPinnedToolIcon(toolName: string) {
     return {
       src: "/icons/export-presets.svg",
       alt: "Type scale",
+    };
+  }
+
+  if (toolName === "SVG wave generator") {
+    return {
+      src: "/icons/palette-comparisons.svg",
+      alt: "SVG wave generator",
     };
   }
 
@@ -189,6 +197,13 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
                       <div className="mt-6 flex-1 md:mt-0">
                         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
                           <TypeScaleGenerator variant="hero" />
+                        </div>
+                      </div>
+                    )}
+                    {tool.href === "/tools/svg-wave-generator" && (
+                      <div className="mt-6 flex-1 md:mt-0">
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                          <SvgWaveGenerator variant="hero" />
                         </div>
                       </div>
                     )}

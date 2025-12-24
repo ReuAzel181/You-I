@@ -38,6 +38,11 @@ export const tools: Tool[] = [
     description: "Generate a typography scale from a base size and ratio.",
     href: "/tools/type-scale",
   },
+  {
+    name: "SVG wave generator",
+    description: "Create responsive SVG wave backgrounds for hero sections and page breaks.",
+    href: "/tools/svg-wave-generator",
+  },
 ];
 
 type ToolGridProps = {
