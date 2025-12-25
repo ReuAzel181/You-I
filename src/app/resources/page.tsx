@@ -53,7 +53,7 @@ export default function ResourcesPage() {
                   Contrast and color checks
                 </h2>
                 <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
-                  Pair the color contrast checker with quick rules of thumb so you can move faster
+                  Pair the Color Contrast Checker with quick rules of thumb so you can move faster
                   than the spec every time you adjust a palette.
                 </p>
                 <ul className="mt-4 space-y-1.5 text-[11px] text-zinc-700">
@@ -65,7 +65,7 @@ export default function ResourcesPage() {
                         href="/tools/color-contrast-checker"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
-                        color contrast checker
+                        Color Contrast Checker
                       </PageTransitionLink>
                       . Aim for at least 4.5&nbsp;:&nbsp;1 for body text and 3&nbsp;:&nbsp;1 for
                       large headings.
@@ -125,7 +125,7 @@ export default function ResourcesPage() {
                         href="/tools/ratio-calculator"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
-                        ratio calculator
+                        Ratio Calculator
                       </PageTransitionLink>{" "}
                       to keep heading and body sizes related. Try keeping line-heights between 1.4
                       and 1.6 for long-form text.
@@ -139,7 +139,7 @@ export default function ResourcesPage() {
                         href="/tools/em-to-percent-converter"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
-                        EM to percent converter
+                        Unit Converter
                       </PageTransitionLink>{" "}
                       before handing off specs so spacing behaves as expected in code.
                     </span>
@@ -152,7 +152,7 @@ export default function ResourcesPage() {
                         href="/tools/google-font-explorer"
                         className="font-medium text-red-600 hover:text-red-700"
                       >
-                        Google font explorer
+                        Google Font Explorer
                       </PageTransitionLink>
                       , test headings at real viewport widths instead of only looking at specimen
                       rows.
@@ -265,7 +265,7 @@ export default function ResourcesPage() {
                   Keep contrast-safe components in every design file
                 </h3>
                 <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
-                  Pair the color contrast checker with your workspace so primary, secondary, and
+                  Pair the Color Contrast Checker with your workspace so primary, secondary, and
                   surface colors are always available with AA/AAA status visible.
                 </p>
                 <ul className="mt-3 space-y-1.5 text-[11px] text-zinc-700">
@@ -309,7 +309,7 @@ export default function ResourcesPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-violet-500" />
-                    <span>Use the ratio calculator for layout explorations and responsive frames.</span>
+                    <span>Use the Ratio Calculator for layout explorations and responsive frames.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-violet-500" />

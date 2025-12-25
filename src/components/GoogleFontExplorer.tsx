@@ -296,7 +296,7 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
     return (
       <div className="space-y-3">
         <div className="rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2">
-          <p className="text-xs font-medium text-zinc-700">Google font explorer</p>
+          <p className="text-xs font-medium text-zinc-700">Google Font Explorer</p>
           <p className="mt-1 text-[11px] text-zinc-500">
             Search curated families and preview your copy in a few styles without leaving the
             homepage.

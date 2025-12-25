@@ -4,11 +4,11 @@ const columns = [
   {
     title: "Tools",
     links: [
-      { label: "Color contrast checker", href: "/tools/color-contrast-checker" },
-      { label: "Ratio calculator", href: "/tools/ratio-calculator" },
-      { label: "EM to percent converter", href: "/tools/em-to-percent-converter" },
-      { label: "Google font explorer", href: "/tools/google-font-explorer" },
-      { label: "Type scale", href: "/tools/type-scale" },
+      { label: "Color Contrast Checker", href: "/tools/color-contrast-checker" },
+      { label: "Ratio Calculator", href: "/tools/ratio-calculator" },
+      { label: "Unit Converter", href: "/tools/em-to-percent-converter" },
+      { label: "Google Font Explorer", href: "/tools/google-font-explorer" },
+      { label: "Type Scale", href: "/tools/type-scale" },
     ],
   },
   {

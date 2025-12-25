@@ -197,15 +197,15 @@ export default function SettingsPage() {
 
     const labelForPath = (path: string) => {
       if (path === "/tools/color-contrast-checker") {
-        return "Color contrast checker";
+        return "Color Contrast Checker";
       }
 
       if (path === "/tools/ratio-calculator") {
-        return "Ratio calculator";
+        return "Ratio Calculator";
       }
 
       if (path === "/tools/em-to-percent-converter") {
-        return "EM to percent converter";
+        return "Unit Converter";
       }
 
       if (path === "/tools/lorem-placeholder-generator") {

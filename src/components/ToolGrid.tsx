@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 export type Tool = {
@@ -11,22 +11,22 @@ export type Tool = {
 
 export const tools: Tool[] = [
   {
-    name: "Color contrast checker",
+    name: "Color Contrast Checker",
     description: "Quickly validate WCAG ratios for any text and background pair.",
     href: "/tools/color-contrast-checker",
   },
   {
-    name: "Ratio calculator",
+    name: "Ratio Calculator",
     description: "See pass/fail states for AA and AAA across font sizes.",
     href: "/tools/ratio-calculator",
   },
   {
-    name: "EM to percent converter",
+    name: "Unit Converter",
     description: "Convert px, rem, em, and percentage values with a custom base size.",
     href: "/tools/em-to-percent-converter",
   },
   {
-    name: "Google font explorer",
+    name: "Google Font Explorer",
     description: "Browse Google Fonts with live previews focused on English text.",
     href: "/tools/google-font-explorer",
   },
@@ -36,12 +36,12 @@ export const tools: Tool[] = [
     href: "/tools/lorem-placeholder-generator",
   },
   {
-    name: "Type scale",
+    name: "Type Scale",
     description: "Generate a typography scale from a base size and ratio.",
     href: "/tools/type-scale",
   },
   {
-    name: "SVG wave generator",
+    name: "SVG Wave Generator",
     description: "Create responsive SVG wave backgrounds for hero sections and page breaks.",
     href: "/tools/svg-wave-generator",
   },
@@ -63,19 +63,51 @@ type ToolGridProps = {
 };
 
 export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
-  const [orderedTools, setOrderedTools] = useState(tools);
+  const [orderedTools, setOrderedTools] = useState<Tool[]>(() => {
+    if (typeof window === "undefined") {
+      return tools;
+    }
+
+    try {
+      const stored = window.localStorage.getItem("youi-tools-order");
+
+      if (!stored) {
+        return tools;
+      }
+
+      const names = JSON.parse(stored) as unknown;
+
+      if (!Array.isArray(names)) {
+        return tools;
+      }
+
+      const orderedFromStorage: Tool[] = [];
+
+      names.forEach((name) => {
+        if (typeof name !== "string") {
+          return;
+        }
+        const tool = tools.find((item) => item.name === name);
+        if (tool) {
+          orderedFromStorage.push(tool);
+        }
+      });
+
+      const remaining = tools.filter(
+        (tool) => !orderedFromStorage.some((item) => item.name === tool.name),
+      );
+
+      if (orderedFromStorage.length === 0 && remaining.length === tools.length) {
+        return tools;
+      }
+
+      return [...orderedFromStorage, ...remaining];
+    } catch {
+      return tools;
+    }
+  });
   const [dragToolName, setDragToolName] = useState<string | null>(null);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
-  const [separatorPosition, setSeparatorPosition] = useState<{
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-    isAfter: boolean;
-    showHorizontal: boolean;
-    showVertical: boolean;
-    isVerticalAfter: boolean;
-  } | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const lastRectsRef = useRef<Record<string, DOMRect | null>>({});
 
@@ -108,34 +140,30 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
     const rect = target.getBoundingClientRect();
     const offsetY = event.clientY - rect.top;
     const offsetX = event.clientX - rect.left;
-    const proximityY = rect.height * 0.25;
-    const proximityX = rect.width * 0.25;
+    const proximityY = rect.height * 0.3;
+    const proximityX = rect.width * 0.3;
 
     let isAfter = false;
-    let showHorizontal = false;
 
     if (offsetY < proximityY) {
       isAfter = false;
-      showHorizontal = true;
     } else if (rect.height - offsetY < proximityY) {
       isAfter = true;
-      showHorizontal = true;
+    } else {
+      isAfter = offsetY >= rect.height / 2;
     }
 
-    let showVertical = false;
     let isVerticalAfter = false;
+    let showVertical = false;
 
     if (offsetX < proximityX) {
-      showVertical = true;
       isVerticalAfter = false;
-    } else if (rect.width - offsetX < proximityX) {
       showVertical = true;
+    } else if (rect.width - offsetX < proximityX) {
       isVerticalAfter = true;
-    }
-
-    if (!showHorizontal && !showVertical) {
-      setSeparatorPosition(null);
-      return;
+      showVertical = true;
+    } else {
+      isVerticalAfter = offsetX >= rect.width / 2;
     }
 
     const dragged = orderedTools.find((tool) => tool.name === dragToolName);
@@ -145,50 +173,28 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
     }
 
     const withoutDragged = orderedTools.filter((tool) => tool.name !== dragToolName);
+    const targetIndex = withoutDragged.findIndex((tool) => tool.name === targetName);
 
-    const layoutItems: {
-      type: "card" | "ghost";
-      tool?: Tool;
-      centerX: number;
-      centerY: number;
-    }[] = [];
+    if (targetIndex === -1) {
+      return;
+    }
 
-    withoutDragged.forEach((tool) => {
-      const element = cardRefs.current[tool.name];
-      if (!element) {
-        return;
-      }
-      const cardRect = element.getBoundingClientRect();
-      layoutItems.push({
-        type: "card",
-        tool,
-        centerX: cardRect.left + cardRect.width / 2,
-        centerY: cardRect.top + cardRect.height / 2,
-      });
-    });
+    let insertIndex = targetIndex;
 
-    layoutItems.push({
-      type: "ghost",
-      centerX: event.clientX,
-      centerY: event.clientY,
-    });
+    if (showVertical) {
+      insertIndex = isVerticalAfter ? targetIndex + 1 : targetIndex;
+    } else {
+      insertIndex = isAfter ? targetIndex + 1 : targetIndex;
+    }
 
-    layoutItems.sort((a, b) => {
-      if (a.centerY === b.centerY) {
-        return a.centerX - b.centerX;
-      }
-      return a.centerY - b.centerY;
-    });
+    if (insertIndex < 0) {
+      insertIndex = 0;
+    } else if (insertIndex > withoutDragged.length) {
+      insertIndex = withoutDragged.length;
+    }
 
-    const next: Tool[] = [];
-
-    layoutItems.forEach((item) => {
-      if (item.type === "ghost") {
-        next.push(dragged);
-      } else if (item.tool) {
-        next.push(item.tool);
-      }
-    });
+    const next = [...withoutDragged];
+    next.splice(insertIndex, 0, dragged);
 
     if (next.length !== orderedTools.length) {
       return;
@@ -205,17 +211,6 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
     if (changed) {
       setOrderedTools(next);
     }
-
-    setSeparatorPosition({
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height,
-      isAfter,
-      showHorizontal,
-      showVertical,
-      isVerticalAfter,
-    });
   }
 
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
@@ -223,13 +218,11 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
 
     setDragToolName(null);
     setDragPosition(null);
-    setSeparatorPosition(null);
   }
 
   function handleDragEnd() {
     setDragToolName(null);
     setDragPosition(null);
-    setSeparatorPosition(null);
   }
 
   function handleDrag(event: React.DragEvent<HTMLDivElement>) {
@@ -242,6 +235,18 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
       y: event.clientY,
     });
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const names = orderedTools.map((tool) => tool.name);
+
+    try {
+      window.localStorage.setItem("youi-tools-order", JSON.stringify(names));
+    } catch {}
+  }, [orderedTools]);
 
   useLayoutEffect(() => {
     const currentRects: Record<string, DOMRect | null> = {};
@@ -317,6 +322,10 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
             const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
             const hasHref = Boolean(tool.href) && !tool.isLocked;
             const isDragging = dragToolName === tool.name;
+            const isColorContrastChecker = tool.href === "/tools/color-contrast-checker";
+            const isGoogleFontExplorer = tool.href === "/tools/google-font-explorer";
+            const isRatioCalculator = tool.href === "/tools/ratio-calculator";
+            const isTypeScale = tool.href === "/tools/type-scale";
             return (
               <div
                 key={tool.name}
@@ -325,128 +334,156 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                 }}
                 onDragOver={(event) => handleDragOver(event, tool.name)}
                 onDrop={(event) => handleDrop(event)}
-                className={`flex flex-col rounded-xl border p-4 transition-colors transition-shadow hover:border-red-200 hover:bg-red-50 hover:shadow-sm [data-theme=dark]:hover:border-red-400 [data-theme=dark]:hover:bg-red-500/20 ${
+                onClick={(event) => {
+                  if (!hasHref) {
+                    return;
+                  }
+                  const target = event.target as HTMLElement;
+                  if (target.closest("button")) {
+                    return;
+                  }
+                  window.location.href = tool.href as string;
+                }}
+                className={`relative flex flex-col overflow-hidden rounded-xl border p-4 transition-colors transition-shadow ${
+                  tool.isLocked
+                    ? "cursor-not-allowed border-zinc-200 bg-zinc-50"
+                    : "hover:border-red-200 hover:bg-red-50 hover:shadow-sm [data-theme=dark]:hover:border-red-400 [data-theme=dark]:hover:bg-red-500/20"
+                } ${
                   isDragging
                     ? "border-red-300 bg-red-50"
                     : "border-zinc-200 bg-zinc-50 [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-zinc-900/40"
                 }`}
               >
                 <div className={isDragging ? "opacity-0" : ""}>
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-xs font-semibold text-white cursor-move"
-                        draggable
-                        onDragStart={(event) => handleDragStart(event, tool.name)}
-                        onDragEnd={handleDragEnd}
-                        onDrag={handleDrag}
-                      >
-                        {tool.isLocked ? (
+                  <div className="relative z-10">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold text-white ${
+                            tool.isLocked
+                              ? "bg-zinc-300 cursor-not-allowed"
+                              : "bg-red-500 cursor-move"
+                          }`}
+                          draggable={!tool.isLocked}
+                          onDragStart={
+                            tool.isLocked
+                              ? undefined
+                              : (event) => handleDragStart(event, tool.name)
+                          }
+                          onDragEnd={tool.isLocked ? undefined : handleDragEnd}
+                          onDrag={tool.isLocked ? undefined : handleDrag}
+                        >
+                          {tool.isLocked ? (
+                            <Image
+                              src="/icons/lock-black.svg"
+                              alt=""
+                              width={14}
+                              height={14}
+                              className="h-3.5 w-3.5"
+                            />
+                          ) : (
+                            "UI"
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-zinc-900">
+                            {tool.name}
+                            {tool.isLocked && (
+                              <span className="ml-2 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 border border-green-200">
+                                Coming soon
+                              </span>
+                            )}
+                          </h3>
+                        </div>
+                      </div>
+                      {onPinTool && !tool.isLocked && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onPinTool(tool);
+                          }}
+                          aria-pressed={isPinned}
+                          className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold transition-colors transition-transform duration-200 ${
+                            isPinned
+                              ? "border-red-500 bg-red-500 text-white scale-105"
+                              : "border-zinc-200 bg-white text-zinc-500 hover:border-red-200 hover:text-red-500"
+                          }`}
+                        >
                           <Image
-                            src="/icons/lock.svg"
+                            src={isPinned ? "/icons/pin-alt.svg" : "/icons/pin.svg"}
                             alt=""
                             width={14}
                             height={14}
-                            className="h-3.5 w-3.5"
+                            className={`pin-icon-light h-3.5 w-3.5 transition-transform duration-200 ${
+                              isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
+                            }`}
                           />
-                        ) : (
-                          "UI"
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-zinc-900">
-                          {tool.name}
-                          {tool.isLocked && (
-                            <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
-                              Coming soon
-                            </span>
-                          )}
-                        </h3>
-                      </div>
+                          <Image
+                            src="/icons/pin-alt.svg"
+                            alt=""
+                            width={14}
+                            height={14}
+                            className={`pin-icon-dark h-3.5 w-3.5 transition-transform duration-200 ${
+                              isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
+                            }`}
+                          />
+                        </button>
+                      )}
                     </div>
-                    {onPinTool && !tool.isLocked && (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onPinTool(tool);
-                        }}
-                        aria-pressed={isPinned}
-                        className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold transition-colors transition-transform duration-200 ${
-                          isPinned
-                            ? "border-red-500 bg-red-500 text-white scale-105"
-                            : "border-zinc-200 bg-white text-zinc-500 hover:border-red-200 hover:text-red-500"
-                        }`}
+                    {hasHref ? (
+                      <PageTransitionLink
+                        href={tool.href as string}
+                        className="mt-1 flex-1 text-left text-xs leading-relaxed text-zinc-600"
                       >
-                        <Image
-                          src={isPinned ? "/icons/pin-alt.svg" : "/icons/pin.svg"}
-                          alt=""
-                          width={14}
-                          height={14}
-                          className={`pin-icon-light h-3.5 w-3.5 transition-transform duration-200 ${
-                            isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
-                          }`}
-                        />
-                        <Image
-                          src="/icons/pin-alt.svg"
-                          alt=""
-                          width={14}
-                          height={14}
-                          className={`pin-icon-dark h-3.5 w-3.5 transition-transform duration-200 ${
-                            isPinned ? "-rotate-12 scale-110" : "rotate-0 scale-100"
-                          }`}
-                        />
-                      </button>
+                        {tool.description}
+                      </PageTransitionLink>
+                    ) : (
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                        {tool.description}
+                      </p>
                     )}
                   </div>
-                  {hasHref ? (
-                    <PageTransitionLink
-                      href={tool.href as string}
-                      className="mt-1 flex-1 text-left text-xs leading-relaxed text-zinc-600"
-                    >
-                      {tool.description}
-                    </PageTransitionLink>
-                  ) : (
-                    <p className="mt-1 text-xs leading-relaxed text-zinc-600">
-                      {tool.description}
-                    </p>
+                  {isColorContrastChecker && (
+                    <Image
+                      src="/images/tools/color-contrast-checker.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.15] z-0"
+                    />
+                  )}
+                  {isGoogleFontExplorer && (
+                    <Image
+                      src="/images/tools/google-font-explorer.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.18] z-0"
+                    />
+                  )}
+                  {isRatioCalculator && (
+                    <Image
+                      src="/images/tools/ratio-calculator.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.15] z-0"
+                    />
+                  )}
+                  {isTypeScale && (
+                    <Image
+                      src="/images/tools/type-scale.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-[9.6rem] w-auto -translate-y-1/2 opacity-[0.15] z-0"
+                    />
                   )}
                 </div>
               </div>
             );
           })}
-          {separatorPosition && (
-            <>
-              {separatorPosition.showHorizontal && (
-                <div
-                  className="pointer-events-none fixed z-10 h-0.5 rounded-full bg-gradient-to-r from-red-100 via-red-300 to-red-100 opacity-80"
-                  style={{
-                    left: separatorPosition.left,
-                    top:
-                      separatorPosition.isAfter
-                        ? separatorPosition.top + separatorPosition.height + 6
-                        : separatorPosition.top - 6,
-                    width: separatorPosition.width,
-                  }}
-                />
-              )}
-              {separatorPosition.showVertical && (
-                <div
-                  className="pointer-events-none fixed z-10 w-0.5 rounded-full bg-gradient-to-b from-red-100 via-red-300 to-red-100 opacity-80"
-                  style={{
-                    left: separatorPosition.isVerticalAfter
-                      ? separatorPosition.left + separatorPosition.width + 6
-                      : separatorPosition.left - 6,
-                    top:
-                      separatorPosition.top +
-                      separatorPosition.height / 2 -
-                      separatorPosition.height / 4,
-                    height: separatorPosition.height / 2,
-                  }}
-                />
-              )}
-            </>
-          )}
           {dragToolName && dragPosition && draggedTool && (
             <div
               className="pointer-events-none fixed z-20 max-w-xs rounded-xl border border-red-200 bg-white p-4 shadow-xl ring-1 ring-red-200"
@@ -460,7 +497,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-xs font-semibold text-white">
                     {draggedTool.isLocked ? (
                       <Image
-                        src="/icons/lock.svg"
+                        src="/icons/lock-black.svg"
                         alt=""
                         width={14}
                         height={14}
@@ -474,7 +511,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                     <h3 className="text-sm font-semibold text-zinc-900">
                       {draggedTool.name}
                       {draggedTool.isLocked && (
-                        <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
+                        <span className="ml-2 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 border border-green-200">
                           Coming soon
                         </span>
                       )}

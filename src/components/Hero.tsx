@@ -11,13 +11,13 @@ export function Hero() {
         <div className="hero-intro flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-            New: Color contrast checker and ratio calculator
+            New: Color Contrast Checker and Ratio Calculator
           </div>
           <h1 className="text-balance leading-[1.1] text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl lg:text-5xl">
             Every tool you need to design accessible interfaces in one place.
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-            YOU-I brings color contrast checking, ratio calculators, and palette
+            YOU-I brings color contrast checking, Ratio Calculators, and palette
             helpers together so you can design interfaces that look great and
             stay accessible.
           </p>

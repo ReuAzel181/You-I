@@ -26,31 +26,31 @@ type PinnedToolHeroProps = {
 const PINNED_TOOLS_STORAGE_KEY = "you-i-pinned-tools";
 
 function getPinnedToolIcon(toolName: string) {
-  if (toolName === "Color contrast checker") {
+  if (toolName === "Color Contrast Checker") {
     return {
       src: "/icons/color-contrast.svg",
-      alt: "Color contrast checker",
+      alt: "Color Contrast Checker",
     };
   }
 
-  if (toolName === "Ratio calculator") {
+  if (toolName === "Ratio Calculator") {
     return {
       src: "/icons/ratio-calculator.svg",
-      alt: "Ratio calculator",
+      alt: "Ratio Calculator",
     };
   }
 
-  if (toolName === "EM to percent converter") {
+  if (toolName === "Unit Converter") {
     return {
       src: "/icons/palette-comparisons.svg",
-      alt: "EM to percent converter",
+      alt: "Unit Converter",
     };
   }
 
-  if (toolName === "Google font explorer") {
+  if (toolName === "Google Font Explorer") {
     return {
       src: "/icons/theme-explorer.svg",
-      alt: "Google font explorer",
+      alt: "Google Font Explorer",
     };
   }
 
@@ -61,17 +61,17 @@ function getPinnedToolIcon(toolName: string) {
     };
   }
 
-  if (toolName === "Type scale") {
+  if (toolName === "Type Scale") {
     return {
       src: "/icons/export-presets.svg",
-      alt: "Type scale",
+      alt: "Type Scale",
     };
   }
 
-  if (toolName === "SVG wave generator") {
+  if (toolName === "SVG Wave Generator") {
     return {
       src: "/icons/palette-comparisons.svg",
-      alt: "SVG wave generator",
+      alt: "SVG Wave Generator",
     };
   }
 

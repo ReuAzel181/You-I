@@ -265,7 +265,7 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-            <span>EM to percent converter</span>
+            <span>Unit Converter</span>
           </div>
           <div className="text-right">
             <p className="text-[10px] uppercase tracking-wide text-zinc-400 [data-theme=dark]:text-zinc-300">

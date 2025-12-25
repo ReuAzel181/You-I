@@ -33,7 +33,7 @@ export default function SvgWaveGeneratorPage() {
                   <span>Tool</span>
                 </div>
                 <h1 className="text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-                  SVG wave generator
+                  SVG Wave Generator
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
                   Generate SVG wave backgrounds you can drop into hero sections, dividers, and

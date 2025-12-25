@@ -367,7 +367,7 @@ export function RatioCalculator({ variant = "full", onDimensionsChange }: RatioC
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-            Aspect ratio calculator
+            Aspect Ratio Calculator
           </div>
           {ratioValue !== null && (
             <p className="text-xs font-mono text-zinc-500">{ratioValue.toFixed(2)} : 1</p>

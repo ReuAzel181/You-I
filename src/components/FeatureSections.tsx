@@ -7,7 +7,7 @@ const personas = [
       "Experiment with palettes while contrast, ratios, and real UI previews stay visible the whole time.",
     items: [
       "Hero previews with AA / AAA status at a glance",
-      "Color contrast checker embedded on the homepage",
+      "Color Contrast Checker embedded on the homepage",
       "Pinned tools so your favorite checks are always open",
     ],
   },
@@ -16,7 +16,7 @@ const personas = [
     description:
       "Turn color specs into shippable code with predictable ratios, sizes, and states already verified.",
     items: [
-      "Ratio calculator for viewports and component dimensions",
+      "Ratio Calculator for viewports and component dimensions",
       "EM ↔ percent converter for responsive typography",
       "Copy-ready values for hex, RGB, and HSL tokens",
     ],

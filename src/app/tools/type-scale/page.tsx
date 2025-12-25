@@ -33,7 +33,7 @@ export default function TypeScalePage() {
                   <span>Tool</span>
                 </div>
                 <h1 className="text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-                  Type scale
+                  Type Scale
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
                   Start from a base font size and pick a scale ratio to generate a simple,

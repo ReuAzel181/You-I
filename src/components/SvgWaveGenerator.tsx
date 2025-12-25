@@ -361,6 +361,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
   const { nudgeAmount } = useSettings();
   const effectiveNudgeAmount =
     Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
+  const [hasHydrated, setHasHydrated] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const positionToggleRef = useRef<HTMLDivElement | null>(null);
   const downloadToggleRef = useRef<HTMLDivElement | null>(null);
@@ -451,6 +452,16 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
   });
   const isMorphingRef = useRef(false);
   const morphFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setHasHydrated(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -1117,6 +1128,49 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
     }
   }
 
+  if (!hasHydrated) {
+    const placeholderHeight =
+      variant === "hero" ? "h-52 sm:h-60 md:h-80" : "h-64 sm:h-72 md:h-96";
+
+    return (
+      <div
+        ref={cardRef}
+        className={`${containerChrome} ${containerPadding} relative animate-pulse`}
+      >
+        <div className={`flex flex-col gap-4 ${layoutDirection}`}>
+          <div className={`space-y-4 ${controlsLayoutWidth}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-200" />
+                <span>Loading wave generator</span>
+              </div>
+            </div>
+            <div className="space-y-3 text-[11px] text-zinc-400">
+              <div className="h-3 w-40 rounded-full bg-zinc-200" />
+              <div className="h-3 w-52 rounded-full bg-zinc-200" />
+              <div className="h-3 w-32 rounded-full bg-zinc-200" />
+            </div>
+          </div>
+          <div className="flex-1 space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="space-y-0.5">
+                  <div className="h-3 w-24 rounded-full bg-zinc-200" />
+                  {variant === "full" && (
+                    <div className="h-3 w-40 rounded-full bg-zinc-200" />
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-2xl border border-dashed border-zinc-200 bg-zinc-50">
+              <div className={`w-full ${placeholderHeight}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div ref={cardRef} className={`${containerChrome} ${containerPadding} relative`}>
       <div className={`flex flex-col gap-4 ${layoutDirection}`}>
@@ -1124,7 +1178,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-              <span>SVG wave generator</span>
+              <span>SVG Wave Generator</span>
             </div>
           </div>
           <div className="space-y-3 text-[11px] text-zinc-700">

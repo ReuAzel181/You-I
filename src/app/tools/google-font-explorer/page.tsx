@@ -22,7 +22,7 @@ export default function GoogleFontExplorerPage() {
                   Tool
                 </div>
                 <h1 className="text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-                  Google font explorer
+                  Google Font Explorer
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
                   Browse Google Fonts with live previews that focus on regular weights and English

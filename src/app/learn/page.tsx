@@ -178,7 +178,7 @@ export default function LearnPage() {
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-violet-500" />
                     <span>
-                      Use the ratio calculator to record the viewport and component sizes you design
+                      Use the Ratio Calculator to record the viewport and component sizes you design
                       against.
                     </span>
                   </li>
@@ -192,7 +192,7 @@ export default function LearnPage() {
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-violet-500" />
                     <span>
-                      Try real copy in the Google font explorer so your type choices already account
+                      Try real copy in the Google Font Explorer so your type choices already account
                       for long labels and edge cases.
                     </span>
                   </li>
@@ -208,7 +208,7 @@ export default function LearnPage() {
                     href="/tools/ratio-calculator"
                     className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-800"
                   >
-                    Open ratio calculator
+                    Open Ratio Calculator
                   </Link>
                 </div>
               </article>
@@ -245,7 +245,7 @@ export default function LearnPage() {
                   tools you use every week so they&apos;re waiting on the homepage when you return.
                 </li>
                 <li>
-                  <span className="font-medium text-zinc-800">Google font explorer.</span> Browse
+                  <span className="font-medium text-zinc-800">Google Font Explorer.</span> Browse
                   focused font previews with your own copy and quick links back to your workspace.
                 </li>
                 <li>
