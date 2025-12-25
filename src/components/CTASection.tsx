@@ -22,7 +22,7 @@ export function CTASection() {
             href="/resources"
             className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50"
           >
-            Browse accessibility resources
+            View Guides
           </Link>
         </div>
       </div>

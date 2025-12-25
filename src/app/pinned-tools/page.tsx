@@ -264,6 +264,11 @@ export default function PinnedToolsPage() {
                     const createdDate = new Date(
                       preset.createdAt,
                     ).toLocaleDateString();
+                    const iconSource = tool ? tool.name : preset.toolName;
+                    const iconInitial =
+                      iconSource.trim().length > 0
+                        ? iconSource.trim().charAt(0).toUpperCase()
+                        : "U";
 
                     return (
                       <div
@@ -277,7 +282,7 @@ export default function PinnedToolsPage() {
                         <div className="mb-3 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-xs font-semibold text-white">
-                              UI
+                              {iconInitial}
                             </div>
                             <div className="flex-1">
                               <h2 className="text-sm font-semibold text-zinc-900">

@@ -9,7 +9,7 @@ import { PageTransitionLink } from "@/components/PageTransitionLink";
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Workspace", href: "/pinned-tools" },
-  { label: "Resources", href: "/resources" },
+  { label: "Guide", href: "/resources" },
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
 ];

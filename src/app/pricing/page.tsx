@@ -312,18 +312,8 @@ export default function PricingPage() {
                     href="/contact"
                     className="mt-6 inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:bg-red-600 active:translate-y-0 active:scale-95"
                   >
-                    Talk to us about Pro
+                    Talk to us
                   </Link>
-                  <p className="mt-3 text-[11px] text-red-700/80 [data-theme=dark]:text-red-100/90">
-                    Have questions before upgrading?{" "}
-                    <Link
-                      href="/contact"
-                      className="font-semibold underline-offset-2 hover:underline"
-                    >
-                      Contact us
-                    </Link>
-                    .
-                  </p>
                 </div>
               <div className="top-tier-glow">
                 <div className="violet-inner-ring relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-violet-500 bg-gradient-to-b from-violet-50 to-violet-100 p-3 sm:p-4 shadow-sm">

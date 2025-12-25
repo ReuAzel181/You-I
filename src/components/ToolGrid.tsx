@@ -63,49 +63,7 @@ type ToolGridProps = {
 };
 
 export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
-  const [orderedTools, setOrderedTools] = useState<Tool[]>(() => {
-    if (typeof window === "undefined") {
-      return tools;
-    }
-
-    try {
-      const stored = window.localStorage.getItem("youi-tools-order");
-
-      if (!stored) {
-        return tools;
-      }
-
-      const names = JSON.parse(stored) as unknown;
-
-      if (!Array.isArray(names)) {
-        return tools;
-      }
-
-      const orderedFromStorage: Tool[] = [];
-
-      names.forEach((name) => {
-        if (typeof name !== "string") {
-          return;
-        }
-        const tool = tools.find((item) => item.name === name);
-        if (tool) {
-          orderedFromStorage.push(tool);
-        }
-      });
-
-      const remaining = tools.filter(
-        (tool) => !orderedFromStorage.some((item) => item.name === tool.name),
-      );
-
-      if (orderedFromStorage.length === 0 && remaining.length === tools.length) {
-        return tools;
-      }
-
-      return [...orderedFromStorage, ...remaining];
-    } catch {
-      return tools;
-    }
-  });
+  const [orderedTools, setOrderedTools] = useState<Tool[]>(tools);
   const [dragToolName, setDragToolName] = useState<string | null>(null);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -241,6 +199,50 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
       return;
     }
 
+    try {
+      const stored = window.localStorage.getItem("youi-tools-order");
+
+      if (!stored) {
+        return;
+      }
+
+      const names = JSON.parse(stored) as unknown;
+
+      if (!Array.isArray(names)) {
+        return;
+      }
+
+      const orderedFromStorage: Tool[] = [];
+
+      names.forEach((name) => {
+        if (typeof name !== "string") {
+          return;
+        }
+        const tool = tools.find((item) => item.name === name);
+        if (tool) {
+          orderedFromStorage.push(tool);
+        }
+      });
+
+      const remaining = tools.filter(
+        (tool) => !orderedFromStorage.some((item) => item.name === tool.name),
+      );
+
+      if (orderedFromStorage.length === 0 && remaining.length === tools.length) {
+        return;
+      }
+
+      window.setTimeout(() => {
+        setOrderedTools([...orderedFromStorage, ...remaining]);
+      }, 0);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const names = orderedTools.map((tool) => tool.name);
 
     try {
@@ -322,10 +324,18 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
             const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
             const hasHref = Boolean(tool.href) && !tool.isLocked;
             const isDragging = dragToolName === tool.name;
+            const initial =
+              tool.name.trim().length > 0
+                ? tool.name.trim().charAt(0).toUpperCase()
+                : "U";
             const isColorContrastChecker = tool.href === "/tools/color-contrast-checker";
             const isGoogleFontExplorer = tool.href === "/tools/google-font-explorer";
             const isRatioCalculator = tool.href === "/tools/ratio-calculator";
             const isTypeScale = tool.href === "/tools/type-scale";
+            const isUnitConverter = tool.href === "/tools/em-to-percent-converter";
+            const isPlaceholderGenerator =
+              tool.href === "/tools/lorem-placeholder-generator";
+            const isSvgWaveGenerator = tool.href === "/tools/svg-wave-generator";
             return (
               <div
                 key={tool.name}
@@ -382,12 +392,17 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                               className="h-3.5 w-3.5"
                             />
                           ) : (
-                            "UI"
+                            initial
                           )}
                         </div>
                         <div className="flex-1">
                           <h3 className="text-sm font-semibold text-zinc-900">
                             {tool.name}
+                            {isColorContrastChecker && !tool.isLocked && (
+                              <span className="ml-2 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                                New
+                              </span>
+                            )}
                             {tool.isLocked && (
                               <span className="ml-2 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 border border-green-200">
                                 Coming soon
@@ -450,7 +465,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                       alt=""
                       width={260}
                       height={260}
-                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.15] z-0"
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.135] z-0"
                     />
                   )}
                   {isGoogleFontExplorer && (
@@ -459,7 +474,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                       alt=""
                       width={260}
                       height={260}
-                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.18] z-0"
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.162] z-0"
                     />
                   )}
                   {isRatioCalculator && (
@@ -468,7 +483,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                       alt=""
                       width={260}
                       height={260}
-                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.15] z-0"
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.135] z-0"
                     />
                   )}
                   {isTypeScale && (
@@ -477,7 +492,34 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                       alt=""
                       width={260}
                       height={260}
-                      className="pointer-events-none absolute right-[-28px] top-1/2 h-[9.6rem] w-auto -translate-y-1/2 opacity-[0.15] z-0"
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-[9.6rem] w-auto -translate-y-1/2 opacity-[0.135] z-0"
+                    />
+                  )}
+                  {isUnitConverter && (
+                    <Image
+                      src="/images/tools/unitcontverter.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.135] z-0"
+                    />
+                  )}
+                  {isPlaceholderGenerator && (
+                    <Image
+                      src="/images/tools/placeholder-generator.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.135] z-0"
+                    />
+                  )}
+                  {isSvgWaveGenerator && (
+                    <Image
+                      src="/images/tools/svg-wave.svg"
+                      alt=""
+                      width={260}
+                      height={260}
+                      className="pointer-events-none absolute right-[-28px] top-1/2 h-32 w-auto -translate-y-1/2 opacity-[0.135] z-0"
                     />
                   )}
                 </div>

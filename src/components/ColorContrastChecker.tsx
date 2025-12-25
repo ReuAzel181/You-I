@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/providers/AuthProvider";
 import { useSettings } from "@/providers/SettingsProvider";
 
 type RgbColor = {
@@ -423,6 +424,7 @@ function ColorSwatchPicker({ value, onChange, fallback, label }: ColorSwatchPick
 }
 
 export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerProps) {
+  const { user, isLoading } = useAuth();
   const { nudgeAmount } = useSettings();
   const effectiveNudgeAmount =
     Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
@@ -604,6 +606,8 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
 
   const isFull = variant === "full";
   const effectiveMode = isFull ? colorMode : "two";
+  const canUsePresets = isFull && Boolean(user);
+  const showPresetAuthNotice = isFull && !user && !isLoading;
 
   const formattedTextColor = formatHex(textColor);
   const formattedBackgroundColor = formatHex(backgroundColor);
@@ -1990,195 +1994,208 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     </div>
     {isFull && (
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium text-zinc-500">Presets</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs font-medium text-zinc-500">Presets</p>
+          {canUsePresets && presets.length > 0 && (
+            <p className="text-[11px] text-zinc-400">{presets.length} saved</p>
+          )}
+        </div>
+        {showPresetAuthNotice && (
+          <div className="mb-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
+            Sign in to save and reuse presets.
+          </div>
+        )}
+        {canUsePresets && (
+          <>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                value={presetName}
+                onChange={(event) => setPresetName(event.target.value)}
+                placeholder={`Preset ${presets.length + 1}`}
+                className="h-8 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+              />
+              <button
+                type="button"
+                onClick={handleSavePreset}
+                className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
+              >
+                Save preset
+              </button>
+            </div>
             {presets.length > 0 && (
-              <p className="text-[11px] text-zinc-400">{presets.length} saved</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              value={presetName}
-              onChange={(event) => setPresetName(event.target.value)}
-              placeholder={`Preset ${presets.length + 1}`}
-              className="h-8 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-            />
-            <button
-              type="button"
-              onClick={handleSavePreset}
-              className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
-            >
-              Save preset
-            </button>
-          </div>
-          {presets.length > 0 && (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {presets.map((preset) => {
-                const formattedText = formatHex(preset.textColor) || "#111827";
-                const formattedBackground = formatHex(preset.backgroundColor) || "#ffffff";
-                const formattedContainer = formatHex(preset.containerColor) || "#f4f4f5";
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {presets.map((preset) => {
+                  const formattedText = formatHex(preset.textColor) || "#111827";
+                  const formattedBackground = formatHex(preset.backgroundColor) || "#ffffff";
+                  const formattedContainer = formatHex(preset.containerColor) || "#f4f4f5";
 
-                return (
-                  <div
-                    key={preset.id}
-                    className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-[11px] text-zinc-800"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        {editingPresetId === preset.id ? (
-                          <input
-                            autoFocus
-                            value={preset.name}
-                            onChange={(event) =>
-                              handlePresetNameChange(preset.id, event.target.value)
-                            }
-                            onBlur={() => setEditingPresetId(null)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === "Escape") {
-                                event.preventDefault();
-                                setEditingPresetId(null);
-                              }
-                            }}
-                            className="h-6 rounded border border-zinc-200 bg-white px-2 text-[11px] text-zinc-900 outline-none ring-red-100 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-                          />
-                        ) : (
-                          <p className="font-medium">{preset.name}</p>
-                        )}
+                  return (
+                    <div
+                      key={preset.id}
+                      className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-[11px] text-zinc-800"
+                    >
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setEditingPresetId(preset.id)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full border border-transparent text-[10px] text-zinc-400 transition-colors hover:border-zinc-200 hover:bg-white hover:text-zinc-700"
-                            aria-label="Edit preset name"
-                          >
-                            <Image
-                              src="/icons/pen.svg"
-                              alt=""
-                              width={14}
-                              height={14}
-                              className="h-3.5 w-3.5"
+                          {editingPresetId === preset.id ? (
+                            <input
+                              autoFocus
+                              value={preset.name}
+                              onChange={(event) =>
+                                handlePresetNameChange(preset.id, event.target.value)
+                              }
+                              onBlur={() => setEditingPresetId(null)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === "Escape") {
+                                  event.preventDefault();
+                                  setEditingPresetId(null);
+                                }
+                              }}
+                              className="h-6 rounded border border-zinc-200 bg-white px-2 text-[11px] text-zinc-900 outline-none ring-red-100 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                             />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPresets((current) =>
-                                current.filter((item) => item.id !== preset.id),
-                              );
-                              if (editingPresetId === preset.id) {
-                                setEditingPresetId(null);
-                              }
-                            }}
-                            className="text-[10px] text-zinc-400 transition-colors hover:text-red-500"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTextColor(preset.textColor);
-                          setBackgroundColor(preset.backgroundColor);
-                          setContainerColor(preset.containerColor);
-                          setFontSize(preset.fontSize);
-                          setColorMode(preset.mode);
-                        }}
-                        className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-700 hover:border-red-200 hover:bg-red-50"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                      <div className="flex items-start gap-2">
-                        <span
-                          className="mt-0.5 h-3 w-3 rounded-full"
-                          style={{ backgroundColor: formattedText }}
-                        />
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-                            Text
-                          </p>
-                          <div className="flex items-center gap-2">
+                          ) : (
+                            <p className="font-medium">{preset.name}</p>
+                          )}
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={(event) =>
-                                handleCopy(preset.textColor, "preset text color", event)
-                              }
-                              className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                              onClick={() => setEditingPresetId(preset.id)}
+                              className="flex h-6 w-6 items-center justify-center rounded-full border border-transparent text-[10px] text-zinc-400 transition-colors hover:border-zinc-200 hover:bg-white hover:text-zinc-700"
+                              aria-label="Edit preset name"
                             >
-                              {formattedText}
+                              <Image
+                                src="/icons/pen.svg"
+                                alt=""
+                                width={14}
+                                height={14}
+                                className="h-3.5 w-3.5"
+                              />
                             </button>
-                          </div>
-                          <p className="text-[10px] text-zinc-500">
-                            {hexToRgbString(formattedText, "#111827")}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span
-                          className="mt-0.5 h-3 w-3 rounded-full"
-                          style={{ backgroundColor: formattedBackground }}
-                        />
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-                            Background
-                          </p>
-                          <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={(event) =>
-                                handleCopy(preset.backgroundColor, "preset background color", event)
-                              }
-                              className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                              onClick={() => {
+                                setPresets((current) =>
+                                  current.filter((item) => item.id !== preset.id),
+                                );
+                                if (editingPresetId === preset.id) {
+                                  setEditingPresetId(null);
+                                }
+                              }}
+                              className="text-[10px] text-zinc-400 transition-colors hover:text-red-500"
                             >
-                              {formattedBackground}
+                              Delete
                             </button>
                           </div>
-                          <p className="text-[10px] text-zinc-500">
-                            {hexToRgbString(formattedBackground, "#ffffff")}
-                          </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTextColor(preset.textColor);
+                            setBackgroundColor(preset.backgroundColor);
+                            setContainerColor(preset.containerColor);
+                            setFontSize(preset.fontSize);
+                            setColorMode(preset.mode);
+                          }}
+                          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-700 hover:border-red-200 hover:bg-red-50"
+                        >
+                          Apply
+                        </button>
                       </div>
-                      {preset.mode === "three" && (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
                         <div className="flex items-start gap-2">
                           <span
                             className="mt-0.5 h-3 w-3 rounded-full"
-                            style={{ backgroundColor: formattedContainer }}
+                            style={{ backgroundColor: formattedText }}
                           />
                           <div>
                             <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-                              Container
+                              Text
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(event) =>
+                                  handleCopy(preset.textColor, "preset text color", event)
+                                }
+                                className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                              >
+                                {formattedText}
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              {hexToRgbString(formattedText, "#111827")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span
+                            className="mt-0.5 h-3 w-3 rounded-full"
+                            style={{ backgroundColor: formattedBackground }}
+                          />
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                              Background
                             </p>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={(event) =>
                                   handleCopy(
-                                    preset.containerColor,
-                                    "preset container color",
+                                    preset.backgroundColor,
+                                    "preset background color",
                                     event,
                                   )
                                 }
                                 className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
                               >
-                                {formattedContainer}
+                                {formattedBackground}
                               </button>
                             </div>
                             <p className="text-[10px] text-zinc-500">
-                              {hexToRgbString(formattedContainer, "#f4f4f5")}
+                              {hexToRgbString(formattedBackground, "#ffffff")}
                             </p>
                           </div>
                         </div>
-                      )}
+                        {preset.mode === "three" && (
+                          <div className="flex items-start gap-2">
+                            <span
+                              className="mt-0.5 h-3 w-3 rounded-full"
+                              style={{ backgroundColor: formattedContainer }}
+                            />
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                                Container
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    handleCopy(
+                                      preset.containerColor,
+                                      "preset container color",
+                                      event,
+                                    )
+                                  }
+                                  className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-800 hover:border-red-200 hover:bg-red-50"
+                                >
+                                  {formattedContainer}
+                                </button>
+                              </div>
+                              <p className="text-[10px] text-zinc-500">
+                                {hexToRgbString(formattedContainer, "#f4f4f5")}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    )}
   </div>
   );
 }
