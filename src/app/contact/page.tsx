@@ -1,20 +1,61 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics } from "@/providers/SettingsProvider";
+
+const faqItems = [
+  {
+    question: "How do I choose between free and paid plans?",
+    answer:
+      "Tell us how many people are designing or reviewing interfaces and how often you run checks. We will suggest a plan that fits your current workflow.",
+  },
+  {
+    question: "Can YOU-I match the files and tools we already use?",
+    answer:
+      "Share which design tools, repos, or handoff flows you rely on today and we will outline how pinned tools and presets can slot into that setup.",
+  },
+  {
+    question: "How do analytics and privacy work in YOU-I?",
+    answer:
+      "Let us know what your team privacy requirements look like and we will explain how local analytics and account data are handled.",
+  },
+  {
+    question: "Can I use YOU-I on a small client project?",
+    answer:
+      "Yes. Include a short description of the client work, timelines, and how often you expect to run checks so we can suggest a lightweight setup.",
+  },
+  {
+    question: "Do you support larger accessibility teams or agencies?",
+    answer:
+      "Tell us how many designers and reviewers you have and how you currently collaborate. We can outline how presets, workspaces, and seats scale with your team.",
+  },
+  {
+    question: "What if I only need a one-off audit or review?",
+    answer:
+      "Describe the interface or flow you are reviewing and what kind of report you need. We will suggest how to use YOU-I for focused reviews.",
+  },
+  {
+    question: "How quickly do you usually reply to messages?",
+    answer:
+      "Most questions receive a reply within one business day. If your note is more complex, we will let you know what to expect next.",
+  },
+];
 
 export default function ContactPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [teamSize, setTeamSize] = useState("");
-  const [topic, setTopic] = useState("pricing");
+  const [topic, setTopic] = useState("other");
+  const [usage, setUsage] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "success" | "error">("idle");
+  const [openFaq, setOpenFaq] = useState<boolean[]>(() => faqItems.map(() => false));
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -30,7 +71,7 @@ export default function ContactPage() {
       <main>
         <section className="border-b border-zinc-200 bg-white/80">
           <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[11px] font-medium text-red-600">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -45,8 +86,8 @@ export default function ContactPage() {
                   sales scripts.
                 </p>
               </div>
-              <div className="flex w-full flex-col gap-2 text-[11px] text-zinc-600 md:w-64">
-                <p>
+              <div className="flex w-full flex-col gap-2 text-[11px] text-zinc-600 md:w-64 md:items-start">
+                <p className="max-w-xs text-left">
                   Wondering which plan to pick, or how a feature works in your setup? Start with a
                   short note including your team size and tools.
                 </p>
@@ -54,7 +95,7 @@ export default function ContactPage() {
                   href="/pricing"
                   className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                 >
-                  View pricing again
+                  View pricing
                 </Link>
               </div>
             </div>
@@ -63,7 +104,7 @@ export default function ContactPage() {
 
         <section className="py-8 md:py-10">
           <div className="mx-auto max-w-6xl px-4 md:px-8">
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1.6fr),minmax(0,1.4fr)]">
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1.6fr),minmax(0,1.4fr)] md:items-start">
               <article className="rounded-2xl border border-zinc-200 bg-white p-5 text-left shadow-sm sm:p-6">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-red-500">
                   Talk to us
@@ -77,7 +118,7 @@ export default function ContactPage() {
                   sit in your workflow.
                 </p>
                 <form
-                  className="mt-4 space-y-3 text-[11px] text-zinc-700"
+                  className="mt-4 space-y-4 text-[11px] text-zinc-700"
                   onSubmit={(event) => {
                     event.preventDefault();
 
@@ -94,7 +135,7 @@ export default function ContactPage() {
                     }, 800);
                   }}
                 >
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label htmlFor="contact-name" className="font-medium text-zinc-800">
                         Name
@@ -111,50 +152,146 @@ export default function ContactPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label htmlFor="contact-email" className="font-medium text-zinc-800">
-                        Work email
-                      </label>
-                      <input
-                        id="contact-email"
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        autoComplete="email"
-                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
-                        placeholder="you@example.com"
-                        required
-                      />
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="contact-email" className="font-medium text-zinc-800">
+                          Work email
+                        </label>
+                        {email.endsWith("@") && (
+                          <span className="text-[10px] font-medium text-emerald-500">
+                            Press Tab to complete
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          id="contact-email"
+                          type="email"
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Tab" && email.endsWith("@")) {
+                              event.preventDefault();
+                              setEmail(`${email}gmail.com`);
+                            }
+                          }}
+                          autoComplete="email"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                          placeholder="you@example.com"
+                          required
+                        />
+                        {email.endsWith("@") && (
+                          <div className="pointer-events-none absolute inset-0 flex items-center px-3 text-[11px]">
+                            <span className="opacity-0">{email}</span>
+                            <span className="text-zinc-300">gmail.com</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1.1fr),minmax(0,1.4fr),minmax(0,1.1fr)]">
                     <div className="space-y-1">
-                      <label htmlFor="contact-team-size" className="font-medium text-zinc-800">
-                        Team size
-                      </label>
-                      <input
-                        id="contact-team-size"
-                        type="text"
-                        value={teamSize}
-                        onChange={(event) => setTeamSize(event.target.value)}
-                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
-                        placeholder="Just you, 2–5, 6–15, etc."
-                      />
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="contact-team-size" className="font-medium text-zinc-800">
+                          Team size
+                        </label>
+                        <span className="text-[10px] text-zinc-400">Optional</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { value: "solo", label: "Just me" },
+                          { value: "duo", label: "Duo" },
+                          { value: "3-5", label: "3–5" },
+                          { value: "6-plus", label: "6+" },
+                        ].map((option) => {
+                          const isActive = teamSize === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                setTeamSize((current) =>
+                                  current === option.value ? "" : option.value,
+                                )
+                              }
+                              className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                                isActive
+                                  ? "border-red-400 bg-red-500 text-white shadow-sm"
+                                  : "border-zinc-200 bg-white text-zinc-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <label htmlFor="contact-topic" className="font-medium text-zinc-800">
                         Topic
                       </label>
-                      <select
-                        id="contact-topic"
-                        value={topic}
-                        onChange={(event) => setTopic(event.target.value)}
-                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
-                      >
-                        <option value="pricing">Pricing and plans</option>
-                        <option value="workflow">Workflow and tools</option>
-                        <option value="accessibility">Accessibility questions</option>
-                        <option value="other">Something else</option>
-                      </select>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { value: "other", label: "Something else" },
+                          { value: "pricing", label: "Pricing and plans" },
+                          { value: "bugs", label: "Bugs and issues" },
+                          { value: "workflow", label: "Workflow and tools" },
+                          { value: "accessibility", label: "Accessibility questions" },
+                        ].map((option) => {
+                          const isActive = topic === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setTopic(option.value)}
+                              className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                                isActive
+                                  ? "border-red-400 bg-red-500 text-white shadow-sm"
+                                  : "border-zinc-200 bg-white text-zinc-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-zinc-800">Usage</span>
+                        <span className="text-[10px] text-zinc-400">Optional</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { value: "first-time", label: "First time" },
+                          { value: "exploring", label: "Just exploring" },
+                          { value: "sometimes", label: "Sometimes" },
+                          { value: "often", label: "Often" },
+                          { value: "daily", label: "Daily" },
+                        ].map((option) => {
+                          const isActive = usage === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                setUsage((current) =>
+                                  current === option.value ? "" : option.value,
+                                )
+                              }
+                              className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                                isActive
+                                  ? "border-red-400 bg-red-500 text-white shadow-sm"
+                                  : "border-zinc-200 bg-white text-zinc-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -197,17 +334,68 @@ export default function ContactPage() {
                 </form>
               </article>
 
-              <aside className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-[11px] leading-relaxed text-zinc-600 sm:px-5 sm:py-5">
-                <p className="font-medium text-zinc-800">Typical questions we can help with</p>
-                <ul className="mt-2 space-y-1.5">
-                  <li>Choosing between free and paid plans for a small team.</li>
-                  <li>Making sure pinned tools and presets fit your files and workflows.</li>
-                  <li>Understanding how analytics and privacy settings work in YOU-I.</li>
-                </ul>
-                <p className="mt-3">
-                  If something is blocking you from adopting more accessible patterns, let us know.
-                  We use feedback here to shape future tools and pricing.
+              <aside className="rounded-2xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-[11px] leading-relaxed text-zinc-600 sm:px-5 sm:py-5">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-red-500">
+                  FAQ
                 </p>
+                <h3 className="mt-1 text-sm font-semibold text-zinc-800">
+                  Typical questions we can help with
+                </h3>
+                <div className="mt-3 space-y-2">
+                  {faqItems.map((item, index) => {
+                    const isOpen = openFaq[index];
+
+                    const handleToggle = () => {
+                      setOpenFaq((current) =>
+                        current.map((value, valueIndex) =>
+                          valueIndex === index ? !value : value,
+                        ),
+                      );
+                    };
+
+                    return (
+                      <div
+                        key={item.question}
+                        role="button"
+                        tabIndex={0}
+                        onClick={handleToggle}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleToggle();
+                          }
+                        }}
+                        className={`rounded-lg border bg-white px-3 py-2 transition-colors ${
+                          isOpen
+                            ? "border-red-200 bg-red-50/40"
+                            : "border-zinc-200 hover:border-red-200 hover:bg-red-50/30"
+                        } cursor-pointer`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium text-zinc-800">{item.question}</p>
+                          <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center">
+                            <Image
+                              src={isOpen ? "/icons/faq/minus.svg" : "/icons/faq/plus.svg"}
+                              alt=""
+                              width={10}
+                              height={10}
+                              className="h-3 w-3 text-zinc-400"
+                            />
+                          </span>
+                        </div>
+                        <div
+                          className={`mt-1 overflow-hidden text-[11px] text-zinc-600 transition-[max-height,opacity] duration-400 ease-in-out ${
+                            isOpen
+                              ? "max-h-40 opacity-100"
+                              : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <p>{item.answer}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </aside>
             </div>
           </div>

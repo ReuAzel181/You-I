@@ -12,6 +12,12 @@ export default function PricingPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
   const { profileCountry } = useSettings();
   const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherNotice, setVoucherNotice] = useState<"" | "empty" | "applied">("");
+  const [showEmptyVoucherNotice, setShowEmptyVoucherNotice] = useState(false);
+  const [emptyVoucherPosition, setEmptyVoucherPosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -458,19 +464,54 @@ export default function PricingPage() {
                   Enter a code to unlock amazing gifts.
                 </p>
               </div>
-              <div className="flex w-full gap-2 sm:w-auto sm:min-w-[220px]">
-                <input
-                  type="text"
-                  inputMode="text"
-                  placeholder="Enter voucher code"
-                  className="h-8 flex-1 rounded-lg border border-red-200 bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
-                />
-                <button
-                  type="button"
-                  className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
-                >
-                  Apply
-                </button>
+              <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[220px]">
+                <div className="flex w-full gap-2">
+                  <input
+                    type="text"
+                    inputMode="text"
+                    placeholder="Enter voucher code"
+                    value={voucherCode}
+                    onChange={(event) => {
+                      setVoucherCode(event.target.value);
+                      if (voucherNotice) {
+                        setVoucherNotice("");
+                        setShowEmptyVoucherNotice(false);
+                        setEmptyVoucherPosition(null);
+                      }
+                    }}
+                    className="h-8 flex-1 rounded-lg border border-red-200 bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      if (!voucherCode.trim()) {
+                        const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                        setVoucherNotice("empty");
+                        setEmptyVoucherPosition({
+                          x: rect.left + rect.width / 2,
+                          y: rect.top,
+                        });
+                        setShowEmptyVoucherNotice(true);
+                        window.setTimeout(() => {
+                          setShowEmptyVoucherNotice(false);
+                          setVoucherNotice("");
+                          setEmptyVoucherPosition(null);
+                        }, 2000);
+                        return;
+                      }
+                      setVoucherNotice("applied");
+                    }}
+                    className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
+                  >
+                    Apply
+                  </button>
+                </div>
+                {voucherNotice === "empty" && null}
+                {voucherNotice === "applied" && (
+                  <p className="text-[10px] font-medium text-emerald-600">
+                    Voucher noted — we will include this when billing becomes available.
+                  </p>
+                )}
               </div>
             </div>
             <div className="mt-6 grid gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[11px] text-zinc-600 md:grid-cols-3">
@@ -498,6 +539,19 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
+        {voucherNotice === "empty" && emptyVoucherPosition && (
+          <div
+            className={`pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-2 transform rounded-full border border-red-200 bg-white/95 px-3 py-1.5 text-[10px] font-medium text-red-700 shadow-sm transition-opacity duration-200 ${
+              showEmptyVoucherNotice ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              left: emptyVoucherPosition.x,
+              top: emptyVoucherPosition.y,
+            }}
+          >
+            Enter a code first.
+          </div>
+        )}
       </main>
       <Footer />
     </div>

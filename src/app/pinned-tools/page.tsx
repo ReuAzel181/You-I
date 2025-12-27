@@ -36,7 +36,7 @@ export default function PinnedToolsPage() {
         return [];
       }
 
-      return parsed
+      const mapped = parsed
         .map((item) => {
           if (!item || typeof item !== "object") {
             return null;
@@ -58,7 +58,7 @@ export default function PinnedToolsPage() {
             return null;
           }
 
-          return {
+          const base = {
             id: value.id,
             name: value.name,
             toolName: value.toolName,
@@ -68,8 +68,19 @@ export default function PinnedToolsPage() {
                 ? value.createdAt
                 : new Date().toISOString(),
           } satisfies WorkspacePreset;
+          return base;
         })
         .filter((preset): preset is WorkspacePreset => Boolean(preset));
+
+      const seen = new Set<string>();
+
+      return mapped.filter((preset) => {
+        if (seen.has(preset.id)) {
+          return false;
+        }
+        seen.add(preset.id);
+        return true;
+      });
     } catch {
       return [];
     }
@@ -77,6 +88,7 @@ export default function PinnedToolsPage() {
 
   const [hasHydrated, setHasHydrated] = useState(false);
   const [removingPresetIds, setRemovingPresetIds] = useState<string[]>([]);
+  const [confirmingPresetId, setConfirmingPresetId] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
   const [toolNameInput, setToolNameInput] = useState(
     allTools[0]?.name ?? "",
@@ -310,41 +322,55 @@ export default function PinnedToolsPage() {
                             Saved workspace preset.
                           </p>
                         )}
-                        <div className="flex items-center justify-between gap-2">
-                          {tool?.href && (
-                            <Link
-                              href={tool.href}
-                              className="inline-flex flex-1 items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-red-600"
-                            >
-                              Open tool
-                            </Link>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRemovingPresetIds((current) =>
-                                current.includes(preset.id)
-                                  ? current
-                                  : [...current, preset.id],
-                              );
+                        <div className="flex items-center justify-end gap-2">
+                          {confirmingPresetId === preset.id ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmingPresetId(null)}
+                                className="inline-flex h-7 items-center justify-center rounded-full border border-zinc-200 px-3 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRemovingPresetIds((current) =>
+                                    current.includes(preset.id)
+                                      ? current
+                                      : [...current, preset.id],
+                                  );
 
-                              window.setTimeout(() => {
-                                setPresets((current) =>
-                                  current.filter(
-                                    (item) => item.id !== preset.id,
-                                  ),
-                                );
-                                setRemovingPresetIds((current) =>
-                                  current.filter(
-                                    (id) => id !== preset.id,
-                                  ),
-                                );
-                              }, 180);
-                            }}
-                            className="inline-flex h-7 items-center justify-center rounded-full border border-zinc-200 px-3 text-[11px] font-medium text-zinc-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-                          >
-                            Remove
-                          </button>
+                                  window.setTimeout(() => {
+                                    setPresets((current) =>
+                                      current.filter(
+                                        (item) => item.id !== preset.id,
+                                      ),
+                                    );
+                                    setRemovingPresetIds((current) =>
+                                      current.filter(
+                                        (id) => id !== preset.id,
+                                      ),
+                                    );
+                                    setConfirmingPresetId((current) =>
+                                      current === preset.id ? null : current,
+                                    );
+                                  }, 180);
+                                }}
+                                className="inline-flex h-7 items-center justify-center rounded-full border border-red-200 px-3 text-[11px] font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-50"
+                              >
+                                Remove
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmingPresetId(preset.id)}
+                              className="inline-flex h-7 items-center justify-center rounded-full border border-zinc-200 px-3 text-[11px] font-medium text-zinc-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

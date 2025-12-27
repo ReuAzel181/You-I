@@ -28,6 +28,8 @@ type ColorContrastCheckerProps = {
   variant?: "simple" | "full";
 };
 
+const COLOR_CONTRAST_PRESETS_STORAGE_KEY = "you-i-color-contrast-presets";
+
 function parseHexColor(value: string): RgbColor | null {
   const hex = value.trim().replace(/^#/, "");
 
@@ -525,7 +527,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const [colorMode, setColorMode] = useState<"two" | "three">("two");
   const [presets, setPresets] = useState<
     {
-      id: number;
+      id: string;
       name: string;
       textColor: string;
       backgroundColor: string;
@@ -533,9 +535,77 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
       fontSize: string;
       mode: "two" | "three";
     }[]
-  >([]);
+  >(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const stored = window.localStorage.getItem(COLOR_CONTRAST_PRESETS_STORAGE_KEY);
+
+      if (!stored) {
+        return [];
+      }
+
+      const parsed = JSON.parse(stored) as unknown;
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed
+        .map((item) => {
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+
+          const value = item as {
+            id?: unknown;
+            name?: unknown;
+            textColor?: unknown;
+            backgroundColor?: unknown;
+            containerColor?: unknown;
+            fontSize?: unknown;
+            mode?: unknown;
+          };
+
+          if (
+            (typeof value.id !== "string" && typeof value.id !== "number") ||
+            typeof value.name !== "string" ||
+            typeof value.textColor !== "string" ||
+            typeof value.backgroundColor !== "string" ||
+            typeof value.containerColor !== "string" ||
+            typeof value.fontSize !== "string" ||
+            (value.mode !== "two" && value.mode !== "three")
+          ) {
+            return null;
+          }
+
+          return {
+            id: String(value.id),
+            name: value.name,
+            textColor: value.textColor,
+            backgroundColor: value.backgroundColor,
+            containerColor: value.containerColor,
+            fontSize: value.fontSize,
+            mode: value.mode,
+          };
+        })
+        .filter((preset): preset is {
+          id: string;
+          name: string;
+          textColor: string;
+          backgroundColor: string;
+          containerColor: string;
+          fontSize: string;
+          mode: "two" | "three";
+        } => Boolean(preset));
+    } catch {
+      return [];
+    }
+  });
   const [presetName, setPresetName] = useState("Preset 1");
-  const [editingPresetId, setEditingPresetId] = useState<number | null>(null);
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [copyNotice, setCopyNotice] = useState<CopyNoticeState | null>(null);
   const copyNoticeTimeoutRef = useRef<number | null>(null);
   const [copyIconSrc, setCopyIconSrc] = useState("/icons/copy.svg");
@@ -701,9 +771,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     const name = trimmedName || `Preset ${presets.length + 1}`;
 
     setPresets((current) => {
-      const nextId = Date.now();
+      const nextId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-      return [
+      const nextPresets = [
         ...current,
         {
           id: nextId,
@@ -715,6 +785,41 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
           mode: colorMode,
         },
       ];
+
+      if (typeof window !== "undefined") {
+        try {
+          const storageKey = "you-i-workspace-presets";
+          const stored = window.localStorage.getItem(storageKey);
+          const parsed = stored ? JSON.parse(stored) : [];
+          const safeList = Array.isArray(parsed) ? parsed : [];
+
+          const workspacePreset = {
+            id: nextId,
+            name,
+            toolName: "Color Contrast Checker",
+            note: "",
+            createdAt: new Date().toISOString(),
+          };
+
+          const nextWorkspacePresets = [
+            workspacePreset,
+            ...safeList.filter(
+              (item) =>
+                !item ||
+                typeof item !== "object" ||
+                (item as { id?: unknown }).id !== workspacePreset.id,
+            ),
+          ];
+
+          window.localStorage.setItem(
+            storageKey,
+            JSON.stringify(nextWorkspacePresets),
+          );
+        } catch {
+        }
+      }
+
+      return nextPresets;
     });
 
     setPresetName(`Preset ${presets.length + 2}`);
@@ -757,8 +862,22 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     copyNoticeTimeoutRef.current = window.setTimeout(() => {
       setCopyNotice(null);
       copyNoticeTimeoutRef.current = null;
-    }, 1500);
+    }, 1400);
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        COLOR_CONTRAST_PRESETS_STORAGE_KEY,
+        JSON.stringify(presets),
+      );
+    } catch {
+    }
+  }, [presets]);
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -2070,34 +2189,53 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                                 className="h-3.5 w-3.5"
                               />
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPresets((current) =>
-                                  current.filter((item) => item.id !== preset.id),
-                                );
-                                if (editingPresetId === preset.id) {
-                                  setEditingPresetId(null);
-                                }
-                              }}
-                              className="text-[10px] text-zinc-400 transition-colors hover:text-red-500"
-                            >
-                              Delete
-                            </button>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => {
-                            setTextColor(preset.textColor);
-                            setBackgroundColor(preset.backgroundColor);
-                            setContainerColor(preset.containerColor);
-                            setFontSize(preset.fontSize);
-                            setColorMode(preset.mode);
+                            setPresets((current) =>
+                              current.filter((item) => item.id !== preset.id),
+                            );
+                            if (editingPresetId === preset.id) {
+                              setEditingPresetId(null);
+                            }
+                            if (typeof window !== "undefined") {
+                              try {
+                                const storageKey = "you-i-workspace-presets";
+                                const stored = window.localStorage.getItem(storageKey);
+                                if (stored) {
+                                  const parsed = JSON.parse(stored);
+                                  if (Array.isArray(parsed)) {
+                                    const nextWorkspacePresets = parsed.filter((item) => {
+                                      if (!item || typeof item !== "object") {
+                                        return true;
+                                      }
+                                      const value = item as {
+                                        id?: unknown;
+                                        toolName?: unknown;
+                                      };
+                                      if (
+                                        value.toolName === "Color Contrast Checker" &&
+                                        value.id === preset.id
+                                      ) {
+                                        return false;
+                                      }
+                                      return true;
+                                    });
+                                    window.localStorage.setItem(
+                                      storageKey,
+                                      JSON.stringify(nextWorkspacePresets),
+                                    );
+                                  }
+                                }
+                              } catch {
+                              }
+                            }
                           }}
                           className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-700 hover:border-red-200 hover:bg-red-50"
                         >
-                          Apply
+                          Delete
                         </button>
                       </div>
                       <div className="mt-3 grid gap-2 sm:grid-cols-3">
