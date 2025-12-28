@@ -7,17 +7,25 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
+import { useAuth } from "@/providers/AuthProvider";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export default function PricingPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
-  const { profileCountry } = useSettings();
+  const { user, isLoading } = useAuth();
+  const { profileCountry, subscriptionMode, setSubscriptionMode } = useSettings();
   const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
   const [voucherCode, setVoucherCode] = useState("");
-  const [voucherNotice, setVoucherNotice] = useState<"" | "empty" | "applied">("");
+  const [voucherNotice, setVoucherNotice] = useState<
+    "" | "empty" | "applied" | "invalid" | "already-used" | "error" | "login-required"
+  >("");
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [showEmptyVoucherNotice, setShowEmptyVoucherNotice] = useState(false);
   const [emptyVoucherPosition, setEmptyVoucherPosition] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const [voucherPlanLabel, setVoucherPlanLabel] = useState<"Pro" | "Top tier" | null>(null);
+  const [voucherEndsAt, setVoucherEndsAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -26,6 +34,8 @@ export default function PricingPage() {
 
     trackEvent("view_pricing", { path: "/pricing" });
   }, [analyticsEnabled, trackEvent]);
+
+  const showAuthNotice = !user && !isLoading;
 
   const currencyConfig = (() => {
     switch (profileCountry) {
@@ -136,86 +146,94 @@ export default function PricingPage() {
             </div>
             <div className="grid items-center pb-6 gap-4 md:grid-cols-3">
               <div className="flex flex-col rounded-2xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-800">
-                      Starter
-                    </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-800">
+                    Starter
+                  </p>
+                  {subscriptionMode === "starter" && (
                     <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-white">
                       Current plan
                     </span>
-                  </div>
-                  <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-                    {formatPrice(0)}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Try YOU-I on solo work with your own pace.
-                  </p>
-                  <ul className="mt-4 space-y-1.5 text-[11px]">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 inline-flex items-center justify-center">
-                        <Image
-                          src="/icons/check.svg"
-                          alt=""
-                          width={16}
-                          height={16}
-                          className="h-3.5 w-3.5"
-                        />
-                      </span>
-                      <span className="font-medium text-zinc-700">
-                        Unlimited access to all tools
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 inline-flex items-center justify-center">
-                        <Image
-                          src="/icons/check.svg"
-                          alt=""
-                          width={16}
-                          height={16}
-                          className="h-3.5 w-3.5"
-                        />
-                      </span>
-                      <span className="font-medium text-zinc-700">
-                        Save pinned tools and presets
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 inline-flex items-center justify-center">
-                        <Image
-                          src="/icons/check.svg"
-                          alt=""
-                          width={16}
-                          height={16}
-                          className="h-3.5 w-3.5"
-                        />
-                      </span>
-                      <span className="font-medium text-zinc-700">
-                        Local-only analytics, no ads
-                      </span>
-                    </li>
-                  </ul>
-                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Starter is active by default for every account.
-                  </div>
-                  <button
-                    className="mt-4 inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-[11px] font-semibold text-zinc-500"
-                    aria-disabled="true"
-                  >
-                    You&apos;re using this plan
-                  </button>
+                  )}
                 </div>
-                <div className="flex flex-col justify-center rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[26rem] shadow-sm md:z-10">
-                  <div className="flex items-center justify-between gap-2">
-                  <div className="inline-flex items-center gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
-                      Best for you
-                    </p>
-                    <span className="rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-red-600">
-                      Most popular
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
+                  {formatPrice(0)}
+                </p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  Try YOU-I on solo work with your own pace.
+                </p>
+                <ul className="mt-4 space-y-1.5 text-[11px]">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 inline-flex items-center justify-center">
+                      <Image
+                        src="/icons/check.svg"
+                        alt=""
+                        width={16}
+                        height={16}
+                        className="h-3.5 w-3.5"
+                      />
                     </span>
+                    <span className="font-medium text-zinc-700">
+                      Unlimited access to all tools
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 inline-flex items-center justify-center">
+                      <Image
+                        src="/icons/check.svg"
+                        alt=""
+                        width={16}
+                        height={16}
+                        className="h-3.5 w-3.5"
+                      />
+                    </span>
+                    <span className="font-medium text-zinc-700">
+                      Save pinned tools and presets
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 inline-flex items-center justify-center">
+                      <Image
+                        src="/icons/check.svg"
+                        alt=""
+                        width={16}
+                        height={16}
+                        className="h-3.5 w-3.5"
+                      />
+                    </span>
+                    <span className="font-medium text-zinc-700">
+                      Local-only analytics, no ads
+                    </span>
+                  </li>
+                </ul>
+                {subscriptionMode === "starter" && (
+                  <>
+                    <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Starter is active by default for every account.
+                    </div>
+                    <button
+                      className="mt-4 inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-[11px] font-semibold text-zinc-500"
+                      aria-disabled="true"
+                    >
+                      You&apos;re using this plan
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-col justify-center rounded-2xl border-2 border-red-500 bg-red-50 pricing-featured-card p-5 sm:p-6 md:py-8 md:h-[26rem] shadow-sm md:z-10">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
+                      Pro
+                    </p>
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex w-fit items-center rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-red-600">
+                        Best for you
+                      </span>
+                    </div>
                   </div>
-                  <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                  <span className="rounded-full border border-red-300 bg-red-100 px-3 py-1 text-[10px] font-semibold text-red-700">
                     Recommended
                   </span>
                 </div>
@@ -314,12 +332,18 @@ export default function PricingPage() {
                       </span>
                     </li>
                   </ul>
-                  <Link
-                    href="/contact"
-                    className="mt-6 inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:bg-red-600 active:translate-y-0 active:scale-95"
-                  >
-                    Talk to us
-                  </Link>
+                  {showAuthNotice ? (
+                    <p className="mt-6 text-[11px] font-medium text-red-600">
+                      Log in from the top-right corner to manage billing and upgrade.
+                    </p>
+                  ) : (
+                    <Link
+                      href="/billing"
+                      className="mt-6 inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:bg-red-600 active:translate-y-0 active:scale-95"
+                    >
+                      {subscriptionMode === "starter" ? "Manage billing" : "Open billing"}
+                    </Link>
+                  )}
                 </div>
               <div className="top-tier-glow">
                 <div className="violet-inner-ring relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-violet-500 bg-gradient-to-b from-violet-50 to-violet-100 p-3 sm:p-4 shadow-sm">
@@ -449,9 +473,18 @@ export default function PricingPage() {
                       </span>
                     </li>
                   </ul>
-                  <button className="mt-6 inline-flex items-center justify-center rounded-full border border-violet-300 bg-white px-4 py-1.5 text-[11px] font-medium text-violet-700 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-800">
-                    Talk to us
-                  </button>
+                  {showAuthNotice ? (
+                    <p className="mt-6 text-[11px] font-medium text-violet-700">
+                      Log in from the top-right corner to manage billing and upgrade.
+                    </p>
+                  ) : (
+                    <Link
+                      href="/billing"
+                      className="mt-6 inline-flex items-center justify-center rounded-full border border-violet-300 bg-white px-4 py-1.5 text-[11px] font-medium text-violet-700 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-800"
+                    >
+                      {subscriptionMode === "top" ? "You're using this plan" : "Open billing"}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -483,9 +516,12 @@ export default function PricingPage() {
                   />
                   <button
                     type="button"
-                    onClick={(event) => {
+                    disabled={isApplyingVoucher}
+                    onClick={async (event) => {
                       if (!voucherCode.trim()) {
-                        const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                        const rect = (
+                          event.currentTarget as HTMLButtonElement
+                        ).getBoundingClientRect();
                         setVoucherNotice("empty");
                         setEmptyVoucherPosition({
                           x: rect.left + rect.width / 2,
@@ -499,17 +535,126 @@ export default function PricingPage() {
                         }, 2000);
                         return;
                       }
-                      setVoucherNotice("applied");
+
+                      if (!user) {
+                        setVoucherNotice("login-required");
+                        return;
+                      }
+
+                      setIsApplyingVoucher(true);
+                      try {
+                        const supabase = getSupabaseClient();
+                        const trimmedCode = voucherCode.trim();
+
+                        const { data: voucher, error: fetchError } = await supabase
+                          .from("vouchers")
+                          .select("id, is_redeemed, pro_days, plan, expires_at")
+                          .eq("code", trimmedCode)
+                          .maybeSingle();
+
+                        if (fetchError) {
+                          setVoucherNotice("error");
+                          return;
+                        }
+
+                        if (!voucher) {
+                          setVoucherNotice("invalid");
+                          return;
+                        }
+
+                        if ((voucher as { is_redeemed?: boolean }).is_redeemed) {
+                          setVoucherNotice("already-used");
+                          return;
+                        }
+
+                        const { pro_days: proDays } = voucher as {
+                          pro_days?: number | null;
+                        };
+
+                        if (!proDays || proDays <= 0) {
+                          setVoucherNotice("invalid");
+                          return;
+                        }
+
+                        const now = new Date();
+                        const endsAt = new Date(now.getTime() + proDays * 24 * 60 * 60 * 1000);
+
+                        const { error: subscriptionError } = await supabase
+                          .from("user_voucher_subscriptions")
+                          .insert({
+                            user_id: user.id,
+                            voucher_id: (voucher as { id: string }).id,
+                            started_at: now.toISOString(),
+                            ends_at: endsAt.toISOString(),
+                          });
+
+                        if (subscriptionError) {
+                          setVoucherNotice("error");
+                          return;
+                        }
+
+                        const { error: redeemError } = await supabase
+                          .from("vouchers")
+                          .update({ is_redeemed: true, user_id: user.id })
+                          .eq("id", (voucher as { id: string }).id);
+
+                        if (redeemError) {
+                          setVoucherNotice("error");
+                          return;
+                        }
+
+                        const nextMode =
+                          (voucher as { plan?: string | null }).plan === "starter"
+                            ? "starter"
+                            : "top";
+                        const planLabel = nextMode === "starter" ? "Pro" : "Top tier";
+
+                        const { error: userUpdateError } = await supabase
+                          .from("users")
+                          .update({
+                            subscription_mode: nextMode,
+                          })
+                          .eq("id", user.id);
+
+                        if (userUpdateError) {
+                          setVoucherNotice("error");
+                          return;
+                        }
+
+                        setSubscriptionMode(nextMode);
+                        setVoucherPlanLabel(planLabel);
+                        setVoucherEndsAt(endsAt.toISOString());
+                        setVoucherNotice("applied");
+                      } catch {
+                        setVoucherNotice("error");
+                      } finally {
+                        setIsApplyingVoucher(false);
+                      }
                     }}
-                    className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600"
+                    className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600 disabled:opacity-60 disabled:hover:bg-red-500"
                   >
-                    Apply
+                    {isApplyingVoucher ? "Applying…" : "Apply"}
                   </button>
                 </div>
                 {voucherNotice === "empty" && null}
-                {voucherNotice === "applied" && (
-                  <p className="text-[10px] font-medium text-emerald-600">
-                    Voucher noted — we will include this when billing becomes available.
+                {voucherNotice === "login-required" && (
+                  <p className="text-[10px] font-medium text-red-600">
+                    Sign in to apply a voucher and unlock the Top tier.
+                  </p>
+                )}
+                {voucherNotice === "invalid" && (
+                  <p className="text-[10px] font-medium text-red-600">
+                    This voucher code is not valid. Check the code and try again.
+                  </p>
+                )}
+                {voucherNotice === "already-used" && (
+                  <p className="text-[10px] font-medium text-red-600">
+                    This voucher has already been used.
+                  </p>
+                )}
+                {voucherNotice === "error" && (
+                  <p className="text-[10px] font-medium text-red-600">
+                    We could not apply this voucher right now. Please try again later.
                   </p>
                 )}
               </div>
@@ -539,6 +684,26 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
+        {voucherNotice === "applied" && voucherPlanLabel && voucherEndsAt && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-sm rounded-2xl border border-emerald-200 bg-white p-5 text-center shadow-lg sm:p-6">
+              <h2 className="text-lg font-semibold text-zinc-900">Voucher applied</h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                You unlocked the {voucherPlanLabel} plan.
+              </p>
+              <p className="mt-1 text-sm text-zinc-600">
+                This plan expires in {new Date(voucherEndsAt).getFullYear()}.
+              </p>
+              <button
+                type="button"
+                onClick={() => setVoucherNotice("")}
+                className="mt-4 inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
         {voucherNotice === "empty" && emptyVoucherPosition && (
           <div
             className={`pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-2 transform rounded-full border border-red-200 bg-white/95 px-3 py-1.5 text-[10px] font-medium text-red-700 shadow-sm transition-opacity duration-200 ${

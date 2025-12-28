@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -12,6 +13,7 @@ const navItems = [
   { label: "Guide", href: "/resources" },
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
+  { label: "Admin", href: "/admin", requiresAdmin: true },
 ];
 
 export function Header() {
@@ -43,6 +45,7 @@ export function Header() {
   const [isCodeSending, setIsCodeSending] = useState(false);
   const [showLoginLinkInError, setShowLoginLinkInError] = useState(false);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const displayName = useMemo(() => {
     if (!user) {
@@ -60,6 +63,49 @@ export function Header() {
     }
 
     return user.email ?? "Account";
+  }, [user]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const checkAdmin = async () => {
+      if (!user) {
+        if (!isCancelled) {
+          setIsAdmin(false);
+        }
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          if (!isCancelled) {
+            setIsAdmin(false);
+          }
+          return;
+        }
+
+        if (!isCancelled) {
+          setIsAdmin((data?.role as string | null) === "admin");
+        }
+      } catch {
+        if (!isCancelled) {
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    void checkAdmin();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -191,7 +237,13 @@ export function Header() {
     }
   }
 
-  const navigationItems = navItems;
+  const navigationItems = navItems.filter((item) => {
+    if ("requiresAdmin" in item && item.requiresAdmin) {
+      return isAdmin;
+    }
+
+    return true;
+  });
 
   async function handleAuthSubmit(event: React.FormEvent) {
     event.preventDefault();

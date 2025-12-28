@@ -825,7 +825,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     setPresetName(`Preset ${presets.length + 2}`);
   };
 
-  const handlePresetNameChange = (presetId: number, name: string) => {
+  const handlePresetNameChange = (presetId: string, name: string) => {
     setPresets((current) =>
       current.map((preset) => (preset.id === presetId ? { ...preset, name } : preset)),
     );

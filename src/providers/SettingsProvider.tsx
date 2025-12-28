@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useAuth } from "@/providers/AuthProvider";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type AppearanceMode = "system" | "light" | "light-high-contrast" | "dark";
 
@@ -111,6 +113,7 @@ type SettingsProviderProps = {
 };
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<SettingsState>(() => {
     if (typeof window === "undefined") {
       return defaultSettings;
@@ -221,6 +224,80 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     const root = document.documentElement;
     root.setAttribute("data-accent", settings.profileBannerColor);
   }, [settings.profileBannerColor]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const run = async () => {
+      const supabase = getSupabaseClient();
+      const email = user.email ?? null;
+
+      if (!email) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, country")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (error) {
+        return;
+      }
+
+      let nextCountry = (data?.country as string | null | undefined) ?? null;
+
+      if (!nextCountry || nextCountry === "Unknown") {
+        let inferred: string | null = null;
+
+        try {
+          const response = await fetch("https://ipapi.co/json/");
+
+          if (response.ok) {
+            const json = (await response.json()) as { country_code?: string | null };
+
+            if (json.country_code && typeof json.country_code === "string") {
+              inferred = json.country_code.toUpperCase();
+            }
+          }
+        } catch {
+        }
+
+        if (!inferred) {
+          inferred = getDefaultCountryCode();
+        }
+
+        nextCountry = inferred;
+
+        if (nextCountry) {
+          await supabase
+            .from("users")
+            .update({ country: nextCountry })
+            .eq("id", user.id);
+        }
+      }
+
+      if (!nextCountry) {
+        return;
+      }
+
+      setSettings((current) => {
+        if (current.profileCountry === nextCountry) {
+          return current;
+        }
+
+        return {
+          ...current,
+          profileCountry: nextCountry as string,
+        };
+      });
+    };
+
+    void run();
+  }, [user]);
 
   const setAppearance = (mode: AppearanceMode) => {
     setSettings((current) => ({
