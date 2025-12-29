@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics } from "@/providers/SettingsProvider";
+import { useAuth } from "@/providers/AuthProvider";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 const faqItems = [
   {
@@ -47,6 +49,7 @@ const faqItems = [
 
 export default function ContactPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const { user } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [teamSize, setTeamSize] = useState("");
@@ -64,6 +67,22 @@ export default function ContactPage() {
 
     trackEvent("view_contact", { path: "/contact" });
   }, [analyticsEnabled, trackEvent]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const nextEmail = user.email ?? "";
+
+    setEmail((current) => {
+      if (current) {
+        return current;
+      }
+
+      return nextEmail;
+    });
+  }, [user]);
 
   return (
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
@@ -119,7 +138,7 @@ export default function ContactPage() {
                 </p>
                 <form
                   className="mt-4 space-y-4 text-[11px] text-zinc-700"
-                  onSubmit={(event) => {
+                  onSubmit={async (event) => {
                     event.preventDefault();
 
                     if (isSubmitting) {
@@ -129,10 +148,37 @@ export default function ContactPage() {
                     setIsSubmitting(true);
                     setSubmitState("idle");
 
-                    window.setTimeout(() => {
-                      setIsSubmitting(false);
+                    try {
+                      const supabase = getSupabaseClient();
+
+                      const payload = {
+                        full_name: fullName.trim(),
+                        email: email.trim(),
+                        team_size: teamSize || null,
+                        topic,
+                        usage: usage || null,
+                        message: message.trim(),
+                      };
+
+                      const { error } = await supabase.from("inquiries").insert(payload);
+
+                      if (error) {
+                        setSubmitState("error");
+                        return;
+                      }
+
                       setSubmitState("success");
-                    }, 800);
+                      setFullName("");
+                      setEmail("");
+                      setTeamSize("");
+                      setTopic("other");
+                      setUsage("");
+                      setMessage("");
+                    } catch {
+                      setSubmitState("error");
+                    } finally {
+                      setIsSubmitting(false);
+                    }
                   }}
                 >
                   <div className="grid grid-cols-2 gap-3">
@@ -175,11 +221,12 @@ export default function ContactPage() {
                             }
                           }}
                           autoComplete="email"
-                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
+                          className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
                           placeholder="you@example.com"
                           required
+                          readOnly={Boolean(user)}
                         />
-                        {email.endsWith("@") && (
+                        {email.endsWith("@") && !user && (
                           <div className="pointer-events-none absolute inset-0 flex items-center px-3 text-[11px]">
                             <span className="opacity-0">{email}</span>
                             <span className="text-zinc-300">gmail.com</span>

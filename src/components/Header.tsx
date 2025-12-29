@@ -239,6 +239,10 @@ export function Header() {
 
   const navigationItems = navItems.filter((item) => {
     if ("requiresAdmin" in item && item.requiresAdmin) {
+      if (pathname && pathname.startsWith("/admin")) {
+        return true;
+      }
+
       return isAdmin;
     }
 

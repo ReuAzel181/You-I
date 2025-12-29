@@ -497,8 +497,13 @@ export default function SettingsPage() {
       case "JP":
         return { code: "JP", label: "Japan · JPY", flag: "🇯🇵" };
       case "US":
-      default:
         return { code: "US", label: "United States · USD", flag: "🇺🇸" };
+      default:
+        return {
+          code: effectiveCountry,
+          label: `Country code · ${effectiveCountry}`,
+          flag: "🌐",
+        };
     }
   })();
 

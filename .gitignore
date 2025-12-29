@@ -42,3 +42,6 @@ next-env.d.ts
 .npmrc
 .vscode/
 .idea/
+
+# project rules
+.project_rules.md

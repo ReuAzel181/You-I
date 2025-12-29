@@ -434,6 +434,8 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const [backgroundColor, setBackgroundColorState] = useState("#ffffff");
   const [containerColor, setContainerColorState] = useState("#f4f4f5");
   const [fontSize, setFontSize] = useState("16");
+  const [subheadingFontSize, setSubheadingFontSize] = useState("14");
+  const [bodyFontSize, setBodyFontSize] = useState("14");
   const [textHue, setTextHue] = useState(() => {
     const hslString = hexToHslString("#111827", "#111827");
     const parts = hslString.match(/\d+/g);
@@ -610,6 +612,13 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const copyNoticeTimeoutRef = useRef<number | null>(null);
   const [copyIconSrc, setCopyIconSrc] = useState("/icons/copy.svg");
   const inputCardRef = useRef<HTMLDivElement | null>(null);
+  const toggleContainerRef = useRef<HTMLDivElement | null>(null);
+  const twoColorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const threeColorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [toggleIndicatorStyle, setToggleIndicatorStyle] = useState<{
+    width: number;
+    x: number;
+  } | null>(null);
   const [whatIfTarget, setWhatIfTarget] = useState<
     "aa-normal" | "aa-large" | "aaa" | "a-plus"
   >("aa-normal");
@@ -834,8 +843,14 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
   const fontSizeNumberRaw = Number.parseInt(fontSize || "16", 10);
   const fontSizeNumber = Number.isNaN(fontSizeNumberRaw) ? 16 : fontSizeNumberRaw;
   const headingFontSize = fontSizeNumber;
-  const supportingFontSize = Math.max(10, fontSizeNumber - 2);
-  const bodyFontSize = 14;
+
+  const supportingFontSizeRaw = Number.parseInt(subheadingFontSize || String(fontSizeNumber - 2), 10);
+  const supportingFontSize = Number.isNaN(supportingFontSizeRaw)
+    ? Math.max(10, fontSizeNumber - 2)
+    : supportingFontSizeRaw;
+
+  const bodyFontSizeRaw = Number.parseInt(bodyFontSize || "14", 10);
+  const bodyFontSizeValue = Number.isNaN(bodyFontSizeRaw) ? 14 : bodyFontSizeRaw;
 
   const handleCopy = (value: string, label: string, event: MouseEvent<HTMLElement>) => {
     copyHexToClipboard(value);
@@ -913,6 +928,46 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
 
   const layoutDirectionClass = isFull ? "flex flex-col gap-6 md:flex-row" : "flex flex-col gap-6";
 
+  useEffect(() => {
+    if (!isFull) {
+      return;
+    }
+
+    const container = toggleContainerRef.current;
+    const activeButton =
+      effectiveMode === "two" ? twoColorButtonRef.current : threeColorButtonRef.current;
+
+    if (!container || !activeButton) {
+      return;
+    }
+
+    const update = () => {
+      const containerRect = container.getBoundingClientRect();
+      const buttonRect = activeButton.getBoundingClientRect();
+
+      setToggleIndicatorStyle({
+        width: buttonRect.width,
+        x: buttonRect.left - containerRect.left,
+      });
+    };
+
+    update();
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleResize = () => {
+      update();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [effectiveMode, isFull]);
+
   return (
     <div className="space-y-4">
       <div className={layoutDirectionClass}>
@@ -928,16 +983,26 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             </div>
             <div className="ml-auto flex h-9 w-[264px] flex-none items-center justify-end gap-3 whitespace-nowrap">
               {isFull && (
-                <div className="relative inline-flex h-8 w-[170px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-1 text-[11px] font-medium">
+                <div
+                  ref={toggleContainerRef}
+                  className="relative inline-flex h-8 flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-1 text-[11px] font-medium"
+                >
                   <span
-                    className={`absolute inset-y-1 left-0 w-1/2 rounded-full bg-red-500 transition-transform duration-300 ease-out ${
-                      effectiveMode === "two" ? "translate-x-0" : "translate-x-full"
-                    }`}
+                    className="absolute inset-y-1 left-0 rounded-full bg-red-500 transition-[transform,width] duration-300 ease-out"
+                    style={
+                      toggleIndicatorStyle
+                        ? {
+                            transform: `translateX(${toggleIndicatorStyle.x}px)`,
+                            width: toggleIndicatorStyle.width,
+                          }
+                        : undefined
+                    }
                   />
                   <button
                     type="button"
+                    ref={twoColorButtonRef}
                     onClick={() => setColorMode("two")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                    className={`relative z-10 rounded-full px-3 py-0.5 text-center transition-colors ${
                       effectiveMode === "two" ? "text-white" : "text-zinc-700"
                     }`}
                   >
@@ -945,8 +1010,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                   <button
                     type="button"
+                    ref={threeColorButtonRef}
                     onClick={() => setColorMode("three")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors ${
+                    className={`relative z-10 rounded-full px-3 py-0.5 text-center transition-colors ${
                       effectiveMode === "three" ? "text-white" : "text-zinc-700"
                     }`}
                   >
@@ -1756,16 +1822,40 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
           {isFull && (
             <div className="mt-4 space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
-                Font size (px)
+                Font sizes (px)
               </label>
-              <input
-                type="number"
-                min={10}
-                max={72}
-                value={fontSize}
-                onChange={(event) => setFontSize(event.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-              />
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <p className="mb-1 text-[11px] text-zinc-500">Heading</p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={fontSize}
+                    onChange={(event) => setFontSize(event.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-[11px] text-zinc-500">Subheading</p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={subheadingFontSize}
+                    onChange={(event) => setSubheadingFontSize(event.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-[11px] text-zinc-500">Body</p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={bodyFontSize}
+                    onChange={(event) => setBodyFontSize(event.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                </div>
+              </div>
             </div>
           )}
           {isFull && roundedActiveRatio !== null && !passesAANormal && recommendedTextColor && (
@@ -1971,22 +2061,22 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 style={previewStyleTwoColor}
               >
                 <p
+                  className="font-medium opacity-80"
+                  style={{ fontSize: `${supportingFontSize}px` }}
+                >
+                  Interface section label
+                </p>
+                <p
                   className="font-semibold"
                   style={{ fontSize: `${headingFontSize}px` }}
                 >
-                  Sample interface heading
-                </p>
-                <p
-                  className="font-medium"
-                  style={{ fontSize: `${supportingFontSize}px` }}
-                >
-                  Supporting line with medium emphasis for short descriptions.
+                  Check your text contrast in context
                 </p>
                 <p
                   className="mt-1 opacity-80"
-                  style={{ fontSize: `${bodyFontSize}px` }}
+                  style={{ fontSize: `${bodyFontSizeValue}px` }}
                 >
-                  Long-form body copy appears at a regular weight to check comfortable reading.
+                  Adjust text, background, and container colors to meet WCAG contrast ratios.
                 </p>
               </div>
               {isFull && (
@@ -2049,22 +2139,22 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   style={previewStyleThreeColorInner}
                 >
                   <p
+                    className="font-medium opacity-80"
+                    style={{ fontSize: `${supportingFontSize}px` }}
+                  >
+                    Nested container section label
+                  </p>
+                  <p
                     className="font-semibold"
                     style={{ fontSize: `${headingFontSize}px` }}
                   >
-                    Container heading example
-                  </p>
-                  <p
-                    className="font-medium"
-                    style={{ fontSize: `${supportingFontSize}px` }}
-                  >
-                    Medium-emphasis copy tested against the container surface.
+                    Validate layered background, container, and text together
                   </p>
                   <p
                     className="mt-1 opacity-80"
-                    style={{ fontSize: `${bodyFontSize}px` }}
+                    style={{ fontSize: `${bodyFontSizeValue}px` }}
                   >
-                    Background, container, and text are all evaluated separately for clarity.
+                    Ensure every level of your UI maintains readable contrast in real layouts.
                   </p>
                 </div>
               </div>

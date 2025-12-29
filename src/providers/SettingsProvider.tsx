@@ -240,7 +240,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id, country")
+        .select("id, country, subscription_mode")
         .eq("email", email)
         .maybeSingle();
 
@@ -249,6 +249,17 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       }
 
       let nextCountry = (data?.country as string | null | undefined) ?? null;
+      const rawSubscriptionMode =
+        (data?.subscription_mode as string | null | undefined) ?? null;
+      let nextSubscriptionMode: SubscriptionMode | null = null;
+
+      if (
+        rawSubscriptionMode === "free" ||
+        rawSubscriptionMode === "starter" ||
+        rawSubscriptionMode === "top"
+      ) {
+        nextSubscriptionMode = rawSubscriptionMode;
+      }
 
       if (!nextCountry || nextCountry === "Unknown") {
         let inferred: string | null = null;
@@ -280,19 +291,34 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         }
       }
 
-      if (!nextCountry) {
-        return;
-      }
-
       setSettings((current) => {
-        if (current.profileCountry === nextCountry) {
+        let changed = false;
+        let draft = current;
+
+        if (nextCountry && current.profileCountry !== nextCountry) {
+          draft = {
+            ...draft,
+            profileCountry: nextCountry as string,
+          };
+          changed = true;
+        }
+
+        if (nextSubscriptionMode && current.subscriptionMode !== nextSubscriptionMode) {
+          if (!changed) {
+            draft = {
+              ...draft,
+            };
+            changed = true;
+          }
+
+          draft.subscriptionMode = nextSubscriptionMode;
+        }
+
+        if (!changed) {
           return current;
         }
 
-        return {
-          ...current,
-          profileCountry: nextCountry as string,
-        };
+        return draft;
       });
     };
 
