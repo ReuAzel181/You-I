@@ -23,6 +23,7 @@ type SettingsState = {
   subscriptionMode: SubscriptionMode;
   focusMode: boolean;
   profileBannerColor: "red" | "sky" | "emerald" | "violet" | "amber";
+  adminUnreadInquiries: number;
 };
 
 type SettingsContextValue = SettingsState & {
@@ -40,6 +41,7 @@ type SettingsContextValue = SettingsState & {
   setSubscriptionMode: (mode: SubscriptionMode) => void;
   setFocusMode: (value: boolean) => void;
   setProfileBannerColor: (value: SettingsState["profileBannerColor"]) => void;
+  setAdminUnreadInquiries: (value: number) => void;
 };
 
 function getDefaultCountryCode() {
@@ -104,6 +106,7 @@ const defaultSettings: SettingsState = {
   subscriptionMode: "starter",
   focusMode: false,
   profileBannerColor: "red",
+  adminUnreadInquiries: 0,
 };
 
 const SettingsContext = createContext<SettingsContextValue | undefined>(undefined);
@@ -186,6 +189,12 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           parsed.profileBannerColor === "sky"
             ? parsed.profileBannerColor
             : defaultSettings.profileBannerColor,
+        adminUnreadInquiries:
+          typeof parsed.adminUnreadInquiries === "number" &&
+          Number.isFinite(parsed.adminUnreadInquiries) &&
+          parsed.adminUnreadInquiries >= 0
+            ? parsed.adminUnreadInquiries
+            : defaultSettings.adminUnreadInquiries,
       };
     } catch {
       return defaultSettings;
@@ -425,6 +434,16 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }));
   };
 
+  const setAdminUnreadInquiries = (value: number) => {
+    const next =
+      typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0;
+
+    setSettings((current) => ({
+      ...current,
+      adminUnreadInquiries: next,
+    }));
+  };
+
   const value: SettingsContextValue = {
     ...settings,
     setAppearance,
@@ -441,6 +460,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setSubscriptionMode,
     setFocusMode,
     setProfileBannerColor,
+    setAdminUnreadInquiries,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

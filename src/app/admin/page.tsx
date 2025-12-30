@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/providers/AuthProvider";
-import { useAnalytics } from "@/providers/SettingsProvider";
+import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type AdminUserRow = {
@@ -52,9 +52,34 @@ type PlanToggleProps = {
 
 type AdminToast = {
   id: number;
-  kind: "success" | "error";
+  kind: "success" | "error" | "confirm-plan";
   message: string;
+  userId?: string;
+  nextMode?: PlanValue;
 };
+
+type VoucherPlanValue = "starter" | "top";
+
+type VoucherPlanToggleProps = {
+  value: VoucherPlanValue;
+  disabled?: boolean;
+  onChange: (next: VoucherPlanValue) => void;
+};
+
+type AdminAnalyticsEntry = {
+  name: string;
+  properties: Record<string, unknown>;
+  timestamp: string;
+};
+
+type AdminToolUsageSummaryItem = {
+  id: string;
+  label: string;
+  count: number;
+  color: string;
+};
+
+type ToolUsageRange = "week" | "month";
 
 const USER_CHART_WIDTH = 320;
 const USER_CHART_HEIGHT = 120;
@@ -65,9 +90,9 @@ const USER_CHART_MAX_BAR_WIDTH = 28;
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const { adminUnreadInquiries, setAdminUnreadInquiries } = useSettings();
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [vouchers, setVouchers] = useState<AdminVoucherRow[]>([]);
-  const [unreadInquiries, setUnreadInquiries] = useState<number | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newVoucherCode, setNewVoucherCode] = useState("");
@@ -78,9 +103,8 @@ export default function AdminPage() {
   const [hasCheckedAdmin, setHasCheckedAdmin] = useState(false);
   const [isUpdatingPlan, setIsUpdatingPlan] = useState<string | null>(null);
   const [toasts, setToasts] = useState<AdminToast[]>([]);
-  const [segmentStyle, setSegmentStyle] = useState<{ left: number; width: number } | null>(
-    null,
-  );
+  const [segmentStyle, setSegmentStyle] = useState<{ left: number; width: number } | null>(null);
+  const [toolUsageRange, setToolUsageRange] = useState<ToolUsageRange>("week");
 
   const toggleContainerRef = useRef<HTMLDivElement | null>(null);
   const overviewLinkRef = useRef<HTMLAnchorElement | null>(null);
@@ -216,14 +240,240 @@ export default function AdminPage() {
     voucherDurationBuckets.medium +
     voucherDurationBuckets.long;
 
+  const toolAnalyticsEntries: AdminAnalyticsEntry[] = (() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const raw = window.localStorage.getItem("you-i-analytics-log");
+
+      if (!raw) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw) as unknown[];
+
+      return parsed
+        .filter(
+          (item): item is AdminAnalyticsEntry =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as { name?: unknown }).name === "string" &&
+            typeof (item as { timestamp?: unknown }).timestamp === "string" &&
+            typeof (item as { properties?: unknown }).properties === "object" &&
+            (item as { properties?: unknown }).properties !== null,
+        )
+        .slice(-200)
+        .reverse();
+    } catch {
+      return [];
+    }
+  })();
+
+  const toolUsageSummary: AdminToolUsageSummaryItem[] = (() => {
+    if (toolAnalyticsEntries.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const rangeDays = toolUsageRange === "week" ? 7 : 30;
+    const cutoff = new Date(now);
+
+    cutoff.setDate(now.getDate() - rangeDays);
+
+    const cutoffIso = cutoff.toISOString();
+    const counts = new Map<string, number>();
+
+    for (const entry of toolAnalyticsEntries) {
+      const rawPath = (entry.properties as { path?: unknown }).path;
+      const path = typeof rawPath === "string" ? rawPath : "";
+
+      if (!path.startsWith("/tools/")) {
+        continue;
+      }
+
+      if (entry.timestamp < cutoffIso) {
+        continue;
+      }
+
+      counts.set(path, (counts.get(path) ?? 0) + 1);
+    }
+
+    if (counts.size === 0) {
+      return [];
+    }
+
+    const labelForPath = (path: string) => {
+      if (path === "/tools/color-contrast-checker") {
+        return "Color Contrast Checker";
+      }
+
+      if (path === "/tools/ratio-calculator") {
+        return "Ratio Calculator";
+      }
+
+      if (path === "/tools/em-to-percent-converter") {
+        return "Unit Converter";
+      }
+
+      if (path === "/tools/lorem-placeholder-generator") {
+        return "Placeholder generator";
+      }
+
+      const segments = path.split("/");
+      const slug = segments[segments.length - 1] ?? "";
+
+      if (!slug) {
+        return path;
+      }
+
+      const spaced = slug.replace(/-/g, " ");
+      return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+    };
+
+    const palette = ["#ef4444", "#0ea5e9", "#22c55e", "#a855f7", "#f97316", "#10b981"];
+
+    return Array.from(counts.entries())
+      .map(([path, count], index) => ({
+        id: path,
+        label: labelForPath(path),
+        count,
+        color: palette[index % palette.length],
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  })();
+
+  const toolUsageTotal = toolUsageSummary.reduce(
+    (sum, item) => sum + item.count,
+    0,
+  );
+
+  const toolUsagePieStyle = (() => {
+    if (toolUsageSummary.length === 0 || toolUsageTotal === 0) {
+      return {};
+    }
+
+    let currentAngle = 0;
+    const segments: string[] = [];
+    const lastIndex = toolUsageSummary.length - 1;
+
+    toolUsageSummary.forEach((item, index) => {
+      const share = item.count / toolUsageTotal;
+      const start = currentAngle;
+      const end = index === lastIndex ? 360 : currentAngle + share * 360;
+
+      segments.push(
+        `${item.color} ${start.toFixed(2)}deg ${end.toFixed(2)}deg`,
+      );
+      currentAngle = end;
+    });
+
+    return {
+      backgroundImage: `conic-gradient(${segments.join(", ")})`,
+    } as const;
+  })();
+
+  const toolUsageTop = toolUsageSummary.length > 0 ? toolUsageSummary[0] : null;
+  const hasToolUsageData = toolUsageSummary.length > 0;
+
+  const toolUsageAveragePerDay = (() => {
+    if (!hasToolUsageData) {
+      return 0;
+    }
+
+    const days = toolUsageRange === "week" ? 7 : 30;
+
+    if (days <= 0) {
+      return 0;
+    }
+
+    return Math.round(toolUsageTotal / days);
+  })();
+
+  const toolUsageDistinctTools = toolUsageSummary.length;
+
+  const toolUsageTopShare =
+    toolUsageTop && toolUsageTotal > 0
+      ? Math.round((toolUsageTop.count / toolUsageTotal) * 100)
+      : 0;
+
+  const toolUsageAveragePerTool =
+    hasToolUsageData && toolUsageDistinctTools > 0
+      ? Math.round(toolUsageTotal / toolUsageDistinctTools)
+      : 0;
+
+  const toolUsageWindow = (() => {
+    if (!hasToolUsageData) {
+      return { first: null as string | null, last: null as string | null };
+    }
+
+    const now = new Date();
+    const rangeDays = toolUsageRange === "week" ? 7 : 30;
+    const cutoff = new Date(now);
+
+    cutoff.setDate(now.getDate() - rangeDays);
+
+    const cutoffIso = cutoff.toISOString();
+
+    let firstTimestamp: string | null = null;
+    let lastTimestamp: string | null = null;
+
+    for (const entry of toolAnalyticsEntries) {
+      const rawPath = (entry.properties as { path?: unknown }).path;
+      const path = typeof rawPath === "string" ? rawPath : "";
+
+      if (!path.startsWith("/tools/")) {
+        continue;
+      }
+
+      if (entry.timestamp < cutoffIso) {
+        continue;
+      }
+
+      if (!firstTimestamp || entry.timestamp < firstTimestamp) {
+        firstTimestamp = entry.timestamp;
+      }
+
+      if (!lastTimestamp || entry.timestamp > lastTimestamp) {
+        lastTimestamp = entry.timestamp;
+      }
+    }
+
+    return { first: firstTimestamp, last: lastTimestamp };
+  })();
+
+  const toolUsageFirstEvent =
+    toolUsageWindow.first !== null ? new Date(toolUsageWindow.first) : null;
+
+  const toolUsageLastEvent =
+    toolUsageWindow.last !== null ? new Date(toolUsageWindow.last) : null;
+
   const showToast = (kind: "success" | "error", message: string) => {
     const id = Date.now() + Math.random();
 
-    setToasts((current) => [...current, { id, kind, message }]);
+    setToasts([{ id, kind, message }]);
 
     setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
     }, 3000);
+  };
+
+  const showConfirmPlanToast = (userId: string, nextMode: PlanValue) => {
+    const id = Date.now() + Math.random();
+    const label =
+      nextMode === "top" ? "Top tier" : nextMode === "starter" ? "Pro" : "Free";
+
+    setToasts([
+      {
+        id,
+        kind: "confirm-plan",
+        message: `Change plan to ${label} for this user?`,
+        userId,
+        nextMode,
+      },
+    ]);
   };
 
   const handleChangeUserPlan = async (
@@ -350,7 +600,7 @@ export default function AdminPage() {
           .eq("is_read", false);
 
         if (!unreadError && unreadRows) {
-          setUnreadInquiries(unreadRows.length);
+          setAdminUnreadInquiries(unreadRows.length);
         }
       } catch {
         setError("Something went wrong while loading admin data.");
@@ -360,7 +610,7 @@ export default function AdminPage() {
     };
 
     void load();
-  }, [isAdmin]);
+  }, [isAdmin, setAdminUnreadInquiries]);
 
   const handleCreateVoucher = async () => {
     const code = newVoucherCode.trim();
@@ -435,7 +685,7 @@ export default function AdminPage() {
       left: activeRect.left - containerRect.left,
       width: activeRect.width,
     });
-  }, [isInquiriesActive, unreadInquiries]);
+  }, [isInquiriesActive, adminUnreadInquiries]);
 
   return (
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
@@ -487,10 +737,12 @@ export default function AdminPage() {
                         : "text-zinc-600 hover:text-zinc-900"
                     }`}
                   >
-                    <span>Inquiries</span>
-                    {unreadInquiries !== null && unreadInquiries > 0 && (
-                      <span className="pointer-events-none absolute -top-1 right-4 inline-flex h-2 w-2 rounded-full bg-red-500 shadow-sm" />
-                    )}
+                    <span className="relative inline-flex items-center">
+                      <span>Inquiries</span>
+                      {adminUnreadInquiries > 0 && (
+                        <span className="pointer-events-none absolute -top-1.5 right-[-6px] inline-flex h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+                      )}
+                    </span>
                   </Link>
                 </div>
               </div>
@@ -498,7 +750,7 @@ export default function AdminPage() {
           </div>
         </section>
         <section className="bg-[var(--background)]">
-          <div className="mx-auto max-w-6xl px-4 pb-12 md:px-8 md:pt-4">
+          <div className="admin-section-intro mx-auto max-w-6xl px-4 pb-12 md:px-8 md:pt-4">
             {!hasCheckedAdmin || isLoading ? null : !isAdmin ? (
               <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-5 text-[11px] text-zinc-600 sm:p-6">
                 This page is only available to admin accounts.
@@ -633,7 +885,7 @@ export default function AdminPage() {
                                       (entry.subscription_mode as PlanValue | null) ?? "free"
                                     }
                                     disabled={isUpdatingPlan === entry.id}
-                                    onChange={(next) => handleChangeUserPlan(entry.id, next)}
+                                    onChange={(next) => showConfirmPlanToast(entry.id, next)}
                                   />
                                 </div>
                               </div>
@@ -681,16 +933,11 @@ export default function AdminPage() {
                         </div>
                         <div className="space-y-1">
                           <p className="text-[11px] font-medium text-zinc-600">Plan</p>
-                          <select
+                          <VoucherPlanToggle
                             value={newVoucherPlan}
-                            onChange={(event) =>
-                              setNewVoucherPlan(event.target.value as "starter" | "top")
-                            }
-                            className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 focus:border-red-400 focus:ring-1 focus:ring-red-200"
-                          >
-                            <option value="starter">Pro</option>
-                            <option value="top">Top tier</option>
-                          </select>
+                            disabled={isCreatingVoucher}
+                            onChange={setNewVoucherPlan}
+                          />
                         </div>
                       </div>
                       <div className="flex items-center justify-end">
@@ -928,26 +1175,209 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-zinc-500">Tool usage</p>
+                      <h2 className="text-sm font-semibold text-zinc-900">
+                        Top tools across sessions
+                      </h2>
+                      <p className="text-[11px] text-zinc-500">
+                        Based on recent tool events recorded in this browser.
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-[10px]">
+                      {[
+                        { id: "week" as const, label: "This week" },
+                        { id: "month" as const, label: "This month" },
+                      ].map((option) => {
+                        const isActive = toolUsageRange === option.id;
+
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setToolUsageRange(option.id)}
+                            className={`relative z-10 min-w-[80px] rounded-full px-3 py-1 text-[10px] font-medium transition-colors duration-150 ${
+                              isActive
+                                ? "bg-red-500 text-white shadow-sm"
+                                : "text-zinc-500 hover:text-zinc-800"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {!hasToolUsageData && (
+                    <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
+                      Use tools while analytics is enabled to see usage trends here.
+                    </p>
+                  )}
+                  {hasToolUsageData && (
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div
+                          className="flex h-24 w-24 items-center justify-center rounded-full border border-zinc-200 bg-white"
+                          style={toolUsagePieStyle}
+                        >
+                          <div className="h-14 w-14 rounded-full bg-white" />
+                        </div>
+                        <div className="text-[10px] text-zinc-500">
+                          <span className="font-medium text-zinc-900">{toolUsageTotal}</span>{" "}
+                          events ·{" "}
+                          <span className="font-medium text-zinc-900">
+                            {toolUsageAveragePerDay}
+                          </span>{" "}
+                          per day
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] text-zinc-600">
+                          <span className="rounded-full bg-zinc-100 px-2 py-0.5">
+                            {toolUsageDistinctTools} tools
+                          </span>
+                          <span className="rounded-full bg-zinc-100 px-2 py-0.5">
+                            Avg {toolUsageAveragePerTool} events/tool
+                          </span>
+                          {toolUsageFirstEvent && toolUsageLastEvent && (
+                            <span className="rounded-full bg-zinc-100 px-2 py-0.5">
+                              {toolUsageFirstEvent.toLocaleDateString()} –{" "}
+                              {toolUsageLastEvent.toLocaleDateString()}
+                            </span>
+                          )}
+                          {toolUsageTop && (
+                            <span className="rounded-full bg-zinc-100 px-2 py-0.5">
+                              Top: {toolUsageTop.label} · {toolUsageTopShare}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        {toolUsageSummary.map((item) => {
+                          const share =
+                            toolUsageTotal > 0
+                              ? Math.round((item.count / toolUsageTotal) * 100)
+                              : 0;
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between text-[11px] text-zinc-700"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full"
+                                  style={{ backgroundColor: item.color }}
+                                />
+                                <span className="font-medium">{item.label}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                                <span>{item.count}</span>
+                                <span>·</span>
+                                <span>{share}%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {hasToolUsageData && toolUsageTop && (
+                    <div className="mt-3 rounded-lg bg-zinc-50 px-3 py-2 text-[10px] text-zinc-600">
+                      <span className="font-medium text-zinc-900">
+                        {toolUsageRange === "week"
+                          ? "Trending this week: "
+                          : "Trending this month: "}
+                      </span>
+                      <span className="font-semibold text-zinc-900">{toolUsageTop.label}</span>
+                      <span>
+                        {" "}
+                        with {toolUsageTop.count} opens in this{" "}
+                        {toolUsageRange === "week" ? "week" : "month"}.
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </section>
       </main>
       {toasts.length > 0 && (
-        <div className="pointer-events-none fixed bottom-4 right-4 z-50 space-y-2">
-          {toasts.map((toast) => (
-            <div
-              key={toast.id}
-              className={`pointer-events-auto flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] shadow-md ${
-                toast.kind === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-red-200 bg-red-50 text-red-700"
-              }`}
-            >
-              <span className="mt-1 h-1.5 w-1.5 rounded-full bg-current" />
-              <p className="leading-snug">{toast.message}</p>
-            </div>
-          ))}
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-0">
+          <div className="pointer-events-none flex w-full max-w-md flex-col gap-3">
+            {toasts.map((toast) => (
+              <div
+                key={toast.id}
+                className={`pointer-events-auto flex flex-col gap-3 rounded-2xl border px-5 py-4 text-[13px] shadow-lg ring-1 ring-black/5 sm:px-6 sm:py-5 ${
+                  toast.kind === "success"
+                    ? "border-emerald-200 bg-emerald-50/95 text-emerald-900"
+                    : toast.kind === "error"
+                      ? "border-red-200 bg-red-50/95 text-red-800"
+                      : "border-zinc-200 bg-white/95 text-zinc-900"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
+                        toast.kind === "success"
+                          ? "bg-emerald-500 text-white"
+                          : toast.kind === "error"
+                            ? "bg-red-500 text-white"
+                            : "bg-zinc-900 text-white"
+                      }`}
+                    >
+                      {toast.kind === "success" ? "✓" : toast.kind === "error" ? "!" : "i"}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                        {toast.kind === "success"
+                          ? "Success"
+                          : toast.kind === "error"
+                            ? "Something went wrong"
+                            : "Confirm change"}
+                      </p>
+                      <p className="text-[12px] font-medium leading-snug">{toast.message}</p>
+                    </div>
+                  </div>
+                </div>
+                {toast.kind === "confirm-plan" && (
+                  <div className="flex flex-wrap justify-end gap-2 border-t border-zinc-200 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const userId = toast.userId;
+                        const nextMode = toast.nextMode;
+
+                        setToasts((current) =>
+                          current.filter((currentToast) => currentToast.id !== toast.id),
+                        );
+
+                        if (userId && nextMode) {
+                          void handleChangeUserPlan(userId, nextMode);
+                        }
+                      }}
+                      className="inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-red-600"
+                    >
+                      Confirm change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setToasts((current) =>
+                          current.filter((currentToast) => currentToast.id !== toast.id),
+                        );
+                      }}
+                      className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-[11px] font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+                    >
+                      Keep current plan
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <Footer />
@@ -991,7 +1421,7 @@ function PlanToggle({ value, disabled, onChange }: PlanToggleProps) {
   return (
     <div
       ref={containerRef}
-      className={`relative inline-flex items-center rounded-full bg-zinc-100 p-0.5 text-[9px] font-medium ${
+      className={`relative inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50  px-0.5 py-0.5 text-[11px] shadow-xs ${
         disabled ? "opacity-60" : ""
       }`}
     >
@@ -1006,7 +1436,7 @@ function PlanToggle({ value, disabled, onChange }: PlanToggleProps) {
         ref={freeRef}
         disabled={disabled}
         onClick={() => handleClick("free")}
-        className={`relative z-10 rounded-full px-2 py-0.5 transition-colors duration-150 ${
+        className={`relative z-10 rounded-full px-3 py-1 text-center font-medium transition-colors duration-200 ${
           value === "free" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
         }`}
       >
@@ -1017,7 +1447,7 @@ function PlanToggle({ value, disabled, onChange }: PlanToggleProps) {
         ref={starterRef}
         disabled={disabled}
         onClick={() => handleClick("starter")}
-        className={`relative z-10 rounded-full px-2 py-0.5 transition-colors duration-150 ${
+        className={`relative z-10 rounded-full px-3 py-1 text-center font-medium transition-colors duration-200 ${
           value === "starter" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
         }`}
       >
@@ -1028,11 +1458,81 @@ function PlanToggle({ value, disabled, onChange }: PlanToggleProps) {
         ref={topRef}
         disabled={disabled}
         onClick={() => handleClick("top")}
-        className={`relative z-10 rounded-full px-2 py-0.5 transition-colors duration-150 ${
+        className={`relative z-10 rounded-full px-3 py-1 text-center font-medium transition-colors duration-200 ${
           value === "top" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
         }`}
       >
         Top
+      </button>
+    </div>
+  );
+}
+
+function VoucherPlanToggle({ value, disabled, onChange }: VoucherPlanToggleProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const starterRef = useRef<HTMLButtonElement | null>(null);
+  const topRef = useRef<HTMLButtonElement | null>(null);
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const activeButton = value === "top" ? topRef.current : starterRef.current;
+
+    if (!container || !activeButton) {
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeButton.getBoundingClientRect();
+
+    setPillStyle({
+      left: activeRect.left - containerRect.left,
+      width: activeRect.width,
+    });
+  }, [value]);
+
+  const handleClick = (next: VoucherPlanValue) => {
+    if (disabled || next === value) {
+      return;
+    }
+
+    onChange(next);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-0.5 py-0.5 text-[11px] shadow-xs ${
+        disabled ? "opacity-60" : ""
+      }`}
+    >
+      <span
+        className={`absolute inset-y-0 my-0.5 rounded-full bg-red-500 shadow-sm transition-all duration-200 ${
+          pillStyle ? "opacity-100" : "opacity-0"
+        }`}
+        style={pillStyle ? { left: pillStyle.left, width: pillStyle.width } : undefined}
+      />
+      <button
+        type="button"
+        ref={starterRef}
+        disabled={disabled}
+        onClick={() => handleClick("starter")}
+        className={`relative z-10 rounded-full px-3 py-1 text-center font-medium transition-colors duration-200 ${
+          value === "starter" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
+        }`}
+      >
+        Pro
+      </button>
+      <button
+        type="button"
+        ref={topRef}
+        disabled={disabled}
+        onClick={() => handleClick("top")}
+        className={`relative z-10 rounded-full px-3 py-1 text-center font-medium transition-colors duration-200 ${
+          value === "top" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
+        }`}
+      >
+        Top tier
       </button>
     </div>
   );

@@ -185,6 +185,10 @@ html {
   transform: translateY(6px);
 }
 
+.admin-section-intro {
+  animation: fade-in-up 180ms ease-out;
+}
+
 @keyframes float-soft {
   0% {
     transform: translateY(0);

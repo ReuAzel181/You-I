@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { useSettings } from "@/providers/SettingsProvider";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -46,6 +47,7 @@ export function Header() {
   const [showLoginLinkInError, setShowLoginLinkInError] = useState(false);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { adminUnreadInquiries } = useSettings();
 
   const displayName = useMemo(() => {
     if (!user) {
@@ -422,6 +424,9 @@ export function Header() {
                   ? pathname === "/"
                   : Boolean(pathname && pathname.startsWith(item.href));
 
+              const showAdminUnreadDot =
+                item.href === "/admin" && isAdmin && adminUnreadInquiries > 0;
+
               return (
                 <PageTransitionLink
                   key={item.label}
@@ -432,7 +437,12 @@ export function Header() {
                       : "font-medium text-zinc-600 hover:text-red-500 hover:after:scale-x-100"
                   }`}
                 >
-                  {item.label}
+                  <span className="relative inline-flex items-center">
+                    {item.label}
+                    {showAdminUnreadDot && (
+                      <span className="pointer-events-none absolute -top-2 right-[-10px] inline-flex h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+                    )}
+                  </span>
                 </PageTransitionLink>
               );
             })}

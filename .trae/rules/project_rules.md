@@ -4,3 +4,5 @@ PILL BUTTON RULE:
     - The active toggle state must be visually indicated by a red pill background.
     - State changes must use a smooth morphing animation using transition: transform, where the active pill slides to the newly selected option, interpolating position and size over time rather than switching instantly.
     - The animation must preserve continuity of shape, position, and dimensions so the transition appears as a single pill transforming between states.
+
+YOU CAN USE THIS:  relative z-10 rounded-full px-2 py-0.5 transition-colors duration-150

@@ -391,7 +391,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
   const [intensityValue, setIntensityValue] = useState("0.6");
   const [fillColor, setFillColor] = useState("#f97373");
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const [outputWidthValue, setOutputWidthValue] = useState("1440");
+  const [outputWidthValue, setOutputWidthValue] = useState("1512");
   const [outputHeightValue, setOutputHeightValue] = useState("320");
   const [seed, setSeed] = useState(1);
   const [downloadLabel, setDownloadLabel] = useState<"Download" | "Downloading">(
@@ -407,7 +407,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
     "/icons/download/download-black.svg",
   );
 
-  const svgWidth = 1440;
+  const svgWidth = 1512;
   const svgHeight = 320;
 
   type WaveConfig = {
@@ -491,6 +491,10 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
   }, []);
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
     const container = positionToggleRef.current;
     const activeButton =
       position === "top" ? positionTopRef.current : positionBottomRef.current;
@@ -506,9 +510,13 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
       left: activeRect.left - containerRect.left,
       width: activeRect.width,
     });
-  }, [position]);
+  }, [position, hasHydrated]);
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
     const container = shapeToggleRef.current;
     const activeButton =
       shape === "smooth" ? shapeSmoothRef.current : shapePeaksRef.current;
@@ -524,9 +532,13 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
       left: activeRect.left - containerRect.left,
       width: activeRect.width,
     });
-  }, [shape]);
+  }, [shape, hasHydrated]);
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
     const container = downloadToggleRef.current;
     const activeButton =
       downloadFormat === "svg"
@@ -546,7 +558,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
       left: activeRect.left - containerRect.left,
       width: activeRect.width,
     });
-  }, [downloadFormat]);
+  }, [downloadFormat, hasHydrated]);
 
   const numericHeight = useMemo(() => {
     const parsed = Number.parseFloat(heightValue);

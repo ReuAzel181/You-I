@@ -303,6 +303,50 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
     lastRectsRef.current = currentRects;
   }, [orderedTools]);
 
+  const nonLockedTools = orderedTools.filter((tool) => !tool.isLocked);
+  const pinnedNonLockedCount = nonLockedTools.filter(
+    (tool) => pinnedToolNames?.includes(tool.name) ?? false,
+  ).length;
+
+  const canPinAll = Boolean(onPinTool) && pinnedNonLockedCount < nonLockedTools.length;
+  const canUnpinAll = Boolean(onPinTool) && pinnedNonLockedCount > 0;
+
+  const handlePinAll = () => {
+    if (!onPinTool) {
+      return;
+    }
+
+    orderedTools.forEach((tool) => {
+      if (tool.isLocked) {
+        return;
+      }
+
+      const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
+
+      if (!isPinned) {
+        onPinTool(tool);
+      }
+    });
+  };
+
+  const handleUnpinAll = () => {
+    if (!onPinTool) {
+      return;
+    }
+
+    orderedTools.forEach((tool) => {
+      if (tool.isLocked) {
+        return;
+      }
+
+      const isPinned = pinnedToolNames?.includes(tool.name) ?? false;
+
+      if (isPinned) {
+        onPinTool(tool);
+      }
+    });
+  };
+
   return (
     <section id="tools" className="border-b border-zinc-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
@@ -317,7 +361,29 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
               glance.
             </p>
           </div>
-          <p className="text-xs text-zinc-500">More tools are coming soon as the platform grows.</p>
+          <div className="flex flex-col items-start gap-2 text-xs text-zinc-500 md:items-end">
+            <p>More tools are coming soon as the platform grows.</p>
+            {onPinTool && (
+              <div className="inline-flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!canPinAll}
+                  onClick={handlePinAll}
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+                >
+                  Pin all tools
+                </button>
+                <button
+                  type="button"
+                  disabled={!canUnpinAll}
+                  onClick={handleUnpinAll}
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-700 transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+                >
+                  Remove all
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {orderedTools.map((tool) => {

@@ -619,6 +619,15 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     width: number;
     x: number;
   } | null>(null);
+  const whatIfToggleContainerRef = useRef<HTMLDivElement | null>(null);
+  const whatIfAANormalRef = useRef<HTMLButtonElement | null>(null);
+  const whatIfAALargeRef = useRef<HTMLButtonElement | null>(null);
+  const whatIfAAARef = useRef<HTMLButtonElement | null>(null);
+  const whatIfAPlusRef = useRef<HTMLButtonElement | null>(null);
+  const [whatIfIndicatorStyle, setWhatIfIndicatorStyle] = useState<{
+    width: number;
+    x: number;
+  } | null>(null);
   const [whatIfTarget, setWhatIfTarget] = useState<
     "aa-normal" | "aa-large" | "aaa" | "a-plus"
   >("aa-normal");
@@ -967,6 +976,55 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
       window.removeEventListener("resize", handleResize);
     };
   }, [effectiveMode, isFull]);
+
+  useEffect(() => {
+    if (!isFull) {
+      return;
+    }
+
+    const container = whatIfToggleContainerRef.current;
+    let activeButton: HTMLButtonElement | null = null;
+
+    if (whatIfTarget === "aa-normal") {
+      activeButton = whatIfAANormalRef.current;
+    } else if (whatIfTarget === "aa-large") {
+      activeButton = whatIfAALargeRef.current;
+    } else if (whatIfTarget === "aaa") {
+      activeButton = whatIfAAARef.current;
+    } else {
+      activeButton = whatIfAPlusRef.current;
+    }
+
+    if (!container || !activeButton) {
+      return;
+    }
+
+    const update = () => {
+      const containerRect = container.getBoundingClientRect();
+      const buttonRect = activeButton.getBoundingClientRect();
+
+      setWhatIfIndicatorStyle({
+        width: buttonRect.width,
+        x: buttonRect.left - containerRect.left,
+      });
+    };
+
+    update();
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleResize = () => {
+      update();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isFull, whatIfTarget]);
 
   return (
     <div className="space-y-4">
@@ -1832,6 +1890,23 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     inputMode="numeric"
                     value={fontSize}
                     onChange={(event) => setFontSize(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                        return;
+                      }
+
+                      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const direction = event.key === "ArrowUp" ? 1 : -1;
+                        const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                        const raw = Number.parseFloat(fontSize || "16");
+                        const base = Number.isFinite(raw) ? raw : 16;
+                        const next = Math.min(72, Math.max(10, base + direction * step));
+                        setFontSize(String(next));
+                      }
+                    }}
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
                 </div>
@@ -1842,6 +1917,24 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     inputMode="numeric"
                     value={subheadingFontSize}
                     onChange={(event) => setSubheadingFontSize(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                        return;
+                      }
+
+                      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const direction = event.key === "ArrowUp" ? 1 : -1;
+                        const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                        const fallback = Math.max(10, fontSizeNumber - 2);
+                        const raw = Number.parseFloat(subheadingFontSize || String(fallback));
+                        const base = Number.isFinite(raw) ? raw : fallback;
+                        const next = Math.min(72, Math.max(10, base + direction * step));
+                        setSubheadingFontSize(String(next));
+                      }
+                    }}
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
                 </div>
@@ -1852,6 +1945,23 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     inputMode="numeric"
                     value={bodyFontSize}
                     onChange={(event) => setBodyFontSize(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                        return;
+                      }
+
+                      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const direction = event.key === "ArrowUp" ? 1 : -1;
+                        const step = event.shiftKey ? effectiveNudgeAmount : 1;
+                        const raw = Number.parseFloat(bodyFontSize || "14");
+                        const base = Number.isFinite(raw) ? raw : 14;
+                        const next = Math.min(72, Math.max(10, base + direction * step));
+                        setBodyFontSize(String(next));
+                      }
+                    }}
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
                   />
                 </div>
@@ -1881,22 +1991,26 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-[11px] leading-snug text-zinc-800">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-medium">What-if contrast simulator</p>
-                <div className="relative inline-flex h-7 w-[260px] flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-0.5 text-[10px]">
+                <div
+                  ref={whatIfToggleContainerRef}
+                  className="relative inline-flex h-7 flex-none items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-1 py-0.5 text-[10px]"
+                >
                   <span
-                    className={`absolute inset-y-1 left-0 w-1/4 rounded-full bg-zinc-900 transition-transform duration-300 ease-out what-if-indicator ${
-                      whatIfTarget === "aa-normal"
-                        ? "translate-x-0"
-                        : whatIfTarget === "aa-large"
-                          ? "translate-x-full"
-                          : whatIfTarget === "aaa"
-                            ? "translate-x-[200%]"
-                            : "translate-x-[300%]"
-                    }`}
+                    className="absolute inset-y-1 left-0 rounded-full bg-zinc-900 transition-[transform,width] duration-300 ease-out"
+                    style={
+                      whatIfIndicatorStyle
+                        ? {
+                            transform: `translateX(${whatIfIndicatorStyle.x}px)`,
+                            width: whatIfIndicatorStyle.width,
+                          }
+                        : undefined
+                    }
                   />
                   <button
                     type="button"
+                    ref={whatIfAANormalRef}
                     onClick={() => setWhatIfTarget("aa-normal")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
+                    className={`relative z-10 rounded-full px-3 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "aa-normal" ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -1904,8 +2018,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                   <button
                     type="button"
+                    ref={whatIfAALargeRef}
                     onClick={() => setWhatIfTarget("aa-large")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
+                    className={`relative z-10 rounded-full px-3 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "aa-large" ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -1913,8 +2028,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                   <button
                     type="button"
+                    ref={whatIfAAARef}
                     onClick={() => setWhatIfTarget("aaa")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
+                    className={`relative z-10 rounded-full px-3 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "aaa" ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -1922,8 +2038,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                   </button>
                   <button
                     type="button"
+                    ref={whatIfAPlusRef}
                     onClick={() => setWhatIfTarget("a-plus")}
-                    className={`relative z-10 flex-1 rounded-full px-2 py-0.5 text-center transition-colors whitespace-nowrap ${
+                    className={`relative z-10 rounded-full px-3 py-0.5 text-center transition-colors whitespace-nowrap ${
                       whatIfTarget === "a-plus" ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -2054,10 +2171,12 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <p className="text-xs font-mono text-amber-600">Enter valid hex colors</p>
             )}
           </div>
-          {effectiveMode === "two" && (
-            <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+          <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+            <div className="relative">
               <div
-                className="rounded-lg border border-zinc-200 px-3 py-3 text-xs leading-relaxed"
+                className={`rounded-lg border border-zinc-200 px-3 py-3 text-xs leading-relaxed transition-opacity duration-300 ${
+                  effectiveMode === "two" ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
                 style={previewStyleTwoColor}
               >
                 <p
@@ -2080,124 +2199,134 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 </p>
               </div>
               {isFull && (
-                <div className="grid gap-2 text-xs">
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
-                    <div>
-                      <p className="font-medium text-zinc-800">AA normal</p>
-                      <p className="text-[11px] text-zinc-500">4.5 : 1 or higher</p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        passesAANormal
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-zinc-100 text-zinc-600"
-                      }`}
+                <div
+                  className={`absolute inset-0 rounded-lg border border-zinc-200 p-3 text-xs leading-relaxed transition-opacity duration-300 ${
+                    effectiveMode === "three" ? "opacity-100" : "pointer-events-none opacity-0"
+                  }`}
+                  style={previewStyleThreeColorOuter}
+                >
+                  <div
+                    className="rounded-md px-3 py-3"
+                    style={previewStyleThreeColorInner}
+                  >
+                    <p
+                      className="font-medium opacity-80"
+                      style={{ fontSize: `${supportingFontSize}px` }}
                     >
-                      {passesAANormal ? "Pass" : "Fail"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
-                    <div>
-                      <p className="font-medium text-zinc-800">AA large</p>
-                      <p className="text-[11px] text-zinc-500">3 : 1 or higher</p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        passesAAALarge
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-zinc-100 text-zinc-600"
-                      }`}
+                      Nested container section label
+                    </p>
+                    <p
+                      className="font-semibold"
+                      style={{ fontSize: `${headingFontSize}px` }}
                     >
-                      {passesAAALarge ? "Pass" : "Fail"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
-                    <div>
-                      <p className="font-medium text-zinc-800">AAA normal</p>
-                      <p className="text-[11px] text-zinc-500">7 : 1 or higher</p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        passesAAA ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"
-                      }`}
+                      Validate layered background, container, and text together
+                    </p>
+                    <p
+                      className="mt-1 opacity-80"
+                      style={{ fontSize: `${bodyFontSizeValue}px` }}
                     >
-                      {passesAAA ? "Pass" : "Fail"}
-                    </span>
+                      Ensure every level of your UI maintains readable contrast in real layouts.
+                    </p>
                   </div>
                 </div>
               )}
             </div>
-          )}
-          {isFull && effectiveMode === "three" && (
-            <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
-              <div
-                className="rounded-lg border border-zinc-200 p-3 text-xs leading-relaxed"
-                style={previewStyleThreeColorOuter}
-              >
-                <div
-                  className="rounded-md px-3 py-3"
-                  style={previewStyleThreeColorInner}
-                >
-                  <p
-                    className="font-medium opacity-80"
-                    style={{ fontSize: `${supportingFontSize}px` }}
-                  >
-                    Nested container section label
-                  </p>
-                  <p
-                    className="font-semibold"
-                    style={{ fontSize: `${headingFontSize}px` }}
-                  >
-                    Validate layered background, container, and text together
-                  </p>
-                  <p
-                    className="mt-1 opacity-80"
-                    style={{ fontSize: `${bodyFontSizeValue}px` }}
-                  >
-                    Ensure every level of your UI maintains readable contrast in real layouts.
-                  </p>
-                </div>
-              </div>
-              <div className="grid gap-2 text-xs">
-                <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
-                  <div>
-                    <p className="font-medium text-zinc-800">Background ↔ Container</p>
-                    <p className="text-[11px] text-zinc-500">
-                      {bgContainerRatio !== null ? `${bgContainerRatio.toFixed(2)} : 1` : "Enter colors"}
-                    </p>
+            {isFull && (
+              <>
+                {effectiveMode === "two" && (
+                  <div className="grid gap-2 text-xs">
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
+                      <div>
+                        <p className="font-medium text-zinc-800">AA normal</p>
+                        <p className="text-[11px] text-zinc-500">4.5 : 1 or higher</p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          passesAANormal
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {passesAANormal ? "Pass" : "Fail"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
+                      <div>
+                        <p className="font-medium text-zinc-800">AA large</p>
+                        <p className="text-[11px] text-zinc-500">3 : 1 or higher</p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          passesAAALarge
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {passesAAALarge ? "Pass" : "Fail"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
+                      <div>
+                        <p className="font-medium text-zinc-800">AAA normal</p>
+                        <p className="text-[11px] text-zinc-500">7 : 1 or higher</p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          passesAAA
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {passesAAA ? "Pass" : "Fail"}
+                      </span>
+                    </div>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      bgContainerPassAA
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-zinc-100 text-zinc-600"
-                    }`}
-                  >
-                    {bgContainerPassAA ? "Pass AA" : "Fail AA"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
-                  <div>
-                    <p className="font-medium text-zinc-800">Container ↔ Text</p>
-                    <p className="text-[11px] text-zinc-500">
-                      {containerTextRatio !== null
-                        ? `${containerTextRatio.toFixed(2)} : 1`
-                        : "Enter colors"}
-                    </p>
+                )}
+                {effectiveMode === "three" && (
+                  <div className="grid gap-2 text-xs">
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
+                      <div>
+                        <p className="font-medium text-zinc-800">Background ↔ Container</p>
+                        <p className="text-[11px] text-zinc-500">
+                          {bgContainerRatio !== null
+                            ? `${bgContainerRatio.toFixed(2)} : 1`
+                            : "Enter colors"}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          bgContainerPassAA
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {bgContainerPassAA ? "Pass AA" : "Fail AA"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-white px-3 py-2">
+                      <div>
+                        <p className="font-medium text-zinc-800">Container ↔ Text</p>
+                        <p className="text-[11px] text-zinc-500">
+                          {containerTextRatio !== null
+                            ? `${containerTextRatio.toFixed(2)} : 1`
+                            : "Enter colors"}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          containerTextPassAA
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {containerTextPassAA ? "Pass AA" : "Fail AA"}
+                      </span>
+                    </div>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      containerTextPassAA
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-zinc-100 text-zinc-600"
-                    }`}
-                  >
-                    {containerTextPassAA ? "Pass AA" : "Fail AA"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

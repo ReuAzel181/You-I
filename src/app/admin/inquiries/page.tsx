@@ -215,10 +215,12 @@ export default function AdminInquiriesPage() {
                         : "text-zinc-600 hover:text-zinc-900"
                     }`}
                   >
-                    <span>Inquiries</span>
-                    {unreadCount > 0 && (
-                      <span className="pointer-events-none absolute -top-1 right-4 inline-flex h-2 w-2 rounded-full bg-red-500 shadow-sm" />
-                    )}
+                    <span className="relative inline-flex items-center">
+                      <span>Inquiries</span>
+                      {unreadCount > 0 && (
+                        <span className="pointer-events-none absolute -top-1.5 right-[-6px] inline-flex h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+                      )}
+                    </span>
                   </Link>
                 </div>
               </div>
@@ -226,7 +228,7 @@ export default function AdminInquiriesPage() {
           </div>
         </section>
         <section className="bg-[var(--background)]">
-          <div className="mx-auto max-w-6xl px-4 pb-12 md:px-8 md:pt-4">
+          <div className="admin-section-intro mx-auto max-w-6xl px-4 pb-12 md:px-8 md:pt-4">
             {!hasCheckedAdmin || isLoading ? null : !isAdmin ? (
               <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-5 text-[11px] text-zinc-600 sm:p-6">
                 This page is only available to admin accounts.
@@ -283,13 +285,13 @@ export default function AdminInquiriesPage() {
                         return (
                           <div
                             key={item.id}
-                            className={`flex flex-col gap-2 rounded-lg border px-3 py-2 text-[11px] sm:flex-row sm:items-start sm:justify-between ${
+                            className={`flex flex-col gap-3 rounded-xl border px-4 py-3 text-[11px] sm:flex-row sm:items-start sm:justify-between ${
                               isRead
                                 ? "border-zinc-200 bg-zinc-50 text-zinc-700"
                                 : "border-violet-200 bg-violet-50 text-zinc-800"
                             }`}
                           >
-                            <div className="min-w-0 flex-1 space-y-1">
+                            <div className="min-w-0 flex-1 space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="font-medium text-zinc-900">
                                   {item.full_name || "Unknown sender"}
@@ -335,9 +337,9 @@ export default function AdminInquiriesPage() {
                                 )}
                               </div>
                               {item.message && (
-                                <p className="mt-1 whitespace-pre-wrap text-[11px]">
-                                  {item.message}
-                                </p>
+                                <div className="mt-1 rounded-xl border border-zinc-200 bg-white/80 px-3 py-2 text-[11px] leading-relaxed text-zinc-800 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+                                  <p className="whitespace-pre-wrap">{item.message}</p>
+                                </div>
                               )}
                             </div>
                             <div className="flex items-start gap-2">
