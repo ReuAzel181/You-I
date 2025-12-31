@@ -1,6 +1,23 @@
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
+import { useSettings } from "@/providers/SettingsProvider";
+
+function getToolsFolder(accent: string) {
+  switch (accent) {
+    case "sky":
+      return "tools_sky";
+    case "emerald":
+      return "tools_emerald";
+    case "violet":
+      return "tools_violet";
+    case "amber":
+      return "tools_amber";
+    case "red":
+    default:
+      return "tools_red";
+  }
+}
 
 export type Tool = {
   name: string;
@@ -63,6 +80,8 @@ type ToolGridProps = {
 };
 
 export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
+  const { profileBannerColor } = useSettings();
+  const toolsFolder = getToolsFolder(profileBannerColor);
   const [orderedTools, setOrderedTools] = useState<Tool[]>(tools);
   const [dragToolName, setDragToolName] = useState<string | null>(null);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
@@ -527,7 +546,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   </div>
                   {isColorContrastChecker && (
                     <Image
-                      src="/images/tools/color-contrast-checker.svg"
+                      src={`/images/${toolsFolder}/color-contrast-checker.svg`}
                       alt=""
                       width={260}
                       height={260}
@@ -536,7 +555,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                   {isGoogleFontExplorer && (
                     <Image
-                      src="/images/tools/google-font-explorer.svg"
+                      src={`/images/${toolsFolder}/google-font-explorer.svg`}
                       alt=""
                       width={260}
                       height={260}
@@ -545,7 +564,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                   {isRatioCalculator && (
                     <Image
-                      src="/images/tools/ratio-calculator.svg"
+                      src={`/images/${toolsFolder}/ratio-calculator.svg`}
                       alt=""
                       width={260}
                       height={260}
@@ -554,7 +573,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                   {isTypeScale && (
                     <Image
-                      src="/images/tools/type-scale.svg"
+                      src={`/images/${toolsFolder}/type-scale.svg`}
                       alt=""
                       width={260}
                       height={260}
@@ -563,7 +582,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                   {isUnitConverter && (
                     <Image
-                      src="/images/tools/unitcontverter.svg"
+                      src={`/images/${toolsFolder}/unit-contverter.svg`}
                       alt=""
                       width={260}
                       height={260}
@@ -572,7 +591,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                   {isPlaceholderGenerator && (
                     <Image
-                      src="/images/tools/placeholder-generator.svg"
+                      src={`/images/${toolsFolder}/placeholder-generator.svg`}
                       alt=""
                       width={260}
                       height={260}
@@ -581,7 +600,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
                   )}
                   {isSvgWaveGenerator && (
                     <Image
-                      src="/images/tools/svg-wave.svg"
+                      src={`/images/${toolsFolder}/svg-wave.svg`}
                       alt=""
                       width={260}
                       height={260}

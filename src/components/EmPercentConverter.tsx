@@ -372,15 +372,29 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
           </div>
         </div>
         {variant === "full" && (
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-medium text-zinc-700">Live text preview</p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1">
+          <div className="mt-4">
+            <div className="flex h-40 flex-col gap-4 sm:h-48 sm:flex-row sm:items-stretch sm:justify-between">
+              <div className="flex w-full flex-col sm:w-56">
+                <p className="text-xs font-medium text-zinc-700">Preview text</p>
+                <div className="mt-1 flex min-h-0 flex-1 flex-col">
+                  <textarea
+                    value={previewText}
+                    onChange={(event) => setPreviewText(event.target.value)}
+                    placeholder="Hello"
+                    className="flex-1 resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
+                  />
+                  <p className="mt-1 text-[10px] text-zinc-500">
+                    Font size uses the current pixel value from the converter.
+                  </p>
+                </div>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col">
+                <p className="text-xs font-medium text-zinc-700">Live text preview</p>
                 <div
-                  className={`flex overflow-hidden rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 text-center ${
+                  className={`mt-1 flex flex-1 overflow-hidden rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 text-center ${
                     shouldRenderVertical
-                      ? "h-40 sm:h-48 items-start justify-center"
-                      : "h-40 sm:h-48 items-center justify-center"
+                      ? "items-start justify-center"
+                      : "items-center justify-center"
                   }`}
                 >
                   {shouldRenderVertical ? (
@@ -403,20 +417,6 @@ export function EmPercentConverter({ variant = "full" }: EmPercentConverterProps
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="mt-2 sm:mt-0 sm:w-48">
-                <label className="mb-1 block text-[11px] font-medium text-zinc-700">
-                  Preview text
-                </label>
-                <input
-                  value={previewText}
-                  onChange={(event) => setPreviewText(event.target.value)}
-                  placeholder="Hello"
-                  className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
-                />
-                <p className="mt-1 text-[10px] text-zinc-500">
-                  Font size uses the current pixel value from the converter.
-                </p>
               </div>
             </div>
             {isPreviewTooLarge && (

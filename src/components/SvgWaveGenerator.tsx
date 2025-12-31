@@ -358,7 +358,7 @@ function buildPathFromExistingPoints(
 }
 
 export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
-  const { nudgeAmount } = useSettings();
+  const { nudgeAmount, profileBannerColor } = useSettings();
   const effectiveNudgeAmount =
     Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -462,6 +462,41 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
       window.clearTimeout(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (!hasHydrated || typeof document === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const id = window.setTimeout(() => {
+      if (cancelled) {
+        return;
+      }
+
+      try {
+        const root = document.documentElement;
+        const primaryColor = getComputedStyle(root)
+          .getPropertyValue("--primary-500")
+          .trim();
+
+        if (!primaryColor) {
+          return;
+        }
+
+        setIsFillTransparent(false);
+        setPreviousFillColorValue(primaryColor);
+        setFillColor(primaryColor);
+      } catch {
+      }
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [profileBannerColor, hasHydrated]);
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -1319,7 +1354,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
                         max={320}
                         value={numericHeight}
                         onChange={(event) => handleHeightChange(event.target.value)}
-                        className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                        className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
                       />
                       <input
                         type="number"
@@ -1343,7 +1378,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
                         step={0.05}
                         value={numericIntensity}
                         onChange={(event) => handleIntensityChange(event.target.value)}
-                        className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                        className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
                       />
                       <input
                         type="number"
@@ -1703,7 +1738,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
                       max={320}
                       value={numericHeight}
                       onChange={(event) => handleHeightChange(event.target.value)}
-                      className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                      className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
                     />
                     <input
                       type="number"
@@ -1730,7 +1765,7 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
                       step={0.05}
                       value={numericIntensity}
                       onChange={(event) => handleIntensityChange(event.target.value)}
-                      className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                      className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
                     />
                     <input
                       type="number"

@@ -1150,7 +1150,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 onChange={(event) =>
                   setTextColor(setHexLightness(textColor, "#111827", Number(event.target.value)))
                 }
-                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
               <div className="mt-1 flex items-center gap-3">
                 <div className="flex flex-1 items-center gap-2">
@@ -1412,7 +1412,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     setHexLightness(backgroundColor, "#ffffff", Number(event.target.value)),
                   )
                 }
-                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
               <div className="mt-1 flex items-center gap-3">
                 <div className="flex flex-1 items-center gap-2">
@@ -1676,7 +1676,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                     setHexLightness(containerColor, "#f4f4f5", Number(event.target.value)),
                   )
                 }
-                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
               <div className="mt-1 flex items-center gap-3">
                 <div className="flex flex-1 items-center gap-2">

@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { TypeScaleGenerator } from "@/components/TypeScaleGenerator";
-import { useAnalytics } from "@/providers/SettingsProvider";
+import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
 
 export default function TypeScalePage() {
   const router = useRouter();
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const { profileBannerColor } = useSettings();
+  const chevronIconSrc = `/icons/chevron/chevron_${profileBannerColor}.svg`;
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -44,17 +46,24 @@ export default function TypeScalePage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (typeof document !== "undefined") {
+                    document.documentElement.classList.add("no-smooth-scroll");
+                    window.setTimeout(() => {
+                      document.documentElement.classList.remove("no-smooth-scroll");
+                    }, 800);
+                  }
+
                   if (window.history.length > 1) {
                     router.back();
                   } else {
-                    router.push("/");
+                    router.push("/#tools");
                   }
                 }}
                 className="inline-flex h-7 items-center gap-1 rounded-full border border-zinc-300 px-3 text-[11px] font-medium text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800"
                 aria-label="Back to main page"
               >
                 <Image
-                  src="/icons/chevron.svg"
+                  src={chevronIconSrc}
                   alt=""
                   width={10}
                   height={10}

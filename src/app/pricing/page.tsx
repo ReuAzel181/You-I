@@ -508,12 +508,12 @@ export default function PricingPage() {
                 </div>
               </div>
             </div>
-            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3 py-3 text-[11px] text-red-900 shadow-sm">
+            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3 py-3 text-[11px] text-red-700 shadow-sm">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700">
                   Have a voucher?
                 </p>
-                <p className="mt-1 text-[11px] text-red-900/80">
+                <p className="mt-1 text-[11px] text-red-700/90">
                   Enter a code to unlock amazing gifts.
                 </p>
               </div>

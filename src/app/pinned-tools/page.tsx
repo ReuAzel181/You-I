@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { tools as allTools } from "@/components/ToolGrid";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
+import { useSettings } from "@/providers/SettingsProvider";
 
 type WorkspacePreset = {
   id: string;
@@ -17,7 +19,25 @@ type WorkspacePreset = {
 
 const WORKSPACE_PRESETS_STORAGE_KEY = "you-i-workspace-presets";
 
+function getChevronIcon(accent: string) {
+  switch (accent) {
+    case "sky":
+      return "/icons/chevron/chevron_sky.svg";
+    case "emerald":
+      return "/icons/chevron/chevron_emerald.svg";
+    case "violet":
+      return "/icons/chevron/chevron_violet.svg";
+    case "amber":
+      return "/icons/chevron/chevron_amber.svg";
+    case "red":
+    default:
+      return "/icons/chevron/chevron_red.svg";
+  }
+}
+
 export default function PinnedToolsPage() {
+  const { profileBannerColor } = useSettings();
+  const chevronIconSrc = getChevronIcon(profileBannerColor);
   const [presets, setPresets] = useState<WorkspacePreset[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -94,6 +114,8 @@ export default function PinnedToolsPage() {
     allTools[0]?.name ?? "",
   );
   const [noteInput, setNoteInput] = useState("");
+  const toolMenuRef = useRef<HTMLDivElement | null>(null);
+  const [isToolMenuOpen, setIsToolMenuOpen] = useState(false);
 
   useEffect(() => {
     const id = setTimeout(() => {
@@ -104,6 +126,32 @@ export default function PinnedToolsPage() {
       clearTimeout(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isToolMenuOpen) {
+      return;
+    }
+
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      if (!toolMenuRef.current) {
+        return;
+      }
+
+      if (!toolMenuRef.current.contains(event.target as Node)) {
+        setIsToolMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [isToolMenuOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -203,18 +251,63 @@ export default function PinnedToolsPage() {
                     >
                       Tool
                     </label>
-                    <select
-                      id="workspace-tool"
-                      value={toolNameInput}
-                      onChange={(event) => setToolNameInput(event.target.value)}
-                      className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 focus:border-red-400 focus:ring-1 focus:ring-red-200"
-                    >
-                      {allTools.map((tool) => (
-                        <option key={tool.name} value={tool.name}>
-                          {tool.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div ref={toolMenuRef} className="relative">
+                      <button
+                        type="button"
+                        id="workspace-tool"
+                        aria-haspopup="listbox"
+                        aria-expanded={isToolMenuOpen}
+                        onClick={() => setIsToolMenuOpen((open) => !open)}
+                        className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 transition-colors hover:border-red-300 hover:bg-red-50 focus:border-red-400 focus:ring-1 focus:ring-red-200"
+                      >
+                        <span className="truncate">{toolNameInput || "Select a tool"}</span>
+                        <span className="ml-2 flex h-4 w-4 items-center justify-center">
+                          <Image
+                            src={chevronIconSrc}
+                            alt=""
+                            width={12}
+                            height={12}
+                            className={`h-3 w-3 transition-transform ${
+                              isToolMenuOpen ? "rotate-90" : "rotate-270"
+                            }`}
+                          />
+                        </span>
+                      </button>
+                      {isToolMenuOpen && (
+                        <div
+                          role="listbox"
+                          aria-label="Workspace tool"
+                          className="absolute left-0 right-0 z-10 mt-1 max-h-60 overflow-auto rounded-md border border-zinc-200 bg-white py-1 text-sm shadow-lg"
+                        >
+                          {allTools.map((tool) => {
+                            const isActive = toolNameInput === tool.name;
+
+                            return (
+                              <button
+                                key={tool.name}
+                                type="button"
+                                onClick={() => {
+                                  setToolNameInput(tool.name);
+                                  setIsToolMenuOpen(false);
+                                }}
+                                className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-[13px] ${
+                                  isActive
+                                    ? "bg-red-50 text-red-700"
+                                    : "text-zinc-700 hover:bg-red-50 hover:text-red-700"
+                                }`}
+                                role="option"
+                                aria-selected={isActive}
+                              >
+                                <span className="truncate">{tool.name}</span>
+                                {isActive && (
+                                  <span className="ml-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label

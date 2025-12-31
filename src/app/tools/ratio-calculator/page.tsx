@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RatioCalculator } from "@/components/RatioCalculator";
-import { useAnalytics } from "@/providers/SettingsProvider";
+import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
 
 type ViewportPresetId =
   | "none"
@@ -40,6 +40,8 @@ const viewportPresets: ViewportPreset[] = [
 export default function RatioCalculatorPage() {
   const router = useRouter();
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const { profileBannerColor } = useSettings();
+  const chevronIconSrc = `/icons/chevron/chevron_${profileBannerColor}.svg`;
   const [dimensionWidth, setDimensionWidth] = useState<number | null>(null);
   const [dimensionHeight, setDimensionHeight] = useState<number | null>(null);
   const [viewportPixelWidth, setViewportPixelWidth] = useState(0);
@@ -155,17 +157,24 @@ export default function RatioCalculatorPage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (typeof document !== "undefined") {
+                    document.documentElement.classList.add("no-smooth-scroll");
+                    window.setTimeout(() => {
+                      document.documentElement.classList.remove("no-smooth-scroll");
+                    }, 800);
+                  }
+
                   if (window.history.length > 1) {
                     router.back();
                   } else {
-                    router.push("/");
+                    router.push("/#tools");
                   }
                 }}
                 className="inline-flex h-7 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
                 aria-label="Back to main page"
               >
                 <Image
-                  src="/icons/chevron.svg"
+                  src={chevronIconSrc}
                   alt=""
                   width={10}
                   height={10}
@@ -251,14 +260,14 @@ export default function RatioCalculatorPage() {
                         height: `${previewBoxHeight}px`,
                       }}
                     >
-                    <div
-                      className="pointer-events-none absolute inset-0"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(to right, rgba(248,113,113,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(248,113,113,0.18) 1px, transparent 1px)",
-                        backgroundSize: "1px 1px",
-                      }}
-                    />
+                      <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(to right, color-mix(in srgb, var(--primary-500) 18%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--primary-500) 18%, transparent) 1px, transparent 1px)",
+                          backgroundSize: "1px 1px",
+                        }}
+                      />
                       <div className="relative flex h-full items-center justify-center">
                         <span className="rounded bg-white/80 px-2 py-0.5 text-[10px] font-medium text-red-700 shadow-sm">
                           {dimensionWidth} × {dimensionHeight}

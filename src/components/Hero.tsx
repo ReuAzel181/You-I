@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-zinc-200 bg-[radial-gradient(circle_at_top,_#fee2e2_0,_transparent_55%),linear-gradient(to_bottom,_#ffffff,_#f4f4f5)]">
+    <section className="relative overflow-hidden border-b border-zinc-200 bg-[radial-gradient(circle_at_top,_var(--primary-100)_0,_transparent_55%),linear-gradient(to_bottom,_#ffffff,_#f4f4f5)]">
       <div className="hero-liquid-bg">
         <div className="hero-liquid-blob" />
         <div className="hero-liquid-blob hero-liquid-blob-secondary" />
@@ -144,7 +144,6 @@ export function Hero() {
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
                     Local only
                   </span>
-                  <span>Auto-saves in your browser</span>
                 </div>
               </div>
             </div>

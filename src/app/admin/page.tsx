@@ -181,8 +181,8 @@ export default function AdminPage() {
 
     const data = [
       { id: "free", label: "Free", count: freeUsers, color: "#e5e7eb" },
-      { id: "pro", label: "Pro", count: proUsers, color: "#ef4444" },
-      { id: "top", label: "Top tier", count: topUsers, color: "#8b5cf6" },
+      { id: "pro", label: "Pro", count: proUsers, color: "var(--primary-500)" },
+      { id: "top", label: "Top tier", count: topUsers, color: "var(--primary-300)" },
     ].filter((item) => item.count > 0);
 
     const total = data.reduce((sum, item) => sum + item.count, 0);
@@ -989,8 +989,8 @@ export default function AdminPage() {
                         >
                           <defs>
                             <linearGradient id="user-bar-fill" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#fb7185" />
-                              <stop offset="100%" stopColor="#ef4444" />
+                              <stop offset="0%" stopColor="var(--primary-300)" />
+                              <stop offset="100%" stopColor="var(--primary-500)" />
                             </linearGradient>
                           </defs>
                           <line

@@ -1,4 +1,21 @@
 import Image from "next/image";
+import { useSettings } from "@/providers/SettingsProvider";
+
+function getNoAdsImage(accent: string) {
+  switch (accent) {
+    case "sky":
+      return "/images/no_ads/no_ads_sky.png";
+    case "emerald":
+      return "/images/no_ads/no_ads_emerald.png";
+    case "violet":
+      return "/images/no_ads/no_ads_violet.png";
+    case "amber":
+      return "/images/no_ads/no_ads_amber.png";
+    case "red":
+    default:
+      return "/images/no_ads/no_ads_red.png";
+  }
+}
 
 const personas = [
   {
@@ -34,6 +51,9 @@ const personas = [
 ];
 
 export function FeatureSections() {
+  const { profileBannerColor } = useSettings();
+  const noAdsImageSrc = getNoAdsImage(profileBannerColor);
+
   return (
     <section className="border-b border-zinc-200 bg-zinc-50">
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
@@ -49,7 +69,7 @@ export function FeatureSections() {
           </div>
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 bg-white/90 px-5 py-5 text-left shadow-sm ring-1 ring-zinc-900/5 sm:px-6 sm:py-6">
             <Image
-              src="/images/no-ads.png"
+              src={noAdsImageSrc}
               alt="No ads badge"
               width={320}
               height={320}

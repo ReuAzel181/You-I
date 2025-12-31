@@ -535,7 +535,7 @@ export function LoremPlaceholderGenerator({ variant = "default" }: LoremPlacehol
 
                   setLengthInput(String(next));
                 }}
-                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
               <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
                 {lengthValue.toLocaleString("en-US")}
@@ -594,7 +594,7 @@ export function LoremPlaceholderGenerator({ variant = "default" }: LoremPlacehol
 
                   setLengthInput(String(next));
                 }}
-                className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+                className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
               />
               <input
                 type="number"

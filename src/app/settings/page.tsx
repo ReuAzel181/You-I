@@ -92,37 +92,57 @@ export default function SettingsPage() {
   const { analyticsEnabled: analyticsActive, trackEvent } = useAnalytics();
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [analyticsEntries, setAnalyticsEntries] = useState<AnalyticsEntry[]>([]);
 
-  const analyticsEntries: AnalyticsEntry[] = (() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    try {
-      const raw = window.localStorage.getItem("you-i-analytics-log");
-
-      if (!raw) {
-        return [];
+    const run = () => {
+      if (typeof window === "undefined") {
+        return;
       }
 
-      const parsed = JSON.parse(raw) as unknown[];
+      try {
+        const raw = window.localStorage.getItem("you-i-analytics-log");
 
-      return parsed
-        .filter(
-          (item): item is AnalyticsEntry =>
-            typeof item === "object" &&
-            item !== null &&
-            typeof (item as { name?: unknown }).name === "string" &&
-            typeof (item as { timestamp?: unknown }).timestamp === "string" &&
-            typeof (item as { properties?: unknown }).properties === "object" &&
-            (item as { properties?: unknown }).properties !== null,
-        )
-        .slice(-200)
-        .reverse();
-    } catch {
-      return [];
-    }
-  })();
+        if (!raw) {
+          if (!cancelled) {
+            setAnalyticsEntries([]);
+          }
+          return;
+        }
+
+        const parsed = JSON.parse(raw) as unknown[];
+
+        const filtered = parsed
+          .filter(
+            (item): item is AnalyticsEntry =>
+              typeof item === "object" &&
+              item !== null &&
+              typeof (item as { name?: unknown }).name === "string" &&
+              typeof (item as { timestamp?: unknown }).timestamp === "string" &&
+              typeof (item as { properties?: unknown }).properties === "object" &&
+              (item as { properties?: unknown }).properties !== null,
+          )
+          .slice(-200)
+          .reverse();
+
+        if (!cancelled) {
+          setAnalyticsEntries(filtered);
+        }
+      } catch {
+        if (!cancelled) {
+          setAnalyticsEntries([]);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const totalAnalyticsEvents = analyticsEntries.length;
 
@@ -162,11 +182,11 @@ export default function SettingsPage() {
     }
 
     const palette: Record<AnalyticsCategory, { label: string; color: string }> = {
-      tools: { label: "Tools", color: "#f97316" },
-      workspace: { label: "Workspace", color: "#22c55e" },
-      settings: { label: "Settings", color: "#6366f1" },
-      marketing: { label: "Marketing pages", color: "#ef4444" },
-      analytics: { label: "Analytics", color: "#0ea5e9" },
+      tools: { label: "Tools", color: "var(--primary-500)" },
+      workspace: { label: "Workspace", color: "var(--primary-400)" },
+      settings: { label: "Settings", color: "var(--primary-600)" },
+      marketing: { label: "Marketing pages", color: "var(--primary-300)" },
+      analytics: { label: "Analytics", color: "var(--primary-700)" },
       other: { label: "Other", color: "#a1a1aa" },
     };
 
@@ -277,7 +297,12 @@ export default function SettingsPage() {
       return formatter ? formatter.format(date) : key;
     });
 
-    const palette = ["#ef4444", "#0ea5e9", "#22c55e", "#a855f7"];
+    const palette = [
+      "var(--primary-600)",
+      "var(--primary-500)",
+      "var(--primary-400)",
+      "var(--primary-300)",
+    ];
     const topTools = analyticsToolSummary.slice(0, 4);
 
     const series: ToolTimelineSeries[] = topTools.map((tool, toolIndex) => {
@@ -743,18 +768,18 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[11px] font-medium text-zinc-600">Banner color</p>
+                          <p className="text-[11px] font-medium text-zinc-600">Theme color</p>
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-2 py-2">
                               {[
-                                { id: "red", className: "bg-red-500", locked: false },
-                                { id: "sky", className: "bg-sky-500", locked: true },
-                                { id: "emerald", className: "bg-emerald-500", locked: true },
-                                { id: "violet", className: "bg-violet-500", locked: true },
-                                { id: "amber", className: "bg-amber-500", locked: true },
+                                { id: "red", color: "#ef4444" },
+                                { id: "sky", color: "#0ea5e9" },
+                                { id: "emerald", color: "#10b981" },
+                                { id: "violet", color: "#8b5cf6" },
+                                { id: "amber", color: "#f59e0b" },
                               ].map((option) => {
                                 const isActive = profileBannerDraft === option.id;
-                                const isLocked = option.locked;
+                                const isLocked = subscriptionMode === "free" && option.id !== "red";
 
                                 return (
                                   <button
@@ -773,7 +798,8 @@ export default function SettingsPage() {
                                     } ${isLocked ? "cursor-not-allowed opacity-60" : ""}`}
                                   >
                                     <span
-                                      className={`h-5 w-5 rounded-full ${option.className}`}
+                                      className="h-5 w-5 rounded-full"
+                                      style={{ backgroundColor: option.color }}
                                     />
                                     {isLocked && (
                                       <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -797,7 +823,7 @@ export default function SettingsPage() {
                           </div>
                           <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-violet-600 [data-theme=dark]:text-violet-300">
                             <span className="h-1.5 w-1.5 rounded-full bg-violet-500 [data-theme=dark]:bg-violet-300" />
-                            <span>Extra banner colors are a Pro feature in the Top tier.</span>
+                            <span>Extra banner colors are available on Pro and Top tier plans.</span>
                           </p>
                         </div>
                       </div>
@@ -1031,7 +1057,13 @@ export default function SettingsPage() {
                   >
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <p className="font-medium">Free</p>
-                      <p className="text-[11px] text-emerald-700 [data-theme=dark]:text-emerald-100">
+                      <p
+                        className={`text-[11px] ${
+                          subscriptionMode === "free"
+                            ? "text-emerald-700 [data-theme=dark]:text-emerald-100"
+                            : "text-zinc-500 [data-theme=dark]:text-zinc-400"
+                        }`}
+                      >
                         Default mode with access to all current tools.
                       </p>
                     </div>
@@ -1039,13 +1071,27 @@ export default function SettingsPage() {
                   <div
                     className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-[11px] ${
                       subscriptionMode === "starter"
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                        ? "border-red-500 bg-red-50 text-red-800"
                         : "border-zinc-200 bg-zinc-50 text-zinc-700"
                     }`}
                   >
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className="font-medium">Starter</p>
-                      <p className="text-[11px] text-zinc-500">
+                      <p
+                        className={`font-medium ${
+                          subscriptionMode === "starter"
+                            ? "text-red-700 [data-theme=dark]:text-red-200"
+                            : ""
+                        }`}
+                      >
+                        Pro
+                      </p>
+                      <p
+                        className={`text-[11px] ${
+                          subscriptionMode === "starter"
+                            ? "text-red-700 [data-theme=dark]:text-red-200"
+                            : "text-zinc-500 [data-theme=dark]:text-zinc-400"
+                        }`}
+                      >
                         Reflects the light green starter plan on the pricing page.
                       </p>
                     </div>
@@ -1059,7 +1105,13 @@ export default function SettingsPage() {
                   >
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <p className="font-medium">Top tier</p>
-                      <p className="text-[11px] text-zinc-500">
+                      <p
+                        className={`text-[11px] ${
+                          subscriptionMode === "top"
+                            ? "text-violet-700 [data-theme=dark]:text-violet-200"
+                            : "text-zinc-500 [data-theme=dark]:text-zinc-400"
+                        }`}
+                      >
                         Use when you are working in a team-focused environment.
                       </p>
                     </div>
@@ -1081,14 +1133,16 @@ export default function SettingsPage() {
                 </ul>
               </div>
               <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600">
-                  <Image
-                    src="/icon.svg"
-                    alt=""
-                    width={16}
-                    height={16}
-                    className="h-4 w-4"
-                  />
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-medium text-red-700">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500">
+                    <Image
+                      src="/icon.svg"
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="h-3 w-3"
+                    />
+                  </span>
                   <span>About YOU-I</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
@@ -1233,8 +1287,8 @@ export default function SettingsPage() {
                           {analyticsToolTimelineGridLines.map((y, index) => (
                             <g key={y}>
                               <line
-                                x1={TOOL_CHART_Y_AXIS_LABEL_WIDTH}
-                                x2={TOOL_CHART_WIDTH - TOOL_CHART_PADDING_X}
+                                x1={0}
+                                x2={TOOL_CHART_WIDTH}
                                 y1={y}
                                 y2={y}
                                 stroke="#e5e7eb"
@@ -1264,36 +1318,35 @@ export default function SettingsPage() {
                               strokeWidth={1}
                             />
                           ))}
-                          {analyticsToolTimelineCoordinates.map((series) => {
+                          {analyticsToolTimelineCoordinates.map((series, seriesIndex) => {
                             if (series.coordinates.length === 0) {
                               return null;
                             }
 
-                            const pathD = series.coordinates
-                              .map((point, index) =>
-                                index === 0
-                                  ? `M ${point.x} ${point.y}`
-                                  : `L ${point.x} ${point.y}`,
-                              )
-                              .join(" ");
+                            const seriesCount = analyticsToolTimelineCoordinates.length;
+                            const barWidth = 8;
+                            const baseY = TOOL_CHART_HEIGHT - TOOL_CHART_PADDING_Y;
 
                             return (
                               <g key={series.id}>
-                                <path
-                                  d={pathD}
-                                  fill="none"
-                                  stroke={series.color}
-                                  strokeWidth={1.5}
-                                />
-                                {series.coordinates.map((point) => (
-                                  <circle
-                                    key={`${series.id}-${point.dateKey}`}
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r={2}
-                                    fill={series.color}
-                                  />
-                                ))}
+                                {series.coordinates.map((point) => {
+                                  const totalWidth = barWidth * seriesCount;
+                                  const x =
+                                    point.x - totalWidth / 2 + seriesIndex * barWidth;
+                                  const height = Math.max(0, baseY - point.y);
+
+                                  return (
+                                    <rect
+                                      key={`${series.id}-${point.dateKey}`}
+                                      x={x}
+                                      y={point.y}
+                                      width={barWidth}
+                                      height={height}
+                                      rx={barWidth / 2}
+                                      fill={series.color}
+                                    />
+                                  );
+                                })}
                               </g>
                             );
                           })}

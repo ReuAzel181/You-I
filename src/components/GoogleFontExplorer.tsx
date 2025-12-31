@@ -316,7 +316,7 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by family name"
-                className="h-7 w-full rounded-md border border-zinc-200 bg-zinc-50 px-2 text-[10px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-offset-0"
+                className="h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-[10px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-1 focus:ring-offset-0"
               />
             </div>
             <div className="space-y-1">
@@ -407,7 +407,7 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search by family name"
-              className="h-8 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:bg-white focus:ring-2 focus:ring-offset-0"
+              className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
             />
           </div>
           <div className="space-y-1">
@@ -416,7 +416,7 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
               value={sampleText}
               onChange={(event) => setSampleText(event.target.value)}
               rows={3}
-              className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:bg-white focus:ring-2 focus:ring-offset-0"
+              className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
             />
             <button
               type="button"
@@ -483,7 +483,7 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
                   setSizeInput(String(clamped));
                 })()
               }
-              className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
+              className="font-size-slider h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200"
             />
           </div>
           <div className="space-y-2">

@@ -117,21 +117,26 @@ type SettingsProviderProps = {
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<SettingsState>(() => {
+  const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
-      return defaultSettings;
+      setHasLoadedFromStorage(true);
+      return;
     }
 
     try {
       const stored = window.localStorage.getItem("you-i-settings");
 
       if (!stored) {
-        return defaultSettings;
+        setHasLoadedFromStorage(true);
+        return;
       }
 
       const parsed = JSON.parse(stored) as Partial<SettingsState>;
 
-      return {
+      setSettings({
         appearance: parsed.appearance ?? defaultSettings.appearance,
         nudgeAmount:
           typeof parsed.nudgeAmount === "number" && Number.isFinite(parsed.nudgeAmount)
@@ -195,19 +200,20 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           parsed.adminUnreadInquiries >= 0
             ? parsed.adminUnreadInquiries
             : defaultSettings.adminUnreadInquiries,
-      };
+      });
     } catch {
-      return defaultSettings;
+    } finally {
+      setHasLoadedFromStorage(true);
     }
-  });
+  }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !hasLoadedFromStorage) {
       return;
     }
 
     window.localStorage.setItem("you-i-settings", JSON.stringify(settings));
-  }, [settings]);
+  }, [settings, hasLoadedFromStorage]);
 
   useEffect(() => {
     if (typeof document === "undefined") {
