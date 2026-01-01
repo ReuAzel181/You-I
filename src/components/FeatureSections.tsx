@@ -63,7 +63,7 @@ export function FeatureSections() {
               Built around your daily interface work
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
-              From quick checks on a color pair to exploring whole font families, YOU-I keeps the
+              From quick checks on a color pair to exploring whole font families, Zanari keeps the
               most useful tools one pin away.
             </p>
           </div>
@@ -85,7 +85,7 @@ export function FeatureSections() {
                   Looking for a place to run quick checks without banners or paywalls in the way?
                 </p>
                 <p className="text-[11px] leading-relaxed text-zinc-600">
-                  YOU-I keeps contrast, ratio, and type tools open in a clean surface so you can
+                  Zanari keeps contrast, ratio, and type tools open in a clean surface so you can
                   focus on interface decisions—not dismissing prompts.
                 </p>
               </div>

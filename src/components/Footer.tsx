@@ -59,11 +59,11 @@ export function Footer() {
                 UI
               </div>
               <span className="text-sm font-semibold tracking-tight text-zinc-900">
-                YOU-I
+                Zanari
               </span>
             </div>
             <p className="max-w-sm text-xs text-zinc-600">
-              YOU-I is a focused toolkit for checking color contrast, exploring ratios, and trying
+              Zanari is a focused toolkit for checking color contrast, exploring ratios, and trying
               fonts in real interface contexts. Pin the tools you use most and they will follow you
               each time you return.
             </p>
@@ -96,7 +96,7 @@ export function Footer() {
           </div>
         </div>
         <div className="flex flex-col gap-3 border-t border-zinc-100 pt-4 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} YOU-I. Built for accessible interface work.</p>
+          <p>© {new Date().getFullYear()} Zanari. Built for accessible interface work.</p>
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />

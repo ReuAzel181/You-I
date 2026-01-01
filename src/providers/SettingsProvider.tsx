@@ -127,7 +127,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }
 
     try {
-      const stored = window.localStorage.getItem("you-i-settings");
+      const stored = window.localStorage.getItem("zanari-settings");
 
       if (!stored) {
         setHasLoadedFromStorage(true);
@@ -212,7 +212,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       return;
     }
 
-    window.localStorage.setItem("you-i-settings", JSON.stringify(settings));
+    window.localStorage.setItem("zanari-settings", JSON.stringify(settings));
   }, [settings, hasLoadedFromStorage]);
 
   useEffect(() => {
@@ -511,11 +511,11 @@ export function useAnalytics() {
       };
 
       try {
-        const raw = window.localStorage.getItem("you-i-analytics-log");
+        const raw = window.localStorage.getItem("zanari-analytics-log");
         const existing = raw ? (JSON.parse(raw) as unknown[]) : [];
         const next = [...existing, payload].slice(-200);
 
-        window.localStorage.setItem("you-i-analytics-log", JSON.stringify(next));
+        window.localStorage.setItem("zanari-analytics-log", JSON.stringify(next));
       } catch {
         // ignore storage errors
       }

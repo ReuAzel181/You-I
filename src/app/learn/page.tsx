@@ -33,13 +33,13 @@ export default function LearnPage() {
                   Learn accessibility and interface basics alongside your tools
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                  Short, practical guides that pair with YOU-I&apos;s tools so you can check
+                  Short, practical guides that pair with Zanari&apos;s tools so you can check
                   contrast, typography, and layouts while you design—not after.
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2 text-[11px] text-zinc-600 md:w-64">
                 <p>
-                  New to YOU-I? Start with contrast, then move into typography and workflow tips.
+                  New to Zanari? Start with contrast, then move into typography and workflow tips.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link
@@ -150,7 +150,7 @@ export default function LearnPage() {
               <aside className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-[11px] leading-relaxed text-zinc-600 sm:px-5 sm:py-5">
                 <p className="font-medium text-zinc-800">Quick rule of thumb</p>
                 <p className="mt-1">
-                  If it&apos;s text and it&apos;s important, aim for AA or better. Use YOU-I&apos;s
+                  If it&apos;s text and it&apos;s important, aim for AA or better. Use Zanari&apos;s
                   contrast checker to save a preset for your brand, neutral, and semantic colors so
                   you don&apos;t have to re-check every time.
                 </p>
@@ -171,7 +171,7 @@ export default function LearnPage() {
                 </h2>
                 <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
                   Handoff goes smoother when specs reference tokens and reusable presets instead of
-                  one-off values. YOU-I&apos;s tools help you capture the decisions that matter
+                  one-off values. Zanari&apos;s tools help you capture the decisions that matter
                   before the handoff meeting.
                 </p>
                 <ul className="mt-3 space-y-1.5 text-[11px] text-zinc-700">
@@ -216,7 +216,7 @@ export default function LearnPage() {
               <aside className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-[11px] leading-relaxed text-zinc-600 sm:px-5 sm:py-5">
                 <p className="font-medium text-zinc-800">A simple handoff checklist</p>
                 <p className="mt-1">
-                  Share a single YOU-I workspace preset with the developers you work with. Include
+                  Share a single Zanari workspace preset with the developers you work with. Include
                   your key color pairs, base font stack, and a couple of viewport examples so
                   everyone talks about the same reference points.
                 </p>
@@ -232,12 +232,12 @@ export default function LearnPage() {
                 Release notes
               </p>
               <h2 className="mt-1 text-sm font-semibold text-zinc-900">
-                What&apos;s new in YOU-I
+                What&apos;s new in Zanari
               </h2>
               <ul className="mt-3 space-y-1.5">
                 <li>
                   <span className="font-medium text-zinc-800">Solutions examples.</span> Explore
-                  real-world ways teams use YOU-I day to day, with examples for product teams,
+                  real-world ways teams use Zanari day to day, with examples for product teams,
                   agencies, and solo designers, now in the Resources page.
                 </li>
                 <li>

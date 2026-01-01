@@ -24,7 +24,7 @@ type PinnedToolHeroProps = {
   onClear: (toolName: string) => void;
 };
 
-const PINNED_TOOLS_STORAGE_KEY = "you-i-pinned-tools";
+const PINNED_TOOLS_STORAGE_KEY = "zanari-pinned-tools";
 
 function getPinnedToolIcon(toolName: string) {
   if (toolName === "Color Contrast Checker") {

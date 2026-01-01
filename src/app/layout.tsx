@@ -17,32 +17,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://you-i-azel.vercel.app"),
-  title: "YOU-I Toolkit",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.zanari.dev"),
+  title: "Zanari Toolkit",
   description:
     "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "YOU-I",
+    title: "Zanari",
     description:
       "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
-    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://you-i-azel.vercel.app/",
-    siteName: "YOU-I",
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.zanari.dev/",
+    siteName: "Zanari",
     type: "website",
     images: [
       {
         url: "/og-banner.png",
         width: 1200,
         height: 630,
-        alt: "YOU-I Toolkit – color contrast and ratio tools",
+        alt: "Zanari Toolkit – color contrast and ratio tools",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "YOU-I Toolkit",
+    title: "Zanari Toolkit",
     description:
       "A web-based platform designed for modern interface creation. Providing a comprehensive collection of tools for UI development and design workflows.",
     images: ["/og-banner.png"],
@@ -83,10 +83,10 @@ export default async function RootLayout({
       data-theme={initialAppearance === "system" ? undefined : initialAppearance}
     >
       <head>
-        <Script id="you-i-theme-init" strategy="beforeInteractive">
+        <Script id="zanari-theme-init" strategy="beforeInteractive">
           {`(function () {
   try {
-    var stored = window.localStorage.getItem('you-i-settings');
+    var stored = window.localStorage.getItem('zanari-settings');
     var parsed = stored ? JSON.parse(stored) : null;
     var appearance = parsed && typeof parsed.appearance === 'string' ? parsed.appearance : 'system';
     var root = document.documentElement;

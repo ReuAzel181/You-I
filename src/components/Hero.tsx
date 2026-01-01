@@ -17,7 +17,7 @@ export function Hero() {
             Every tool you need to design accessible interfaces in one place.
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-            YOU-I brings color contrast checking, Ratio Calculators, and palette
+            Zanari brings color contrast checking, Ratio Calculators, and palette
             helpers together so you can design interfaces that look great and
             stay accessible.
           </p>

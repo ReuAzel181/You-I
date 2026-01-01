@@ -84,7 +84,7 @@ export default async function Image() {
                   color: "#f9fafb",
                 }}
               >
-                YOU-I Toolkit
+                Zanari Toolkit
               </span>
               <span
                 style={{

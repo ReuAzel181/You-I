@@ -19,6 +19,14 @@ const defaultSampleText = "ABCDEFG abcdefg 1234567890 !@#$%^&*()";
 
 const loadedFontFamilies = new Set<string>();
 
+type FontFavorite = {
+  family: string;
+  category: string;
+  addedAt: string;
+};
+
+const FONT_FAVORITES_STORAGE_KEY = "zanari-font-favorites";
+
 function ensureFontStylesheet(family: string) {
   if (typeof document === "undefined") {
     return;
@@ -113,6 +121,64 @@ type GoogleFontExplorerProps = {
 };
 
 export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps) {
+  const [fontFavorites, setFontFavorites] = useState<FontFavorite[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const stored = window.localStorage.getItem(FONT_FAVORITES_STORAGE_KEY);
+
+      if (!stored) {
+        return [];
+      }
+
+      const parsed = JSON.parse(stored) as unknown;
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      const mapped = parsed
+        .map((item) => {
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+
+          const value = item as {
+            family?: unknown;
+            category?: unknown;
+            addedAt?: unknown;
+          };
+
+          if (typeof value.family !== "string" || typeof value.category !== "string") {
+            return null;
+          }
+
+          const base = {
+            family: value.family,
+            category: value.category,
+            addedAt:
+              typeof value.addedAt === "string" ? value.addedAt : new Date().toISOString(),
+          } satisfies FontFavorite;
+
+          return base;
+        })
+        .filter((item): item is FontFavorite => Boolean(item));
+
+      const seen = new Set<string>();
+
+      return mapped.filter((item) => {
+        if (seen.has(item.family)) {
+          return false;
+        }
+        seen.add(item.family);
+        return true;
+      });
+    } catch {
+      return [];
+    }
+  });
   const [fonts, setFonts] = useState<FontItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +195,17 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
   const [sizeInput, setSizeInput] = useState("26");
   const [previewWeight, setPreviewWeight] = useState<PreviewWeightId>("regular");
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      FONT_FAVORITES_STORAGE_KEY,
+      JSON.stringify(fontFavorites),
+    );
+  }, [fontFavorites]);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,6 +259,34 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
   useEffect(() => {
     setVisibleCount(pageSize);
   }, [searchQuery, categoryFilter, feelingFilter]);
+
+  const favoriteFamilies = useMemo(() => {
+    const set = new Set<string>();
+
+    fontFavorites.forEach((favorite) => {
+      set.add(favorite.family);
+    });
+
+    return set;
+  }, [fontFavorites]);
+
+  function toggleFontFavorite(font: FontItem) {
+    setFontFavorites((current) => {
+      const exists = current.some((item) => item.family === font.family);
+
+      if (exists) {
+        return current.filter((item) => item.family !== font.family);
+      }
+
+      const next: FontFavorite = {
+        family: font.family,
+        category: font.category,
+        addedAt: new Date().toISOString(),
+      };
+
+      return [next, ...current];
+    });
+  }
 
   const filteredFonts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -364,25 +469,51 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
                 {previewFonts.map((font) => {
                   const previewFamily = `"${font.family}", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
                   const previewFontWeight = getPreviewWeightValue(previewWeight);
+                  const isFavorite = favoriteFamilies.has(font.family);
 
                   return (
                     <li key={font.family} className="px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[11px] font-medium text-zinc-800">
-                          {font.family}
-                        </span>
-                        <span className="ml-2 whitespace-nowrap text-[10px] lowercase text-zinc-500">
-                          {font.category}
-                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-medium text-zinc-800">
+                            {font.family}
+                          </p>
+                          <p className="text-[10px] lowercase text-zinc-500">
+                            {font.category}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleFontFavorite(font)}
+                          aria-label={
+                            isFavorite
+                              ? "Remove from favorite fonts"
+                              : "Add to favorite fonts"
+                          }
+                          className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-full border border-zinc-200 text-[11px] text-zinc-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                          >
+                            <path
+                              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.04 4 9.54 4.81 10.35 6.09 11.16 4.81 12.66 4 14.2 4 16.7 4 18.7 6 18.7 8.5c0 3.78-3.4 6.86-8.55 11.54z"
+                              fill={isFavorite ? "#ef4444" : "none"}
+                              stroke={isFavorite ? "#ef4444" : "currentColor"}
+                              strokeWidth="1.6"
+                            />
+                          </svg>
+                        </button>
                       </div>
                       <p
                         style={{
                           fontFamily: previewFamily,
-                          fontSize: previewSize,
-                          lineHeight: 1.2,
+                          fontSize: Math.max(previewSize, 18),
+                          lineHeight: 1.25,
                           fontWeight: previewFontWeight,
                         }}
-                        className="mt-1 line-clamp-2 break-words text-[11px] leading-tight text-zinc-900"
+                        className="mt-1 w-full break-words text-[15px] leading-snug text-zinc-900"
                       >
                         {sampleText}
                       </p>
@@ -617,16 +748,44 @@ export function GoogleFontExplorer({ variant = "full" }: GoogleFontExplorerProps
                     {visibleFonts.map((font) => {
                       const previewFamily = `"${font.family}", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
                       const previewFontWeight = getPreviewWeightValue(previewWeight);
+                      const isFavorite = favoriteFamilies.has(font.family);
 
                       return (
                         <li key={font.family} className="px-3 py-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="truncate text-[11px] font-medium text-zinc-800">
-                              {font.family}
-                            </span>
-                            <span className="ml-2 whitespace-nowrap text-[10px] lowercase text-zinc-500">
-                              {font.category}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[11px] font-medium text-zinc-800">
+                                {font.family}
+                              </p>
+                              <p className="text-[10px] lowercase text-zinc-500">
+                                {font.category}
+                              </p>
+                            </div>
+                            <div className="flex flex-none justify-center">
+                              <button
+                                type="button"
+                                onClick={() => toggleFontFavorite(font)}
+                                aria-label={
+                                  isFavorite
+                                    ? "Remove from favorite fonts"
+                                    : "Add to favorite fonts"
+                                }
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 text-[11px] text-zinc-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  aria-hidden="true"
+                                  className="h-4 w-4"
+                                >
+                                  <path
+                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.04 4 9.54 4.81 10.35 6.09 11.16 4.81 12.66 4 14.2 4 16.7 4 18.7 6 18.7 8.5c0 3.78-3.4 6.86-8.55 11.54z"
+                                    fill={isFavorite ? "#ef4444" : "none"}
+                                    stroke={isFavorite ? "#ef4444" : "currentColor"}
+                                    strokeWidth="1.6"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           <p
                             style={{

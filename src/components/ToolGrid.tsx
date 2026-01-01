@@ -219,7 +219,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
     }
 
     try {
-      const stored = window.localStorage.getItem("youi-tools-order");
+      const stored = window.localStorage.getItem("zanari-tools-order");
 
       if (!stored) {
         return;
@@ -265,7 +265,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
     const names = orderedTools.map((tool) => tool.name);
 
     try {
-      window.localStorage.setItem("youi-tools-order", JSON.stringify(names));
+      window.localStorage.setItem("zanari-tools-order", JSON.stringify(names));
     } catch {}
   }, [orderedTools]);
 
@@ -375,7 +375,7 @@ export function ToolGrid({ pinnedToolNames, onPinTool }: ToolGridProps) {
               Tools that feel familiar and fast
             </h2>
             <p className="max-w-xl text-sm text-zinc-600">
-              Inspired by the simplicity of iLovePDF, YOU-I focuses on clean
+              Inspired by the simplicity of iLovePDF, Zanari focuses on clean
               layouts, clear labels, and workflows you can understand at a
               glance.
             </p>

@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      const storageKey = `you-i-user-known:${email}`;
+      const storageKey = `zanari-user-known:${email}`;
       const isBrowser = typeof window !== "undefined";
       const hasSeenUserBefore =
         isBrowser && window.localStorage.getItem(storageKey) === "1";
@@ -223,7 +223,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (error) {
-        setAuthError(error.message);
+        let message = error.message;
+
+        try {
+          const { data: existing, error: userError } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", email.toLowerCase())
+            .maybeSingle();
+
+          if (!userError && !existing) {
+            message = "No account is found for this email. Try signing up instead.";
+          } else if (!userError && existing) {
+            message = "Invalid login credentials. Check your password and try again.";
+          }
+        } catch {
+        }
+
+        setAuthError(message);
         setIsLoading(false);
         return false;
       }

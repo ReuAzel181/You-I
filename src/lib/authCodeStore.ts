@@ -26,7 +26,7 @@ function getSecret() {
     return resendKey;
   }
 
-  return "you-i-default-secret";
+  return "zanari-default-secret";
 }
 
 function getBucket(timestamp: number) {

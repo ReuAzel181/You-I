@@ -42,6 +42,15 @@ type PlanSegment = {
   offset: number;
 };
 
+type CountrySegment = {
+  id: string;
+  label: string;
+  count: number;
+  color: string;
+  length: number;
+  offset: number;
+};
+
 type PlanValue = "free" | "starter" | "top";
 
 type PlanToggleProps = {
@@ -87,12 +96,23 @@ const USER_CHART_PADDING_X = 16;
 const USER_CHART_PADDING_Y = 16;
 const USER_CHART_MAX_BAR_WIDTH = 28;
 
-const ADMIN_CACHE_KEY = "you-i-admin-overview-cache";
+const ADMIN_CACHE_KEY = "zanari-admin-overview-cache";
 type AdminCachePayload = {
   users: AdminUserRow[];
   vouchers: AdminVoucherRow[];
   updatedAt: string;
 };
+
+const COUNTRY_COLORS = [
+  "#ef4444",
+  "#0ea5e9",
+  "#22c55e",
+  "#a855f7",
+  "#f97316",
+  "#06b6d4",
+  "#eab308",
+  "#6366f1",
+];
 
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
@@ -177,9 +197,64 @@ export default function AdminPage() {
     return codes.size;
   })();
 
+  const countryCounts = (() => {
+    if (users.length === 0) {
+      return [] as { code: string; count: number }[];
+    }
+
+    const counts = new Map<string, number>();
+
+    for (const entry of users) {
+      const raw = entry.country;
+      const key = raw && raw !== "Unknown" ? raw : "Unknown";
+      const current = counts.get(key) ?? 0;
+
+      counts.set(key, current + 1);
+    }
+
+    const items = Array.from(counts.entries()).map(([code, count]) => ({
+      code,
+      count,
+    }));
+
+    items.sort((a, b) => b.count - a.count);
+
+    return items;
+  })();
+
+  const totalCountryUsers = countryCounts.reduce(
+    (total, item) => total + item.count,
+    0,
+  );
+
   const PLAN_CHART_RADIUS = 26;
   const PLAN_CHART_STROKE_WIDTH = 10;
   const PLAN_CHART_CIRCUMFERENCE = 2 * Math.PI * PLAN_CHART_RADIUS;
+
+  const countrySegments: CountrySegment[] = (() => {
+    if (countryCounts.length === 0 || totalCountryUsers === 0) {
+      return [];
+    }
+
+    let currentOffset = 0;
+
+    return countryCounts.map((item, index) => {
+      const fraction = item.count / totalCountryUsers;
+      const length = PLAN_CHART_CIRCUMFERENCE * fraction;
+      const segment = {
+        id: item.code,
+        label: item.code,
+        count: item.count,
+        color: COUNTRY_COLORS[index % COUNTRY_COLORS.length],
+        length,
+        offset: currentOffset,
+      };
+
+      currentOffset -= length;
+
+      return segment;
+    });
+  })();
 
   const planSegments: PlanSegment[] = (() => {
     if (totalUsers === 0) {
@@ -253,7 +328,7 @@ export default function AdminPage() {
     }
 
     try {
-      const raw = window.localStorage.getItem("you-i-analytics-log");
+      const raw = window.localStorage.getItem("zanari-analytics-log");
 
       if (!raw) {
         return [];
@@ -746,7 +821,7 @@ export default function AdminPage() {
                     Admin dashboard
                   </h1>
                   <p className="max-w-2xl text-sm leading-relaxed text-zinc-600">
-                    See who is using YOU-I and create vouchers for Pro or Top tiers.
+                    See who is using Zanari and create vouchers for Pro or Top tiers.
                   </p>
                 </div>
                 <div
@@ -1183,6 +1258,121 @@ export default function AdminPage() {
                 </div>
 
                 <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-zinc-500">Visitor geography</p>
+                      <h2 className="text-sm font-semibold text-zinc-900">
+                        Countries of people using the system
+                      </h2>
+                      <p className="text-[11px] text-zinc-500">
+                        Based on the country field stored for each account.
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-zinc-50 px-3 py-1 text-[10px] font-medium text-zinc-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                      <span>{totalCountryUsers} users with country data</span>
+                    </div>
+                  </div>
+                  {totalCountryUsers === 0 && (
+                    <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600">
+                      Once people start signing up with country information, their distribution
+                      will appear here.
+                    </p>
+                  )}
+                  {totalCountryUsers > 0 && (
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex h-28 w-28 items-center justify-center">
+                          {countrySegments.length === 0 ? (
+                            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-zinc-200 text-[10px] text-zinc-500">
+                              No data
+                            </div>
+                          ) : (
+                            <svg
+                              width="96"
+                              height="96"
+                              viewBox="0 0 96 96"
+                            >
+                              <circle
+                                cx="48"
+                                cy="48"
+                                r={PLAN_CHART_RADIUS}
+                                stroke="#e5e7eb"
+                                strokeWidth={PLAN_CHART_STROKE_WIDTH}
+                                fill="none"
+                              />
+                              {countrySegments.map((segment) => (
+                                <circle
+                                  key={segment.id}
+                                  cx="48"
+                                  cy="48"
+                                  r={PLAN_CHART_RADIUS}
+                                  stroke={segment.color}
+                                  strokeWidth={PLAN_CHART_STROKE_WIDTH}
+                                  strokeDasharray={`${segment.length} ${PLAN_CHART_CIRCUMFERENCE}`}
+                                  strokeDashoffset={segment.offset}
+                                  strokeLinecap="round"
+                                  fill="none"
+                                />
+                              ))}
+                            </svg>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-zinc-500">
+                          <span className="font-medium text-zinc-900">
+                            {countryCounts.length}
+                          </span>{" "}
+                          countries ·{" "}
+                          <span className="font-medium text-zinc-900">
+                            {totalCountryUsers}
+                          </span>{" "}
+                          users
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        {countryCounts.map((item, index) => {
+                          const share =
+                            totalCountryUsers > 0
+                              ? Math.round((item.count / totalCountryUsers) * 100)
+                              : 0;
+
+                          return (
+                            <div
+                              key={item.code}
+                              className="space-y-1"
+                            >
+                              <div className="flex items-center justify-between text-[11px] text-zinc-700">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{
+                                      backgroundColor:
+                                        COUNTRY_COLORS[index % COUNTRY_COLORS.length],
+                                    }}
+                                  />
+                                  <span className="font-medium">{item.code}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                                  <span>{item.count}</span>
+                                  <span>·</span>
+                                  <span>{share}%</span>
+                                </div>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
+                                <div
+                                  className="h-full rounded-full bg-sky-400"
+                                  style={{ width: `${share}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
                   <div className="mb-3 space-y-1">
                     <p className="text-xs font-medium text-zinc-500">Existing vouchers</p>
                     <p className="text-[11px] text-zinc-500">
@@ -1208,11 +1398,54 @@ export default function AdminPage() {
                               {voucher.is_active ? "Active" : "Inactive"}
                             </p>
                           </div>
-                          {voucher.created_at && (
-                            <p className="text-[9px] text-zinc-400">
-                              {new Date(voucher.created_at).toLocaleDateString("en-US")}
-                            </p>
-                          )}
+                          <div className="flex flex-col items-end gap-1 text-right">
+                            {voucher.created_at && (
+                              <p className="text-[9px] text-zinc-400">
+                                {new Date(voucher.created_at).toLocaleDateString("en-US")}
+                              </p>
+                            )}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const baseUrl =
+                                    typeof window !== "undefined"
+                                      ? window.location.origin
+                                      : process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+                                  if (!baseUrl) {
+                                    showToast(
+                                      "error",
+                                      "Unable to copy voucher link without a configured site URL.",
+                                    );
+                                    return;
+                                  }
+
+                                  const shareUrl = `${baseUrl}/pricing?voucher=${encodeURIComponent(
+                                    voucher.code,
+                                  )}`;
+
+                                  if (
+                                    typeof navigator !== "undefined" &&
+                                    typeof navigator.clipboard !== "undefined"
+                                  ) {
+                                    await navigator.clipboard.writeText(shareUrl);
+                                    showToast("success", "Voucher link copied to clipboard.");
+                                  } else {
+                                    showToast(
+                                      "error",
+                                      "Clipboard permissions are not available in this browser.",
+                                    );
+                                  }
+                                } catch {
+                                  showToast("error", "Unable to copy voucher link right now.");
+                                }
+                              }}
+                              className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-medium text-zinc-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                            >
+                              Copy link
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

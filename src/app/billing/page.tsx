@@ -65,7 +65,7 @@ export default function BillingPage() {
                 </h1>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
                   Review your current plan, update payment methods, and see how you have been using
-                  YOU-I.
+                  Zanari.
                 </p>
               </div>
               <div className="flex flex-col items-end gap-3">
@@ -327,7 +327,7 @@ export default function BillingPage() {
                     <p className="text-xs font-medium text-zinc-500">Usage</p>
                     <h2 className="text-sm font-semibold text-zinc-900">Usage this month</h2>
                     <p className="text-[11px] text-zinc-500">
-                      A quick snapshot of how you are using YOU-I across tools and workspace.
+                      A quick snapshot of how you are using Zanari across tools and workspace.
                     </p>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">

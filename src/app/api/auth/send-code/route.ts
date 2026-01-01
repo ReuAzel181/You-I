@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM ?? "YOU-I <onboarding@resend.dev>";
+  const from = process.env.EMAIL_FROM ?? "Zanari <onboarding@resend.dev>";
 
   if (!apiKey) {
     return NextResponse.json(
@@ -77,11 +77,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const subject = `Your YOU-I sign-in code: ${code}`;
+  const subject = `Your Zanari sign-in code: ${code}`;
   const text = [
     "Hi,",
     "",
-    `Your YOU-I verification code is ${code}.`,
+    `Your Zanari verification code is ${code}.`,
     "",
     "Enter this code in the browser to create your account and sign in.",
     "",
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
                   </td>
                   <td style="width:8px;"></td>
                   <td>
-                    <div style="font-size:13px;font-weight:600;color:#111827;">YOU-I</div>
+                    <div style="font-size:13px;font-weight:600;color:#111827;">Zanari</div>
                     <div style="font-size:11px;color:#6b7280;">Verification code</div>
                   </td>
                 </tr>
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
           <tr>
             <td align="left" style="padding:0 0 18px 0;">
               <p style="font-size:13px;line-height:1.6;margin:0;color:#4b5563;">
-                Enter this code in your browser to create your YOU-I account and continue:
+                Enter this code in your browser to create your Zanari account and continue:
               </p>
             </td>
           </tr>
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
           <tr>
             <td align="left">
               <p style="font-size:11px;line-height:1.5;margin:0;color:#9ca3af;">
-                Sent securely from YOU-I. For best results, keep this code private and do not forward this email.
+                Sent securely from Zanari. For best results, keep this code private and do not forward this email.
               </p>
             </td>
           </tr>
@@ -181,8 +181,39 @@ export async function POST(request: Request) {
   });
 
   if (!response.ok) {
+    let message = "Failed to send code";
+
+    try {
+      const contentType = response.headers.get("Content-Type") ?? "";
+
+      if (contentType.includes("application/json")) {
+        const payload = (await response.json()) as {
+          error?: string | { message?: string };
+          message?: string;
+        };
+
+        const rawError =
+          typeof payload.error === "string"
+            ? payload.error
+            : (payload.error as { message?: string } | undefined)?.message;
+
+        const rawMessage = rawError ?? payload.message;
+
+        if (typeof rawMessage === "string" && rawMessage.trim().length > 0) {
+          message = rawMessage;
+        }
+      } else {
+        const textBody = (await response.text()).trim();
+
+        if (textBody.length > 0) {
+          message = textBody;
+        }
+      }
+    } catch {
+    }
+
     return NextResponse.json(
-      { error: "Failed to send code" },
+      { error: message },
       { status: 502 },
     );
   }

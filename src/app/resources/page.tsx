@@ -50,7 +50,7 @@ export default function ResourcesPage() {
                   Learn how each piece fits into your workflow
                 </h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-zinc-600">
-                  Browse short, practical guides for every YOU-I tool. Each card explains when to
+                  Browse short, practical guides for every Zanari tool. Each card explains when to
                   reach for it, what to look for, and how it pairs with your workspace.
                 </p>
               </div>

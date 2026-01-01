@@ -17,7 +17,7 @@ const navItems = [
   { label: "Admin", href: "/admin", requiresAdmin: true },
 ];
 
-const ADMIN_FLAG_STORAGE_KEY = "you-i-is-admin";
+const ADMIN_FLAG_STORAGE_KEY = "zanari-is-admin";
 
 export function Header() {
   const pathname = usePathname();
@@ -49,7 +49,9 @@ export function Header() {
   const [showLoginLinkInError, setShowLoginLinkInError] = useState(false);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const { adminUnreadInquiries } = useSettings();
+  const { adminUnreadInquiries, appearance } = useSettings();
+  const [isPasswordActive, setIsPasswordActive] = useState(false);
+  const [isAuthModeSwitching, setIsAuthModeSwitching] = useState(false);
 
   const displayName = useMemo(() => {
     if (!user) {
@@ -68,6 +70,16 @@ export function Header() {
 
     return user.email ?? "Account";
   }, [user]);
+
+  const passwordHintColorClass =
+    appearance === "dark" ? "text-zinc-400" : "text-zinc-500";
+
+  function handlePasswordKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Control") {
+      event.preventDefault();
+      setIsPasswordVisible((current) => !current);
+    }
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -191,6 +203,7 @@ export function Header() {
     setVisibleError(null);
     setIsAuthClosing(false);
     setIsAuthOpen(true);
+    setIsAuthModeSwitching(false);
   }
 
   function closeAuth() {
@@ -206,6 +219,7 @@ export function Header() {
       setCodeExpiresAt(null);
       setCodeRemainingSeconds(0);
       setVisibleError(null);
+      setIsPasswordActive(false);
     }, 180);
   }
 
@@ -456,7 +470,7 @@ export function Header() {
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight text-zinc-900">
-                YOU-I
+                Zanari
               </span>
             </div>
           </PageTransitionLink>
@@ -705,7 +719,7 @@ export function Header() {
                 {celebrateMode === "signup" ? "Your account is ready" : "You are signed in"}
               </p>
               <h2 className="mt-1 text-base font-semibold text-zinc-900">
-                {celebrateMode === "signup" ? "Welcome to YOU-I" : "Good to see you again"}
+                {celebrateMode === "signup" ? "Welcome to Zanari" : "Good to see you again"}
               </h2>
               <p className="mt-2 text-[11px] text-zinc-600">
                 {celebrateMode === "signup"
@@ -751,8 +765,8 @@ export function Header() {
                 </p>
                 <h2 className="text-lg font-semibold text-zinc-900">
                   {authMode === "signup"
-                    ? "Create your YOU-I account"
-                    : "Log in to YOU-I"}
+                    ? "Create your Zanari account"
+                    : "Log in to Zanari"}
                 </h2>
                 <p className="text-[11px] text-zinc-500">
                   {authMode === "signup"
@@ -827,14 +841,36 @@ export function Header() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-zinc-700">
-                      Password
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-medium text-zinc-700">
+                        Password
+                      </label>
+                      {isPasswordActive && (
+                        <span className={`text-[10px] font-medium ${passwordHintColorClass}`}>
+                          CTRL: Show/Hide password
+                        </span>
+                      )}
+                    </div>
                     <div className="relative">
                       <input
                         type={isPasswordVisible ? "text" : "password"}
                         value={password}
-                        onChange={(event) => setPassword(event.target.value)}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setPassword(next);
+                          if (next && !isPasswordActive) {
+                            setIsPasswordActive(true);
+                          }
+                        }}
+                        onKeyDown={handlePasswordKeyDown}
+                        onFocus={() => {
+                          setIsPasswordActive(true);
+                        }}
+                        onBlur={() => {
+                          if (!password) {
+                            setIsPasswordActive(false);
+                          }
+                        }}
                         placeholder={
                           authMode === "signup" ? "Create a password" : "Enter your password"
                         }
@@ -995,11 +1031,17 @@ export function Header() {
                   Need an account?{" "}
                   <button
                     type="button"
-                    className="font-medium text-red-600 hover:underline"
+                    className={`font-medium text-red-600 hover:underline transition-transform duration-150 ${
+                      isAuthModeSwitching ? "scale-95 opacity-80" : ""
+                    }`}
                     onClick={() => {
+                      setIsAuthModeSwitching(true);
                       setAuthMode("signup");
                       setAuthStep("signup");
                       setVisibleError(null);
+                      window.setTimeout(() => {
+                        setIsAuthModeSwitching(false);
+                      }, 180);
                     }}
                   >
                     Get started

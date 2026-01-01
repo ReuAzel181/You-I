@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
@@ -10,10 +11,83 @@ import { PageTransitionLink } from "@/components/PageTransitionLink";
 import { useAuth } from "@/providers/AuthProvider";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
+type VoucherAccentId = "red" | "sky" | "emerald" | "violet" | "amber";
+
+type VoucherStyles = {
+  container: string;
+  label: string;
+  body: string;
+  input: string;
+  button: string;
+  error: string;
+};
+
+function getVoucherStyles(accent: VoucherAccentId): VoucherStyles {
+  switch (accent) {
+    case "emerald":
+      return {
+        container: "border-emerald-200 bg-emerald-50/70 text-emerald-700",
+        label: "text-emerald-700",
+        body: "text-emerald-700/90",
+        input:
+          "border-emerald-200 placeholder:text-emerald-300 focus:border-emerald-400 focus:ring-emerald-400",
+        button: "bg-emerald-500 hover:bg-emerald-600 disabled:hover:bg-emerald-500",
+        error: "text-emerald-600",
+      };
+    case "violet":
+      return {
+        container: "border-violet-200 bg-violet-50/70 text-violet-700",
+        label: "text-violet-700",
+        body: "text-violet-700/90",
+        input:
+          "border-violet-200 placeholder:text-violet-300 focus:border-violet-400 focus:ring-violet-400",
+        button: "bg-violet-500 hover:bg-violet-600 disabled:hover:bg-violet-500",
+        error: "text-violet-600",
+      };
+    case "amber":
+      return {
+        container: "border-amber-200 bg-amber-50/70 text-amber-800",
+        label: "text-amber-800",
+        body: "text-amber-800/90",
+        input:
+          "border-amber-200 placeholder:text-amber-300 focus:border-amber-400 focus:ring-amber-400",
+        button: "bg-amber-500 hover:bg-amber-600 disabled:hover:bg-amber-500",
+        error: "text-amber-700",
+      };
+    case "sky":
+      return {
+        container: "border-sky-200 bg-sky-50/70 text-sky-700",
+        label: "text-sky-700",
+        body: "text-sky-700/90",
+        input:
+          "border-sky-200 placeholder:text-sky-300 focus:border-sky-400 focus:ring-sky-400",
+        button: "bg-sky-500 hover:bg-sky-600 disabled:hover:bg-sky-500",
+        error: "text-sky-600",
+      };
+    case "red":
+    default:
+      return {
+        container: "border-red-200 bg-red-50/70 text-red-700",
+        label: "text-red-700",
+        body: "text-red-700/90",
+        input:
+          "border-red-200 placeholder:text-red-300 focus:border-red-400 focus:ring-red-400",
+        button: "bg-red-500 hover:bg-red-600 disabled:hover:bg-red-500",
+        error: "text-red-600",
+      };
+  }
+}
+
 export default function PricingPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
   const { user, isLoading } = useAuth();
-  const { profileCountry, subscriptionMode, setSubscriptionMode } = useSettings();
+  const {
+    profileCountry,
+    subscriptionMode,
+    setSubscriptionMode,
+    profileBannerColor,
+  } = useSettings();
+  const searchParams = useSearchParams();
   const [hasHydrated, setHasHydrated] = useState(false);
   const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
   const [voucherCode, setVoucherCode] = useState("");
@@ -50,7 +124,30 @@ export default function PricingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const codeFromQuery = searchParams.get("voucher");
+
+    if (codeFromQuery && !voucherCode) {
+      setVoucherCode(codeFromQuery);
+    }
+  }, [searchParams, voucherCode]);
+
+  useEffect(() => {
+    if (voucherNotice !== "applied") {
+      return;
+    }
+
+    const id = window.setTimeout(() => {
+      setVoucherNotice("");
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, [voucherNotice]);
+
   const showAuthNotice = !user && !isLoading;
+  const voucherStyles = getVoucherStyles(profileBannerColor);
 
   const currencyConfig = (() => {
     switch (profileCountry) {
@@ -183,7 +280,7 @@ export default function PricingPage() {
                   {formatPrice(0)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-600">
-                  Try YOU-I on solo work with your own pace.
+                  Try Zanari on solo work with your own pace.
                 </p>
                 <ul className="mt-4 space-y-1.5 text-[11px]">
                   <li className="flex items-start gap-2">
@@ -273,7 +370,7 @@ export default function PricingPage() {
                     {formatPrice(billingMode === "monthly" ? 5 : 50)}
                   </p>
                   <p className="mt-1 text-xs text-zinc-700 pricing-featured-body [data-theme=dark]:text-zinc-100">
-                    For weekly interface work with YOU-I next to your design tool.
+                    For weekly interface work with Zanari next to your design tool.
                   </p>
                   <ul className="mt-4 space-y-1.5 text-[11px] pricing-featured-body">
                     <li className="flex items-start gap-2">
@@ -403,7 +500,7 @@ export default function PricingPage() {
                     key={billingMode === "monthly" ? "top-monthly" : "top-yearly"}
                     className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 pricing-amount-animate"
                   >
-                    {formatPrice(billingMode === "monthly" ? 10 : 100)}
+                    {formatPrice(billingMode === "monthly" ? 12 : 120)}
                   </p>
                   <p className="mt-1 text-xs text-violet-700">
                     For teams shipping accessible work across many products.
@@ -523,12 +620,16 @@ export default function PricingPage() {
                 </div>
               </div>
             </div>
-            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3 py-3 text-[11px] text-red-700 shadow-sm">
+            <div
+              className={`mb-3 flex flex-wrap items-center gap-3 rounded-xl px-3 py-3 text-[11px] shadow-sm ${voucherStyles.container}`}
+            >
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                <p
+                  className={`text-[10px] font-semibold uppercase tracking-wide ${voucherStyles.label}`}
+                >
                   Have a voucher?
                 </p>
-                <p className="mt-1 text-[11px] text-red-700/90">
+                <p className={`mt-1 text-[11px] ${voucherStyles.body}`}>
                   Enter a code to unlock amazing gifts.
                 </p>
               </div>
@@ -547,7 +648,7 @@ export default function PricingPage() {
                         setEmptyVoucherPosition(null);
                       }
                     }}
-                    className="h-8 flex-1 rounded-lg border border-red-200 bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+                    className={`h-8 flex-1 rounded-lg bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 focus:outline-none focus:ring-1 ${voucherStyles.input}`}
                   />
                   <button
                     type="button"
@@ -666,29 +767,29 @@ export default function PricingPage() {
                         setIsApplyingVoucher(false);
                       }
                     }}
-                    className="inline-flex h-8 items-center justify-center rounded-lg bg-red-500 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-red-600 disabled:opacity-60 disabled:hover:bg-red-500"
+                    className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-[11px] font-semibold text-white shadow-sm disabled:opacity-60 ${voucherStyles.button}`}
                   >
                     {isApplyingVoucher ? "Applying…" : "Apply"}
                   </button>
                 </div>
                 {voucherNotice === "empty" && null}
                 {voucherNotice === "login-required" && (
-                  <p className="text-[10px] font-medium text-red-600">
-                    Sign in to apply a voucher and unlock the Top tier.
+                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
+                    Log in to apply the voucher.
                   </p>
                 )}
                 {voucherNotice === "invalid" && (
-                  <p className="text-[10px] font-medium text-red-600">
+                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
                     This voucher code is not valid. Check the code and try again.
                   </p>
                 )}
                 {voucherNotice === "already-used" && (
-                  <p className="text-[10px] font-medium text-red-600">
+                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
                     This voucher has already been used.
                   </p>
                 )}
                 {voucherNotice === "error" && (
-                  <p className="text-[10px] font-medium text-red-600">
+                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
                     We could not apply this voucher right now. Please try again later.
                   </p>
                 )}
@@ -722,24 +823,46 @@ export default function PricingPage() {
           </>
         )}
         {voucherNotice === "applied" && voucherPlanLabel && voucherEndsAt && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-sm rounded-2xl border border-emerald-200 bg-white p-5 text-center shadow-lg sm:p-6">
-              <h2 className="text-lg font-semibold text-zinc-900">Voucher applied</h2>
-              <p className="mt-2 text-sm text-zinc-600">
-                You unlocked the {voucherPlanLabel} plan.
-              </p>
-              <p className="mt-1 text-sm text-zinc-600">
-                This plan expires in {new Date(voucherEndsAt).getFullYear()}.
-              </p>
-              <button
-                type="button"
-                onClick={() => setVoucherNotice("")}
-                className="mt-4 inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-600"
+          <>
+            <div className="pointer-events-none fixed inset-0 z-40 flex items-start justify-center px-4 pt-20 sm:px-0">
+              <div
+                className={`pointer-events-auto flex w-full max-w-md flex-col gap-3 rounded-2xl border px-5 py-4 text-[13px] shadow-lg ring-1 ring-black/5 sm:px-6 sm:py-5 ${voucherStyles.container}`}
               >
-                Close
-              </button>
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white">
+                    ✓
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide">
+                      Voucher applied
+                    </p>
+                    <p className="text-[12px] font-medium leading-snug">
+                      You unlocked the {voucherPlanLabel} plan.
+                    </p>
+                    <p className="text-[11px] leading-snug opacity-90">
+                      Your access runs until{" "}
+                      {new Date(voucherEndsAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      .
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setVoucherNotice("")}
+                    className="inline-flex items-center justify-center rounded-full border border-white/40 bg-white/10 px-3 py-1.5 text-[11px] font-medium"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+            <VoucherConfetti accent={profileBannerColor} />
+          </>
         )}
         {voucherNotice === "empty" && emptyVoucherPosition && (
           <div
@@ -756,6 +879,53 @@ export default function PricingPage() {
         )}
       </main>
       <Footer />
+    </div>
+  );
+}
+
+type VoucherConfettiProps = {
+  accent: VoucherAccentId;
+};
+
+function VoucherConfetti({ accent }: VoucherConfettiProps) {
+  const primaryColorClass =
+    accent === "emerald"
+      ? "bg-emerald-400"
+      : accent === "violet"
+        ? "bg-violet-400"
+        : accent === "amber"
+          ? "bg-amber-400"
+          : accent === "sky"
+            ? "bg-sky-400"
+            : "bg-red-400";
+
+  const secondaryColorClass =
+    accent === "emerald"
+      ? "bg-emerald-300"
+      : accent === "violet"
+        ? "bg-violet-300"
+        : accent === "amber"
+          ? "bg-amber-300"
+          : accent === "sky"
+            ? "bg-sky-300"
+            : "bg-red-300";
+
+  return (
+    <div className="pointer-events-none fixed inset-y-0 right-0 z-30 flex items-center pr-4 sm:pr-6">
+      <div className="relative h-32 w-32 sm:h-40 sm:w-40">
+        <div
+          className={`absolute left-2 top-4 h-3 w-3 rounded-sm ${primaryColorClass} celebrate-confetti-orbit`}
+        />
+        <div
+          className={`absolute right-3 top-10 h-2.5 w-2.5 rounded-sm ${secondaryColorClass} celebrate-confetti-sway`}
+        />
+        <div
+          className={`absolute bottom-2 left-6 h-20 w-1.5 rounded-full ${primaryColorClass} celebrate-ribbon-fall-a`}
+        />
+        <div
+          className={`absolute bottom-4 right-5 h-16 w-1.5 rounded-full ${secondaryColorClass} celebrate-ribbon-fall-b`}
+        />
+      </div>
     </div>
   );
 }

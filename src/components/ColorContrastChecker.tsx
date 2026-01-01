@@ -28,7 +28,18 @@ type ColorContrastCheckerProps = {
   variant?: "simple" | "full";
 };
 
-const COLOR_CONTRAST_PRESETS_STORAGE_KEY = "you-i-color-contrast-presets";
+type ColorPreset = {
+  id: string;
+  name: string;
+  textColor: string;
+  backgroundColor: string;
+  containerColor: string;
+  fontSize: string;
+  mode: "two" | "three";
+  index?: number;
+};
+
+const COLOR_CONTRAST_PRESETS_STORAGE_KEY = "zanari-color-contrast-presets";
 
 function parseHexColor(value: string): RgbColor | null {
   const hex = value.trim().replace(/^#/, "");
@@ -527,17 +538,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     return "0";
   });
   const [colorMode, setColorMode] = useState<"two" | "three">("two");
-  const [presets, setPresets] = useState<
-    {
-      id: string;
-      name: string;
-      textColor: string;
-      backgroundColor: string;
-      containerColor: string;
-      fontSize: string;
-      mode: "two" | "three";
-    }[]
-  >(() => {
+  const [presets, setPresets] = useState<ColorPreset[]>(() => {
     if (typeof window === "undefined") {
       return [];
     }
@@ -569,6 +570,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             containerColor?: unknown;
             fontSize?: unknown;
             mode?: unknown;
+            index?: unknown;
           };
 
           if (
@@ -583,6 +585,8 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             return null;
           }
 
+          const mode = value.mode as "two" | "three";
+
           return {
             id: String(value.id),
             name: value.name,
@@ -590,23 +594,20 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             backgroundColor: value.backgroundColor,
             containerColor: value.containerColor,
             fontSize: value.fontSize,
-            mode: value.mode,
+            mode,
+            index:
+              typeof value.index === "number" && Number.isFinite(value.index) && value.index > 0
+                ? value.index
+                : undefined,
           };
         })
-        .filter((preset): preset is {
-          id: string;
-          name: string;
-          textColor: string;
-          backgroundColor: string;
-          containerColor: string;
-          fontSize: string;
-          mode: "two" | "three";
-        } => Boolean(preset));
+        .filter((preset): preset is NonNullable<typeof preset> => Boolean(preset));
     } catch {
       return [];
     }
   });
   const [presetName, setPresetName] = useState("Preset 1");
+  const [presetError, setPresetError] = useState<string | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [copyNotice, setCopyNotice] = useState<CopyNoticeState | null>(null);
   const copyNoticeTimeoutRef = useRef<number | null>(null);
@@ -784,9 +785,77 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     color: formattedTextColor,
   };
 
+  const previewLabelText = "Interface section label";
+  const previewHeadingText = "Check your text contrast in context";
+  const previewBodyText =
+    "Adjust text, background, and container colors to meet WCAG contrast ratios.";
+
+  const getPresetIndex = (preset: { name: string; index?: number }): number | null => {
+    if (typeof preset.index === "number" && Number.isFinite(preset.index) && preset.index > 0) {
+      return preset.index;
+    }
+
+    const match = preset.name.match(/^Preset\s+(\d+)$/i);
+
+    if (!match) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(match[1], 10);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+
+    return parsed;
+  };
+
+  const getNextPresetNumber = (list: Array<{ name: string; index?: number }>): number => {
+    const numbers = list
+      .map((preset) => getPresetIndex(preset))
+      .filter((value): value is number => value !== null);
+
+    if (numbers.length === 0) {
+      return 1;
+    }
+
+    numbers.sort((a, b) => a - b);
+
+    for (let candidate = 1; candidate <= numbers[numbers.length - 1]; candidate += 1) {
+      if (!numbers.includes(candidate)) {
+        return candidate;
+      }
+    }
+
+    return numbers[numbers.length - 1] + 1;
+  };
+
   const handleSavePreset = () => {
     const trimmedName = presetName.trim();
-    const name = trimmedName || `Preset ${presets.length + 1}`;
+    const autoNumber = getNextPresetNumber(presets);
+    const autoName = `Preset ${autoNumber}`;
+    const name = trimmedName || autoName;
+
+    const lowerName = name.toLowerCase();
+    const hasDuplicateByName = presets.some(
+      (preset) => preset.name.trim().toLowerCase() === lowerName,
+    );
+
+    let hasDuplicateByIndex = false;
+    const presetNumberMatch = name.match(/^Preset\s+(\d+)$/i);
+
+    if (presetNumberMatch) {
+      const desiredNumber = Number.parseInt(presetNumberMatch[1], 10);
+
+      if (Number.isFinite(desiredNumber) && desiredNumber > 0) {
+        hasDuplicateByIndex = presets.some((preset) => getPresetIndex(preset) === desiredNumber);
+      }
+    }
+
+    if (hasDuplicateByName || hasDuplicateByIndex) {
+      setPresetError("Preset name is already taken.");
+      return;
+    }
 
     setPresets((current) => {
       const nextId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -801,12 +870,13 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
           containerColor,
           fontSize,
           mode: colorMode,
+          index: autoNumber,
         },
       ];
 
       if (typeof window !== "undefined") {
         try {
-          const storageKey = "you-i-workspace-presets";
+          const storageKey = "zanari-workspace-presets";
           const stored = window.localStorage.getItem(storageKey);
           const parsed = stored ? JSON.parse(stored) : [];
           const safeList = Array.isArray(parsed) ? parsed : [];
@@ -840,7 +910,15 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
       return nextPresets;
     });
 
-    setPresetName(`Preset ${presets.length + 2}`);
+    const nextNumber = getNextPresetNumber([
+      ...presets,
+      {
+        name,
+        index: autoNumber,
+      },
+    ]);
+    setPresetName(`Preset ${nextNumber}`);
+    setPresetError(null);
   };
 
   const handlePresetNameChange = (presetId: string, name: string) => {
@@ -2171,66 +2249,58 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
               <p className="text-xs font-mono text-amber-600">Enter valid hex colors</p>
             )}
           </div>
-          <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
-            <div className="relative">
-              <div
-                className={`rounded-lg border border-zinc-200 px-3 py-3 text-xs leading-relaxed transition-opacity duration-300 ${
-                  effectiveMode === "two" ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
-                style={previewStyleTwoColor}
-              >
+        <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+          <div className="rounded-lg border border-zinc-200 text-xs leading-relaxed">
+            {effectiveMode === "two" && (
+              <div className="px-3 py-3 rounded-md" style={previewStyleTwoColor}>
                 <p
                   className="font-medium opacity-80"
                   style={{ fontSize: `${supportingFontSize}px` }}
                 >
-                  Interface section label
+                  {previewLabelText}
                 </p>
                 <p
                   className="font-semibold"
                   style={{ fontSize: `${headingFontSize}px` }}
                 >
-                  Check your text contrast in context
+                  {previewHeadingText}
                 </p>
                 <p
                   className="mt-1 opacity-80"
                   style={{ fontSize: `${bodyFontSizeValue}px` }}
                 >
-                  Adjust text, background, and container colors to meet WCAG contrast ratios.
+                  {previewBodyText}
                 </p>
               </div>
-              {isFull && (
+            )}
+            {isFull && effectiveMode === "three" && (
+              <div className="p-3 rounded-md" style={previewStyleThreeColorOuter}>
                 <div
-                  className={`absolute inset-0 rounded-lg border border-zinc-200 p-3 text-xs leading-relaxed transition-opacity duration-300 ${
-                    effectiveMode === "three" ? "opacity-100" : "pointer-events-none opacity-0"
-                  }`}
-                  style={previewStyleThreeColorOuter}
+                  className="rounded-md px-3 py-3"
+                  style={previewStyleThreeColorInner}
                 >
-                  <div
-                    className="rounded-md px-3 py-3"
-                    style={previewStyleThreeColorInner}
+                  <p
+                    className="font-medium opacity-80"
+                    style={{ fontSize: `${supportingFontSize}px` }}
                   >
-                    <p
-                      className="font-medium opacity-80"
-                      style={{ fontSize: `${supportingFontSize}px` }}
-                    >
-                      Nested container section label
-                    </p>
-                    <p
-                      className="font-semibold"
-                      style={{ fontSize: `${headingFontSize}px` }}
-                    >
-                      Validate layered background, container, and text together
-                    </p>
-                    <p
-                      className="mt-1 opacity-80"
-                      style={{ fontSize: `${bodyFontSizeValue}px` }}
-                    >
-                      Ensure every level of your UI maintains readable contrast in real layouts.
-                    </p>
-                  </div>
+                    {previewLabelText}
+                  </p>
+                  <p
+                    className="font-semibold"
+                    style={{ fontSize: `${headingFontSize}px` }}
+                  >
+                    {previewHeadingText}
+                  </p>
+                  <p
+                    className="mt-1 opacity-80"
+                    style={{ fontSize: `${bodyFontSizeValue}px` }}
+                  >
+                    {previewBodyText}
+                  </p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
             {isFull && (
               <>
                 {effectiveMode === "two" && (
@@ -2348,8 +2418,13 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 value={presetName}
-                onChange={(event) => setPresetName(event.target.value)}
-                placeholder={`Preset ${presets.length + 1}`}
+                onChange={(event) => {
+                  setPresetName(event.target.value);
+                  if (presetError) {
+                    setPresetError(null);
+                  }
+                }}
+                placeholder={`Preset ${getNextPresetNumber(presets)}`}
                 className="h-8 flex-1 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] text-zinc-900 outline-none ring-red-100 placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-offset-0"
               />
               <button
@@ -2360,6 +2435,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                 Save preset
               </button>
             </div>
+            {presetError && (
+              <p className="mt-1 text-[10px] text-red-600">{presetError}</p>
+            )}
             {presets.length > 0 && (
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {presets.map((preset) => {
@@ -2421,7 +2499,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
                             }
                             if (typeof window !== "undefined") {
                               try {
-                                const storageKey = "you-i-workspace-presets";
+                                const storageKey = "zanari-workspace-presets";
                                 const stored = window.localStorage.getItem(storageKey);
                                 if (stored) {
                                   const parsed = JSON.parse(stored);

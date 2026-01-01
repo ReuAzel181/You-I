@@ -47,6 +47,19 @@ type WaveParams = {
   shape: WaveShape;
 };
 
+type WaveFavorite = {
+  id: string;
+  position: WavePosition;
+  shape: WaveShape;
+  heightValue: string;
+  intensityValue: string;
+  fillColor: string;
+  backgroundColor: string;
+  createdAt: string;
+};
+
+const WAVE_FAVORITES_STORAGE_KEY = "zanari-wave-favorites";
+
 function parseHexColor(value: string): RgbColor | null {
   const hex = value.trim().replace(/^#/, "");
 
@@ -362,6 +375,87 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
   const effectiveNudgeAmount =
     Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [waveFavorites, setWaveFavorites] = useState<WaveFavorite[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const stored = window.localStorage.getItem(WAVE_FAVORITES_STORAGE_KEY);
+
+      if (!stored) {
+        return [];
+      }
+
+      const parsed = JSON.parse(stored) as unknown;
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      const mapped = parsed
+        .map((item) => {
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+
+          const value = item as {
+            id?: unknown;
+            position?: unknown;
+            shape?: unknown;
+            heightValue?: unknown;
+            intensityValue?: unknown;
+            fillColor?: unknown;
+            backgroundColor?: unknown;
+            createdAt?: unknown;
+          };
+
+          if (
+            typeof value.position !== "string" ||
+            (value.position !== "top" && value.position !== "bottom")
+          ) {
+            return null;
+          }
+
+          if (
+            typeof value.shape !== "string" ||
+            (value.shape !== "smooth" && value.shape !== "peaks")
+          ) {
+            return null;
+          }
+
+          if (typeof value.heightValue !== "string" || typeof value.intensityValue !== "string") {
+            return null;
+          }
+
+          if (typeof value.fillColor !== "string" || typeof value.backgroundColor !== "string") {
+            return null;
+          }
+
+          const base = {
+            id:
+              typeof value.id === "string"
+                ? value.id
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            position: value.position as WavePosition,
+            shape: value.shape as WaveShape,
+            heightValue: value.heightValue,
+            intensityValue: value.intensityValue,
+            fillColor: value.fillColor,
+            backgroundColor: value.backgroundColor,
+            createdAt:
+              typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
+          } satisfies WaveFavorite;
+
+          return base;
+        })
+        .filter((item): item is WaveFavorite => Boolean(item));
+
+      return mapped;
+    } catch {
+      return [];
+    }
+  });
   const cardRef = useRef<HTMLDivElement | null>(null);
   const positionToggleRef = useRef<HTMLDivElement | null>(null);
   const downloadToggleRef = useRef<HTMLDivElement | null>(null);
@@ -452,6 +546,76 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
   });
   const isMorphingRef = useRef(false);
   const morphFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      WAVE_FAVORITES_STORAGE_KEY,
+      JSON.stringify(waveFavorites),
+    );
+  }, [waveFavorites]);
+
+  const currentWaveFavorite = useMemo<WaveFavorite>(
+    () => ({
+      id: "current",
+      position,
+      shape,
+      heightValue,
+      intensityValue,
+      fillColor,
+      backgroundColor,
+      createdAt: new Date().toISOString(),
+    }),
+    [position, shape, heightValue, intensityValue, fillColor, backgroundColor],
+  );
+
+  const hasFavoriteForCurrentConfig = useMemo(
+    () =>
+      waveFavorites.some(
+        (favorite) =>
+          favorite.position === currentWaveFavorite.position &&
+          favorite.shape === currentWaveFavorite.shape &&
+          favorite.heightValue === currentWaveFavorite.heightValue &&
+          favorite.intensityValue === currentWaveFavorite.intensityValue &&
+          favorite.fillColor === currentWaveFavorite.fillColor &&
+          favorite.backgroundColor === currentWaveFavorite.backgroundColor,
+      ),
+    [waveFavorites, currentWaveFavorite],
+  );
+
+  function handleToggleFavoriteWave() {
+    setWaveFavorites((current) => {
+      const existingIndex = current.findIndex(
+        (favorite) =>
+          favorite.position === currentWaveFavorite.position &&
+          favorite.shape === currentWaveFavorite.shape &&
+          favorite.heightValue === currentWaveFavorite.heightValue &&
+          favorite.intensityValue === currentWaveFavorite.intensityValue &&
+          favorite.fillColor === currentWaveFavorite.fillColor &&
+          favorite.backgroundColor === currentWaveFavorite.backgroundColor,
+      );
+
+      if (existingIndex !== -1) {
+        return current.filter((_, index) => index !== existingIndex);
+      }
+
+      const next: WaveFavorite = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        position: currentWaveFavorite.position,
+        shape: currentWaveFavorite.shape,
+        heightValue: currentWaveFavorite.heightValue,
+        intensityValue: currentWaveFavorite.intensityValue,
+        fillColor: currentWaveFavorite.fillColor,
+        backgroundColor: currentWaveFavorite.backgroundColor,
+        createdAt: new Date().toISOString(),
+      };
+
+      return [next, ...current];
+    });
+  }
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -2080,6 +2244,27 @@ export function SvgWaveGenerator({ variant = "full" }: SvgWaveGeneratorProps) {
                     backgroundColor: backgroundColor === "transparent" ? "transparent" : backgroundColor,
                   }}
                 />
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-end p-2">
+                  <button
+                    type="button"
+                    onClick={handleToggleFavoriteWave}
+                    aria-label={
+                      hasFavoriteForCurrentConfig
+                        ? "Remove wave from favorites"
+                        : "Add wave to favorites"
+                    }
+                    className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-[11px] text-zinc-400 shadow-sm transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
+                      <path
+                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.04 4 9.54 4.81 10.35 6.09 11.16 4.81 12.66 4 14.2 4 16.7 4 18.7 6 18.7 8.5c0 3.78-3.4 6.86-8.55 11.54z"
+                        fill={hasFavoriteForCurrentConfig ? "#ef4444" : "none"}
+                        stroke={hasFavoriteForCurrentConfig ? "#ef4444" : "currentColor"}
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                  </button>
+                </div>
                 <svg
                   viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                   preserveAspectRatio="none"

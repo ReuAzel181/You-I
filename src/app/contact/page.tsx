@@ -16,17 +16,17 @@ const faqItems = [
       "Tell us how many people are designing or reviewing interfaces and how often you run checks. We will suggest a plan that fits your current workflow.",
   },
   {
-    question: "Can YOU-I match the files and tools we already use?",
+    question: "Can Zanari match the files and tools we already use?",
     answer:
       "Share which design tools, repos, or handoff flows you rely on today and we will outline how pinned tools and presets can slot into that setup.",
   },
   {
-    question: "How do analytics and privacy work in YOU-I?",
+    question: "How do analytics and privacy work in Zanari?",
     answer:
       "Let us know what your team privacy requirements look like and we will explain how local analytics and account data are handled.",
   },
   {
-    question: "Can I use YOU-I on a small client project?",
+    question: "Can I use Zanari on a small client project?",
     answer:
       "Yes. Include a short description of the client work, timelines, and how often you expect to run checks so we can suggest a lightweight setup.",
   },
@@ -38,7 +38,7 @@ const faqItems = [
   {
     question: "What if I only need a one-off audit or review?",
     answer:
-      "Describe the interface or flow you are reviewing and what kind of report you need. We will suggest how to use YOU-I for focused reviews.",
+      "Describe the interface or flow you are reviewing and what kind of report you need. We will suggest how to use Zanari for focused reviews.",
   },
   {
     question: "How quickly do you usually reply to messages?",
@@ -112,10 +112,10 @@ export default function ContactPage() {
                       Contact
                     </div>
                     <h1 className="text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-                      Questions about pricing or using YOU-I?
+                      Questions about pricing or using Zanari?
                     </h1>
                     <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                      Reach out with questions about plans, workflows, or how YOU-I fits into your
+                      Reach out with questions about plans, workflows, or how Zanari fits into your
                       team&apos;s design process. We keep replies focused on real interface work, not
                       sales scripts.
                     </p>
@@ -144,11 +144,11 @@ export default function ContactPage() {
                       Talk to us
                     </p>
                     <h2 className="mt-1 text-sm font-semibold text-zinc-900">
-                      Share what you&apos;re designing and what you need from YOU-I
+                      Share what you&apos;re designing and what you need from Zanari
                     </h2>
                     <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
                       The more context you share, the more specific we can be in our reply. Include the
-                      tools you use today, how often you run accessibility checks, and where YOU-I would
+                      tools you use today, how often you run accessibility checks, and where Zanari would
                       sit in your workflow.
                     </p>
                     <form
@@ -366,7 +366,7 @@ export default function ContactPage() {
                           onChange={(event) => setMessage(event.target.value)}
                           rows={5}
                           className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] text-zinc-900 outline-none ring-0 transition-colors focus:border-red-400 focus:bg-red-50/40"
-                          placeholder="Share a short note about your product, your current accessibility checks, and what you hope YOU-I can help with."
+                          placeholder="Share a short note about your product, your current accessibility checks, and what you hope Zanari can help with."
                           required
                         />
                       </div>

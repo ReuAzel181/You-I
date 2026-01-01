@@ -103,7 +103,7 @@ export default function SettingsPage() {
       }
 
       try {
-        const raw = window.localStorage.getItem("you-i-analytics-log");
+        const raw = window.localStorage.getItem("zanari-analytics-log");
 
         if (!raw) {
           if (!cancelled) {
@@ -615,7 +615,7 @@ export default function SettingsPage() {
                 Account preferences
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-zinc-600">
-                Adjust how your account, interface, and notifications behave across the YOU-I
+                Adjust how your account, interface, and notifications behave across the Zanari
                 toolkit.
               </p>
             </div>
@@ -694,7 +694,7 @@ export default function SettingsPage() {
                           <p className="text-xs font-medium text-zinc-500">Profile</p>
                           <h2 className="text-sm font-semibold text-zinc-900">Identity</h2>
                           <p className="text-[11px] text-zinc-500">
-                            Adjust how your name and status appear inside YOU-I.
+                            Adjust how your name and status appear inside Zanari.
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-1">
@@ -956,7 +956,7 @@ export default function SettingsPage() {
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <p className="font-medium">Enable focus mode</p>
                         <p className="text-[11px] text-zinc-500">
-                          When on, YOU-I aims to minimize non-essential animations and prompts.
+                          When on, Zanari aims to minimize non-essential animations and prompts.
                         </p>
                       </div>
                     <span
@@ -983,7 +983,7 @@ export default function SettingsPage() {
                   <p className="text-xs font-medium text-zinc-500">Notifications</p>
                   <h2 className="text-sm font-semibold text-zinc-900">Email updates</h2>
                   <p className="text-[11px] text-zinc-500">
-                    Decide which emails you would like to receive from YOU-I.
+                    Decide which emails you would like to receive from Zanari.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1044,7 +1044,7 @@ export default function SettingsPage() {
                   <p className="text-xs font-medium text-zinc-500">Subscription</p>
                   <h2 className="text-sm font-semibold text-zinc-900">Plan overview</h2>
                   <p className="text-[11px] text-zinc-500">
-                    See which pricing mode you are currently on in YOU-I.
+                    See which pricing mode you are currently on in Zanari.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1123,7 +1123,7 @@ export default function SettingsPage() {
                   <p className="text-xs font-medium text-zinc-500">Privacy</p>
                   <h2 className="text-sm font-semibold text-zinc-900">Data and storage</h2>
                   <p className="text-[11px] text-zinc-500">
-                    Understand how data from the YOU-I toolkit is stored on your device.
+                    Understand how data from the Zanari toolkit is stored on your device.
                   </p>
                 </div>
                 <ul className="space-y-2 text-[11px] text-zinc-600">
@@ -1143,10 +1143,10 @@ export default function SettingsPage() {
                       className="h-3 w-3"
                     />
                   </span>
-                  <span>About YOU-I</span>
+                  <span>About Zanari</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
-                  YOU-I is a focused toolkit for interface design work. Over time, more preferences
+                  Zanari is a focused toolkit for interface design work. Over time, more preferences
                   for privacy, integrations, and keyboard shortcuts will appear here as the toolkit
                   grows.
                 </p>
@@ -1447,7 +1447,7 @@ export default function SettingsPage() {
               event.stopPropagation();
             }}
           >
-            <div className="h-1 w-full bg-gradient-to-r from-red-400 via-red-500 to-red-400" />
+            <div className="h-1 w-full bg-[linear-gradient(to_right,var(--primary-400),var(--primary-500),var(--primary-400))]" />
             <div className="p-5 text-center">
               <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[14px] font-semibold text-white">
