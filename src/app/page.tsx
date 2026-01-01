@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { ToolGrid, type Tool, tools as allTools } from "@/components/ToolGrid";
@@ -218,6 +219,133 @@ function PinnedToolHero({ tools, onClear }: PinnedToolHeroProps) {
   );
 }
 
+function HomeSkeleton() {
+  return (
+    <>
+      <section className="min-h-screen border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
+        <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 pt-8 pb-12 md:px-8">
+          <div className="grid gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-medium text-zinc-400 animate-pulse">
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+                <span className="h-3 w-32 rounded-full bg-zinc-200" />
+              </div>
+              <div className="space-y-3">
+                <div className="h-7 w-64 rounded-full bg-zinc-200 animate-pulse" />
+                <div className="h-3 w-72 rounded-full bg-zinc-200 animate-pulse" />
+                <div className="h-3 w-60 rounded-full bg-zinc-200 animate-pulse" />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="h-9 w-32 rounded-full bg-zinc-200 animate-pulse" />
+                <div className="h-9 w-28 rounded-full bg-zinc-100 animate-pulse" />
+              </div>
+            </div>
+            <div className="hidden md:block">
+              <div className="w-full rounded-2xl border border-zinc-200 bg-white/80 p-4 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-zinc-200" />
+                    <span className="h-2 w-2 rounded-full bg-zinc-200" />
+                    <span className="h-2 w-2 rounded-full bg-zinc-200" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-4 w-20 rounded-full bg-zinc-200" />
+                    <span className="hidden h-4 w-20 rounded-full bg-zinc-100 sm:inline-block" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 rounded-full bg-zinc-200" />
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded bg-zinc-200" />
+                        <div className="h-3 w-28 rounded-full bg-zinc-200" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 rounded-full bg-zinc-200" />
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded bg-zinc-200" />
+                        <div className="h-3 w-28 rounded-full bg-zinc-200" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 rounded-full bg-zinc-200" />
+                      <div className="h-5 w-16 rounded-full bg-zinc-200" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="h-4 w-16 rounded-full bg-zinc-200" />
+                      <div className="h-4 w-16 rounded-full bg-zinc-200" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div key={index} className="h-8 rounded-lg bg-white" />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-gradient-to-r from-zinc-50 to-white px-4 py-3">
+                    <div className="space-y-2">
+                      <div className="h-3 w-28 rounded-full bg-zinc-200" />
+                      <div className="h-3 w-40 rounded-full bg-zinc-200" />
+                    </div>
+                    <div className="h-5 w-20 rounded-full bg-zinc-200" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="border-b border-zinc-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:py-16">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-3">
+              <div className="h-5 w-56 rounded-full bg-zinc-200 animate-pulse" />
+              <div className="space-y-2">
+                <div className="h-3 w-72 rounded-full bg-zinc-200 animate-pulse" />
+                <div className="h-3 w-64 rounded-full bg-zinc-200 animate-pulse" />
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-2 text-xs text-zinc-500 md:items-end">
+              <div className="h-3 w-40 rounded-full bg-zinc-100 animate-pulse" />
+              <div className="inline-flex items-center gap-2">
+                <div className="h-7 w-28 rounded-full bg-zinc-100 animate-pulse" />
+                <div className="h-7 w-24 rounded-full bg-zinc-100 animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-4 animate-pulse"
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-md bg-zinc-200" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 rounded-full bg-zinc-200" />
+                      <div className="h-3 w-20 rounded-full bg-zinc-100" />
+                    </div>
+                  </div>
+                  <div className="h-7 w-7 rounded-full bg-zinc-100" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-full rounded-full bg-zinc-200" />
+                  <div className="h-3 w-5/6 rounded-full bg-zinc-200" />
+                  <div className="h-3 w-2/3 rounded-full bg-zinc-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default function Home() {
   const [pinnedTools, setPinnedTools] = useState<Tool[]>(() => {
     if (typeof window === "undefined") {
@@ -279,34 +407,68 @@ export default function Home() {
     window.localStorage.setItem(PINNED_TOOLS_STORAGE_KEY, JSON.stringify(names));
   }, [pinnedTools]);
 
+  const searchParams = useSearchParams();
+  const activeToolSlug = searchParams.get("tool");
+
+  const displayedPinnedTools = useMemo(() => {
+    if (!activeToolSlug) {
+      return pinnedTools;
+    }
+
+    const matchIndex = pinnedTools.findIndex((tool) => {
+      if (!tool.href) {
+        return false;
+      }
+
+      const segments = tool.href.split("/");
+      const slug = segments[segments.length - 1] || "";
+
+      return slug === activeToolSlug;
+    });
+
+    if (matchIndex <= 0) {
+      return pinnedTools;
+    }
+
+    const match = pinnedTools[matchIndex];
+
+    return [match, ...pinnedTools.filter((_, index) => index !== matchIndex)];
+  }, [activeToolSlug, pinnedTools]);
+
   return (
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
       <Header />
       <main>
-        {hasHydrated && pinnedTools.length > 0 ? (
-          <PinnedToolHero
-            tools={pinnedTools}
-            onClear={(toolName) =>
-              setPinnedTools((current) => current.filter((tool) => tool.name !== toolName))
-            }
-          />
+        {!hasHydrated ? (
+          <HomeSkeleton />
         ) : (
-          <Hero />
-        )}
-        <ToolGrid
-          pinnedToolNames={hasHydrated ? pinnedTools.map((tool) => tool.name) : []}
-          onPinTool={(tool) =>
-            setPinnedTools((current) => {
-              const isAlreadyPinned = current.some((item) => item.name === tool.name);
-              if (isAlreadyPinned) {
-                return current.filter((item) => item.name !== tool.name);
+          <>
+            {pinnedTools.length > 0 ? (
+              <PinnedToolHero
+                tools={displayedPinnedTools}
+                onClear={(toolName) =>
+                  setPinnedTools((current) => current.filter((tool) => tool.name !== toolName))
+                }
+              />
+            ) : (
+              <Hero />
+            )}
+            <ToolGrid
+              pinnedToolNames={pinnedTools.map((tool) => tool.name)}
+              onPinTool={(tool) =>
+                setPinnedTools((current) => {
+                  const isAlreadyPinned = current.some((item) => item.name === tool.name);
+                  if (isAlreadyPinned) {
+                    return current.filter((item) => item.name !== tool.name);
+                  }
+                  return [...current, tool];
+                })
               }
-              return [...current, tool];
-            })
-          }
-        />
-        <FeatureSections />
-        <CTASection />
+            />
+            <FeatureSections />
+            <CTASection />
+          </>
+        )}
       </main>
       <Footer />
     </div>

@@ -478,6 +478,10 @@ html.no-smooth-scroll {
   border-color: var(--primary-500) !important;
 }
 
+.text-red-100 {
+  color: var(--primary-100) !important;
+}
+
 .text-red-400 {
   color: var(--primary-400) !important;
 }
@@ -512,6 +516,14 @@ html.no-smooth-scroll {
 
 .focus\:border-red-400:focus {
   border-color: var(--primary-400) !important;
+}
+
+.focus-within\:border-red-400:focus-within {
+  border-color: var(--primary-400) !important;
+}
+
+.focus-within\:ring-red-100:focus-within {
+  --tw-ring-color: var(--primary-100) !important;
 }
 
 .hover\:border-red-200:hover {

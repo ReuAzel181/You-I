@@ -47,6 +47,7 @@ export default function RatioCalculatorPage() {
   const [viewportPixelWidth, setViewportPixelWidth] = useState(0);
   const [pagePixelWidth, setPagePixelWidth] = useState(0);
   const [viewportPreset, setViewportPreset] = useState<ViewportPresetId>("none");
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,6 +76,28 @@ export default function RatioCalculatorPage() {
 
   const isBoxWiderThanSection =
     hasDimensions && effectiveSectionWidth > 0 && previewBoxWidth > effectiveSectionWidth;
+
+  const handleBackClick = () => {
+    if (typeof window === "undefined" || isLeaving) {
+      return;
+    }
+
+    const root = document.documentElement;
+
+    root.classList.add("no-smooth-scroll");
+    root.classList.add("page-transition-leave");
+    setIsLeaving(true);
+
+    window.setTimeout(() => {
+      router.push("/?tool=ratio-calculator");
+
+      window.setTimeout(() => {
+        root.classList.remove("page-transition-leave");
+        root.classList.remove("no-smooth-scroll");
+        setIsLeaving(false);
+      }, 220);
+    }, 160);
+  };
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -156,20 +179,7 @@ export default function RatioCalculatorPage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (typeof document !== "undefined") {
-                    document.documentElement.classList.add("no-smooth-scroll");
-                    window.setTimeout(() => {
-                      document.documentElement.classList.remove("no-smooth-scroll");
-                    }, 800);
-                  }
-
-                  if (window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push("/#tools");
-                  }
-                }}
+                onClick={handleBackClick}
                 className="inline-flex h-7 items-center gap-1 rounded-full border border-red-300 px-3 text-[11px] font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600"
                 aria-label="Back to main page"
               >

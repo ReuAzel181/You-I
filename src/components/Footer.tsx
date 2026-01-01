@@ -1,4 +1,7 @@
+ "use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const columns = [
   {
@@ -30,6 +33,22 @@ const columns = [
 ];
 
 export function Footer() {
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setHasHydrated(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, []);
+
+  if (!hasHydrated) {
+    return <FooterSkeleton />;
+  }
+
   return (
     <footer className="border-t border-zinc-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
@@ -95,6 +114,53 @@ export function Footer() {
             <span className="hidden text-[11px] text-zinc-400 sm:inline">
               Preferences, analytics, and pinned tools stay in your browser.
             </span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function FooterSkeleton() {
+  return (
+    <footer className="border-t border-zinc-200 bg-white">
+      <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
+        <div className="mb-8 grid gap-8 md:grid-cols-[1.6fr,2fr]">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-md bg-zinc-200 animate-pulse" />
+              <div className="h-4 w-20 rounded-full bg-zinc-200 animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-3 w-56 rounded-full bg-zinc-200 animate-pulse" />
+              <div className="h-3 w-64 rounded-full bg-zinc-200 animate-pulse" />
+              <div className="h-3 w-52 rounded-full bg-zinc-200 animate-pulse" />
+            </div>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="space-y-3">
+                <div className="h-3 w-20 rounded-full bg-zinc-200 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-3 w-28 rounded-full bg-zinc-100 animate-pulse" />
+                  <div className="h-3 w-24 rounded-full bg-zinc-100 animate-pulse" />
+                  <div className="h-3 w-32 rounded-full bg-zinc-100 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden items-start justify-end gap-2 text-[10px] text-zinc-500 md:flex">
+            <div className="h-6 w-28 rounded-full bg-zinc-200 animate-pulse" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 border-t border-zinc-100 pt-4 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+          <div className="h-3 w-56 rounded-full bg-zinc-200 animate-pulse" />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="h-6 w-40 rounded-full bg-zinc-200 animate-pulse" />
+            <div className="h-3 w-16 rounded-full bg-zinc-100 animate-pulse" />
+            <div className="h-3 w-16 rounded-full bg-zinc-100 animate-pulse" />
+            <div className="h-3 w-24 rounded-full bg-zinc-100 animate-pulse" />
+            <div className="hidden h-3 w-56 rounded-full bg-zinc-100 animate-pulse sm:block" />
           </div>
         </div>
       </div>

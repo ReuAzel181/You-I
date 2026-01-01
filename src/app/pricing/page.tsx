@@ -14,6 +14,7 @@ export default function PricingPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
   const { user, isLoading } = useAuth();
   const { profileCountry, subscriptionMode, setSubscriptionMode } = useSettings();
+  const [hasHydrated, setHasHydrated] = useState(false);
   const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherNotice, setVoucherNotice] = useState<
@@ -38,6 +39,16 @@ export default function PricingPage() {
 
     trackEvent("view_pricing", { path: "/pricing" });
   }, [analyticsEnabled, trackEvent]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setHasHydrated(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, []);
 
   const showAuthNotice = !user && !isLoading;
 
@@ -83,6 +94,10 @@ export default function PricingPage() {
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
       <Header />
       <main>
+        {!hasHydrated ? (
+          <PricingSkeleton />
+        ) : (
+          <>
         <section>
           <div className="mx-auto max-w-6xl px-4 pt-12 pb-6 md:px-8 ">
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
@@ -704,6 +719,8 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
+          </>
+        )}
         {voucherNotice === "applied" && voucherPlanLabel && voucherEndsAt && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-sm rounded-2xl border border-emerald-200 bg-white p-5 text-center shadow-lg sm:p-6">
@@ -740,5 +757,111 @@ export default function PricingPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+function PricingSkeleton() {
+  return (
+    <>
+      <section>
+        <div className="mx-auto max-w-6xl px-4 pt-12 pb-6 md:px-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-medium text-zinc-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+                <span className="h-3 w-24 rounded-full bg-zinc-200" />
+              </div>
+              <div className="space-y-3">
+                <div className="h-6 w-56 rounded-full bg-zinc-200" />
+                <div className="h-3 w-72 rounded-full bg-zinc-200" />
+                <div className="h-3 w-64 rounded-full bg-zinc-200" />
+              </div>
+            </div>
+            <div className="flex items-center">
+              <div className="inline-flex h-7 items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 text-[11px] text-zinc-400">
+                <span className="h-3 w-3 rounded-full bg-zinc-200" />
+                <span className="h-3 w-16 rounded-full bg-zinc-200" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="bg-[var(--background)]">
+        <div className="mx-auto max-w-6xl px-4 pb-12 md:px-8">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-[10px] text-zinc-400">
+              <span className="h-7 w-20 rounded-full bg-zinc-200" />
+              <span className="h-7 w-24 rounded-full bg-zinc-200" />
+            </div>
+            <div className="text-right text-[10px] text-zinc-400">
+              <div className="h-3 w-40 rounded-full bg-zinc-200 ml-auto" />
+            </div>
+          </div>
+          <div className="grid items-center gap-4 pb-6 md:grid-cols-3">
+            <div className="flex flex-col rounded-2xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="h-4 w-24 rounded-full bg-zinc-200" />
+                <div className="h-5 w-20 rounded-full bg-zinc-200" />
+              </div>
+              <div className="mt-3 h-7 w-24 rounded-full bg-zinc-200" />
+              <div className="mt-2 h-3 w-40 rounded-full bg-zinc-200" />
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-zinc-200" />
+                  <div className="h-3 w-32 rounded-full bg-zinc-200" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-zinc-200" />
+                  <div className="h-3 w-32 rounded-full bg-zinc-200" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-zinc-200" />
+                  <div className="h-3 w-32 rounded-full bg-zinc-200" />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col justify-center rounded-2xl border-2 border-zinc-200 bg-zinc-50 p-5 shadow-sm sm:p-6 md:h-[26rem]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="h-4 w-12 rounded-full bg-zinc-200" />
+                  <div className="h-4 w-20 rounded-full bg-zinc-100" />
+                </div>
+                <div className="h-5 w-20 rounded-full bg-zinc-200" />
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="h-8 w-24 rounded-full bg-zinc-200" />
+                <div className="h-3 w-40 rounded-full bg-zinc-200" />
+              </div>
+              <div className="mt-4 space-y-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-zinc-200" />
+                    <div className="h-3 w-40 rounded-full bg-zinc-100" />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 h-8 w-32 rounded-full bg-zinc-200" />
+            </div>
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="h-4 w-16 rounded-full bg-zinc-200" />
+                <div className="h-5 w-20 rounded-full bg-zinc-200" />
+              </div>
+              <div className="mt-3 h-7 w-24 rounded-full bg-zinc-200" />
+              <div className="mt-2 h-3 w-40 rounded-full bg-zinc-200" />
+              <div className="mt-3 space-y-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-zinc-200" />
+                    <div className="h-3 w-40 rounded-full bg-zinc-100" />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 h-8 w-32 rounded-full bg-zinc-200" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

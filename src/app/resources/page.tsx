@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAnalytics } from "@/providers/SettingsProvider";
-import { PageTransitionLink } from "@/components/PageTransitionLink";
 
 export default function ResourcesPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -18,11 +18,24 @@ export default function ResourcesPage() {
     trackEvent("view_resources", { path: "/resources" });
   }, [analyticsEnabled, trackEvent]);
 
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setHasHydrated(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen font-sans bg-[var(--background)] text-[var(--foreground)]">
       <Header />
       <main>
-        <section
+        {!hasHydrated ? (
+          <ResourcesSkeleton />
+        ) : (
+          <section
           id="solutions"
           className="border-t border-zinc-100 bg-[var(--background)] py-8 md:py-10"
         >
@@ -304,8 +317,55 @@ export default function ResourcesPage() {
             </div>
           </div>
         </section>
+        )}
       </main>
       <Footer />
     </div>
+  );
+}
+
+function ResourcesSkeleton() {
+  return (
+    <section className="border-t border-zinc-100 bg-[var(--background)] py-8 md:py-10">
+      <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-medium text-zinc-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+              <span className="h-3 w-40 rounded-full bg-zinc-200" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-6 w-64 rounded-full bg-zinc-200" />
+              <div className="h-3 w-72 rounded-full bg-zinc-200" />
+              <div className="h-3 w-60 rounded-full bg-zinc-200" />
+            </div>
+          </div>
+          <div className="flex w-full max-w-xs flex-col items-start gap-2 self-end md:w-auto md:self-auto md:items-end">
+            <div className="h-3 w-40 rounded-full bg-zinc-200" />
+            <div className="flex flex-wrap gap-2">
+              <div className="h-7 w-28 rounded-full bg-zinc-200" />
+              <div className="h-7 w-28 rounded-full bg-zinc-100" />
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <article
+              key={index}
+              className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6"
+            >
+              <div className="h-3 w-32 rounded-full bg-zinc-200" />
+              <div className="mt-2 h-4 w-40 rounded-full bg-zinc-200" />
+              <div className="mt-3 space-y-2">
+                <div className="h-3 w-full rounded-full bg-zinc-100" />
+                <div className="h-3 w-5/6 rounded-full bg-zinc-100" />
+                <div className="h-3 w-3/4 rounded-full bg-zinc-100" />
+              </div>
+              <div className="mt-4 h-7 w-36 rounded-full bg-zinc-100" />
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

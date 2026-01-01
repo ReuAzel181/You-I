@@ -17,6 +17,8 @@ const navItems = [
   { label: "Admin", href: "/admin", requiresAdmin: true },
 ];
 
+const ADMIN_FLAG_STORAGE_KEY = "you-i-is-admin";
+
 export function Header() {
   const pathname = usePathname();
   const {
@@ -68,12 +70,31 @@ export function Header() {
   }, [user]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const cached = window.localStorage.getItem(ADMIN_FLAG_STORAGE_KEY);
+
+      if (cached === "1") {
+        setIsAdmin(true);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     let isCancelled = false;
 
     const checkAdmin = async () => {
       if (!user) {
         if (!isCancelled) {
           setIsAdmin(false);
+          if (typeof window !== "undefined") {
+            try {
+              window.localStorage.removeItem(ADMIN_FLAG_STORAGE_KEY);
+            } catch {}
+          }
         }
         return;
       }
@@ -89,16 +110,38 @@ export function Header() {
         if (error) {
           if (!isCancelled) {
             setIsAdmin(false);
+            if (typeof window !== "undefined") {
+              try {
+                window.localStorage.removeItem(ADMIN_FLAG_STORAGE_KEY);
+              } catch {}
+            }
           }
           return;
         }
 
+        const nextIsAdmin = (data?.role as string | null) === "admin";
+
         if (!isCancelled) {
-          setIsAdmin((data?.role as string | null) === "admin");
+          setIsAdmin(nextIsAdmin);
+
+          if (typeof window !== "undefined") {
+            try {
+              if (nextIsAdmin) {
+                window.localStorage.setItem(ADMIN_FLAG_STORAGE_KEY, "1");
+              } else {
+                window.localStorage.removeItem(ADMIN_FLAG_STORAGE_KEY);
+              }
+            } catch {}
+          }
         }
       } catch {
         if (!isCancelled) {
           setIsAdmin(false);
+          if (typeof window !== "undefined") {
+            try {
+              window.localStorage.removeItem(ADMIN_FLAG_STORAGE_KEY);
+            } catch {}
+          }
         }
       }
     };
@@ -463,6 +506,13 @@ export function Header() {
                   <span className="inline text-[11px] text-zinc-400 md:hidden">Settings</span>
                 </PageTransitionLink>
               </>
+            ) : isLoading ? (
+              <div className="hidden md:flex">
+                <div className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5">
+                  <span className="h-6 w-6 rounded-full bg-zinc-200" />
+                  <span className="h-3 w-20 rounded-full bg-zinc-200" />
+                </div>
+              </div>
             ) : (
               <>
                 <button
@@ -470,7 +520,7 @@ export function Header() {
                   onClick={() => openAuth("login")}
                   className="hidden rounded-full border border-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-700 shadow-[0_0_0_0_rgba(0,0,0,0)] transition-colors transition-transform hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-sm active:translate-y-0 active:scale-95 md:inline-flex"
                 >
-                  {isLoading ? "Loading..." : "Log in"}
+                  Log in
                 </button>
                 <button
                   type="button"

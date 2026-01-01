@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -13,6 +13,7 @@ export default function TypeScalePage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
   const { profileBannerColor } = useSettings();
   const chevronIconSrc = `/icons/chevron/chevron_${profileBannerColor}.svg`;
+  const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -21,6 +22,28 @@ export default function TypeScalePage() {
 
     trackEvent("view_type_scale", { path: "/tools/type-scale" });
   }, [analyticsEnabled, trackEvent]);
+
+  const handleBackClick = () => {
+    if (typeof window === "undefined" || isLeaving) {
+      return;
+    }
+
+    const root = document.documentElement;
+
+    root.classList.add("no-smooth-scroll");
+    root.classList.add("page-transition-leave");
+    setIsLeaving(true);
+
+    window.setTimeout(() => {
+      router.push("/?tool=type-scale");
+
+      window.setTimeout(() => {
+        root.classList.remove("page-transition-leave");
+        root.classList.remove("no-smooth-scroll");
+        setIsLeaving(false);
+      }, 220);
+    }, 160);
+  };
 
   return (
     <div className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)]">
@@ -45,20 +68,7 @@ export default function TypeScalePage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (typeof document !== "undefined") {
-                    document.documentElement.classList.add("no-smooth-scroll");
-                    window.setTimeout(() => {
-                      document.documentElement.classList.remove("no-smooth-scroll");
-                    }, 800);
-                  }
-
-                  if (window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push("/#tools");
-                  }
-                }}
+                onClick={handleBackClick}
                 className="inline-flex h-7 items-center gap-1 rounded-full border border-zinc-300 px-3 text-[11px] font-medium text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800"
                 aria-label="Back to main page"
               >

@@ -976,7 +976,7 @@ export function TypeScaleGenerator({ variant = "full" }: TypeScaleGeneratorProps
                   >
                     <div className="space-y-1.5 min-w-0">
                       <label className="text-[11px] font-medium text-zinc-700">Line height</label>
-                      <div className="inline-flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-zinc-700 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-100 [data-theme=dark]:border-red-500 [data-theme=dark]:bg-red-500/20 [data-theme=dark]:text-red-100">
+                      <div className="inline-flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[11px] text-zinc-700 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-100 [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-zinc-900/40 [data-theme=dark]:text-red-100">
                         <input
                           type="text"
                           value={lineHeight}
@@ -1055,7 +1055,7 @@ export function TypeScaleGenerator({ variant = "full" }: TypeScaleGeneratorProps
                       <label className="text-[11px] font-medium text-zinc-700">
                         Letter spacing
                       </label>
-                      <div className="inline-flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-zinc-700 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-100 [data-theme=dark]:border-red-500 [data-theme=dark]:bg-red-500/20 [data-theme=dark]:text-red-100">
+                      <div className="inline-flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[11px] text-zinc-700 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-100 [data-theme=dark]:border-zinc-700 [data-theme=dark]:bg-zinc-900/40 [data-theme=dark]:text-red-100">
                         <input
                           type="text"
                           value={letterSpacing}

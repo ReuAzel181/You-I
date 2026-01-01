@@ -97,7 +97,7 @@ export default function AdminInquiriesPage() {
         const supabase = getSupabaseClient();
         const { data, error: inquiriesError } = await supabase
           .from("inquiries")
-          .select("id, full_name, email, team_size, topic, usage, message");
+          .select("id, full_name, email, team_size, topic, usage, message, is_read");
 
         if (inquiriesError) {
           setError("Unable to load inquiries right now.");

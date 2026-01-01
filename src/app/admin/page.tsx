@@ -87,6 +87,13 @@ const USER_CHART_PADDING_X = 16;
 const USER_CHART_PADDING_Y = 16;
 const USER_CHART_MAX_BAR_WIDTH = 28;
 
+const ADMIN_CACHE_KEY = "you-i-admin-overview-cache";
+type AdminCachePayload = {
+  users: AdminUserRow[];
+  vouchers: AdminVoucherRow[];
+  updatedAt: string;
+};
+
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
   const { analyticsEnabled, trackEvent } = useAnalytics();
@@ -514,6 +521,28 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const stored = window.localStorage.getItem(ADMIN_CACHE_KEY);
+
+      if (!stored) {
+        return;
+      }
+
+      const parsed = JSON.parse(stored) as AdminCachePayload | null;
+
+      if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.vouchers)) {
+        setUsers(parsed.users);
+        setVouchers(parsed.vouchers);
+      }
+    } catch {
+    }
+  }, []);
+
+  useEffect(() => {
     if (!analyticsEnabled) {
       return;
     }
@@ -597,10 +626,23 @@ export default function AdminPage() {
         const { data: unreadRows, error: unreadError } = await supabase
           .from("inquiries")
           .select("id, is_read")
-          .eq("is_read", false);
+          .is("is_read", false);
 
         if (!unreadError && unreadRows) {
           setAdminUnreadInquiries(unreadRows.length);
+        }
+
+        if (typeof window !== "undefined" && userRows && voucherRows) {
+          try {
+            const payload: AdminCachePayload = {
+              users: userRows as AdminUserRow[],
+              vouchers: voucherRows as AdminVoucherRow[],
+              updatedAt: new Date().toISOString(),
+            };
+
+            window.localStorage.setItem(ADMIN_CACHE_KEY, JSON.stringify(payload));
+          } catch {
+          }
         }
       } catch {
         setError("Something went wrong while loading admin data.");
@@ -796,7 +838,7 @@ export default function AdminPage() {
                         </div>
                       </div>
                     )}
-                    {isLoadingData && (
+                    {isLoadingData && users.length === 0 && (
                       <p className="text-[11px] text-zinc-500">Loading users…</p>
                     )}
                     {!isLoadingData && users.length === 0 && (
@@ -875,7 +917,8 @@ export default function AdminPage() {
                               <div className="flex flex-col items-end gap-1">
                                 {entry.created_at && (
                                   <p className="text-[9px] text-zinc-400">
-                                    Joined {new Date(entry.created_at).toLocaleDateString()}
+                                    Joined{" "}
+                                    {new Date(entry.created_at).toLocaleDateString("en-US")}
                                   </p>
                                 )}
                                 <div className="inline-flex items-center gap-1">
@@ -1167,7 +1210,7 @@ export default function AdminPage() {
                           </div>
                           {voucher.created_at && (
                             <p className="text-[9px] text-zinc-400">
-                              {new Date(voucher.created_at).toLocaleDateString()}
+                              {new Date(voucher.created_at).toLocaleDateString("en-US")}
                             </p>
                           )}
                         </div>
@@ -1241,8 +1284,8 @@ export default function AdminPage() {
                           </span>
                           {toolUsageFirstEvent && toolUsageLastEvent && (
                             <span className="rounded-full bg-zinc-100 px-2 py-0.5">
-                              {toolUsageFirstEvent.toLocaleDateString()} –{" "}
-                              {toolUsageLastEvent.toLocaleDateString()}
+                              {toolUsageFirstEvent.toLocaleDateString("en-US")} –{" "}
+                              {toolUsageLastEvent.toLocaleDateString("en-US")}
                             </span>
                           )}
                           {toolUsageTop && (

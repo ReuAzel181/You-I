@@ -216,7 +216,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   }, [settings, hasLoadedFromStorage]);
 
   useEffect(() => {
-    if (typeof document === "undefined") {
+    if (typeof document === "undefined" || !hasLoadedFromStorage) {
       return;
     }
 
@@ -229,16 +229,29 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }
 
     root.setAttribute("data-theme", mode);
-  }, [settings.appearance]);
+  }, [settings.appearance, hasLoadedFromStorage]);
 
   useEffect(() => {
-    if (typeof document === "undefined") {
+    if (typeof document === "undefined" || !hasLoadedFromStorage) {
       return;
     }
 
     const root = document.documentElement;
     root.setAttribute("data-accent", settings.profileBannerColor);
-  }, [settings.profileBannerColor]);
+  }, [settings.profileBannerColor, hasLoadedFromStorage]);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || !hasLoadedFromStorage) {
+      return;
+    }
+
+    const maxAgeSeconds = 60 * 60 * 24 * 365;
+    const appearance = settings.appearance;
+    const accent = settings.profileBannerColor;
+
+    document.cookie = `you_i_appearance=${appearance}; path=/; max-age=${maxAgeSeconds}`;
+    document.cookie = `you_i_accent=${accent}; path=/; max-age=${maxAgeSeconds}`;
+  }, [settings.appearance, settings.profileBannerColor, hasLoadedFromStorage]);
 
   useEffect(() => {
     if (!user) {

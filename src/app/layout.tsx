@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { SettingsProvider } from "@/providers/SettingsProvider";
@@ -47,13 +49,58 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const cookieAppearance = cookieStore.get("you_i_appearance")?.value;
+  const cookieAccent = cookieStore.get("you_i_accent")?.value;
+
+  const initialAppearance =
+    cookieAppearance === "light" ||
+    cookieAppearance === "light-high-contrast" ||
+    cookieAppearance === "dark" ||
+    cookieAppearance === "system"
+      ? cookieAppearance
+      : "system";
+
+  const initialAccent =
+    cookieAccent === "red" ||
+    cookieAccent === "emerald" ||
+    cookieAccent === "violet" ||
+    cookieAccent === "amber" ||
+    cookieAccent === "sky"
+      ? cookieAccent
+      : "red";
+
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-accent={initialAccent}
+      data-theme={initialAppearance === "system" ? undefined : initialAppearance}
+    >
+      <head>
+        <Script id="you-i-theme-init" strategy="beforeInteractive">
+          {`(function () {
+  try {
+    var stored = window.localStorage.getItem('you-i-settings');
+    var parsed = stored ? JSON.parse(stored) : null;
+    var appearance = parsed && typeof parsed.appearance === 'string' ? parsed.appearance : 'system';
+    var root = document.documentElement;
+
+    if (appearance === 'light' || appearance === 'light-high-contrast' || appearance === 'dark') {
+      root.setAttribute('data-theme', appearance);
+    } else {
+      root.removeAttribute('data-theme');
+    }
+  } catch (error) {
+  }
+})();`}
+        </Script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased page-transition-root`}
       >
