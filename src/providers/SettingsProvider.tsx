@@ -94,7 +94,7 @@ function getDefaultCountryCode() {
 }
 
 const defaultSettings: SettingsState = {
-  appearance: "system",
+  appearance: "light",
   nudgeAmount: 8,
   emailNotifications: true,
   productUpdates: true,
@@ -138,9 +138,16 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       }
 
       const parsed = JSON.parse(stored) as Partial<SettingsState>;
+      const storedAppearance = parsed.appearance;
+      const normalizedAppearance: AppearanceMode =
+        storedAppearance === "light" ||
+        storedAppearance === "light-high-contrast" ||
+        storedAppearance === "dark"
+          ? storedAppearance
+          : "light";
 
       setSettings({
-        appearance: parsed.appearance ?? defaultSettings.appearance,
+        appearance: normalizedAppearance,
         nudgeAmount:
           typeof parsed.nudgeAmount === "number" && Number.isFinite(parsed.nudgeAmount)
             ? parsed.nudgeAmount

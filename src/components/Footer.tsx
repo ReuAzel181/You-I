@@ -89,7 +89,7 @@ export function Footer() {
               </div>
             ))}
           </div>
-          <div className="hidden items-start justify-end gap-2 text-[10px] text-zinc-500 md:flex">
+          <div className="flex items-start justify-end gap-2 text-[10px] text-zinc-500">
             <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 font-medium">
               v0.1 · Early access
             </span>

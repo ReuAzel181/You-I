@@ -61,10 +61,9 @@ export default async function RootLayout({
   const initialAppearance =
     cookieAppearance === "light" ||
     cookieAppearance === "light-high-contrast" ||
-    cookieAppearance === "dark" ||
-    cookieAppearance === "system"
+    cookieAppearance === "dark"
       ? cookieAppearance
-      : "system";
+      : "light";
 
   const initialAccent =
     cookieAccent === "red" ||
@@ -80,7 +79,7 @@ export default async function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-accent={initialAccent}
-      data-theme={initialAppearance === "system" ? undefined : initialAppearance}
+      data-theme={initialAppearance}
     >
       <head>
         <Script id="zanari-theme-init" strategy="beforeInteractive">
@@ -88,14 +87,13 @@ export default async function RootLayout({
   try {
     var stored = window.localStorage.getItem('zanari-settings');
     var parsed = stored ? JSON.parse(stored) : null;
-    var appearance = parsed && typeof parsed.appearance === 'string' ? parsed.appearance : 'system';
+    var appearance = parsed && typeof parsed.appearance === 'string' ? parsed.appearance : 'light';
+    if (appearance === 'system') {
+      appearance = 'light';
+    }
     var root = document.documentElement;
 
-    if (appearance === 'light' || appearance === 'light-high-contrast' || appearance === 'dark') {
-      root.setAttribute('data-theme', appearance);
-    } else {
-      root.removeAttribute('data-theme');
-    }
+    root.setAttribute('data-theme', appearance);
   } catch (error) {
   }
 })();`}

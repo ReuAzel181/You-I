@@ -212,6 +212,8 @@ export default function AdminPage() {
   const [toasts, setToasts] = useState<AdminToast[]>([]);
   const [segmentStyle, setSegmentStyle] = useState<{ left: number; width: number } | null>(null);
   const [toolUsageRange, setToolUsageRange] = useState<ToolUsageRange>("week");
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [showAllVouchers, setShowAllVouchers] = useState(false);
 
   const toggleContainerRef = useRef<HTMLDivElement | null>(null);
   const overviewLinkRef = useRef<HTMLAnchorElement | null>(null);
@@ -1091,8 +1093,13 @@ export default function AdminPage() {
                       <p className="text-[11px] text-zinc-500">No users found yet.</p>
                     )}
                     {!isLoadingData && users.length > 0 && (
-                      <div className="mt-3 space-y-3">
-                        {users.map((entry) => {
+                      <>
+                        <div
+                          className={`mt-3 space-y-3 ${
+                            showAllUsers ? "" : "max-h-80 overflow-y-auto pr-1"
+                          }`}
+                        >
+                          {users.map((entry) => {
                           const isAdminUser = (entry.role ?? "user") === "admin";
                           const normalizedPlan = normalizePlanValue(entry.subscription_mode);
                           const planLabel =
@@ -1105,15 +1112,15 @@ export default function AdminPage() {
                           const isVerified = Boolean(entry.is_email_verified);
                           const isDeleted = Boolean(entry.is_deleted);
 
-                          return (
-                            <div
-                              key={entry.id}
-                              className={`flex flex-col gap-2 rounded-xl border px-3 py-2 text-[11px] sm:flex-row sm:items-center sm:justify-between ${
-                                isDeleted
-                                  ? "border-red-100 bg-red-50"
-                                  : "border-zinc-200 bg-zinc-50"
-                              }`}
-                            >
+                            return (
+                              <div
+                                key={entry.id}
+                                className={`flex flex-col gap-2 rounded-xl border px-3 py-2 text-[11px] sm:flex-row sm:items-center sm:justify-between ${
+                                  isDeleted
+                                    ? "border-red-100 bg-red-50"
+                                    : "border-zinc-200 bg-zinc-50"
+                                }`}
+                              >
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="truncate font-medium text-zinc-900">
@@ -1181,6 +1188,16 @@ export default function AdminPage() {
                           );
                         })}
                       </div>
+                        {users.length > 6 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllUsers((current) => !current)}
+                            className="mt-2 text-[10px] font-medium text-red-600 hover:text-red-700 hover:underline"
+                          >
+                            {showAllUsers ? "Show less users" : "View all users"}
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
@@ -1255,8 +1272,13 @@ export default function AdminPage() {
                         <p className="text-[11px] text-zinc-500">No vouchers created yet.</p>
                       )}
                       {vouchers.length > 0 && (
-                        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                          {vouchers.map((voucher) => (
+                        <>
+                          <div
+                            className={`space-y-2 ${
+                              showAllVouchers ? "" : "max-h-72 overflow-y-auto pr-1"
+                            }`}
+                          >
+                            {vouchers.map((voucher) => (
                             <div
                               key={voucher.id}
                               className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px]"
@@ -1362,7 +1384,17 @@ export default function AdminPage() {
                               </div>
                             </div>
                           ))}
-                        </div>
+                          </div>
+                          {vouchers.length > 6 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAllVouchers((current) => !current)}
+                              className="mt-2 text-[10px] font-medium text-red-600 hover:text-red-700 hover:underline"
+                            >
+                              {showAllVouchers ? "Show less vouchers" : "View all vouchers"}
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

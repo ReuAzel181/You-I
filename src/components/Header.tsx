@@ -508,7 +508,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/60 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
           <PageTransitionLink href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-sm font-semibold text-white">
@@ -594,7 +594,7 @@ export function Header() {
             <button
               type="button"
               onClick={() => setIsNavOpen((current) => !current)}
-              className={`inline-flex h-8 w-8 flex-col items-center justify-center gap-[2px] rounded-full border text-zinc-700 transition-colors md:hidden ${
+              className={`inline-flex h-7 w-7 flex-col items-center justify-center gap-[2px] rounded-full border text-zinc-700 transition-colors md:hidden ${
                 isNavOpen
                   ? isDarkAppearance
                     ? "border-red-500 bg-red-500/10 text-red-400"
@@ -603,21 +603,21 @@ export function Header() {
                     ? "border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800"
                     : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
               }`}
-              aria-label="Toggle navigation"
+              aria-label={isNavOpen ? "Close navigation" : "Open navigation"}
             >
               <span
-                className={`block h-0.5 w-3 rounded-full bg-current transition-transform ${
-                  isNavOpen ? "translate-y-[1.5px] rotate-45" : ""
+                className={`block h-0.5 w-2.5 rounded-full bg-current transition-transform ${
+                  isNavOpen ? "translate-y-[1px] rotate-45" : ""
                 }`}
               />
               <span
-                className={`block h-0.5 w-3 rounded-full bg-current transition-opacity ${
+                className={`block h-0.5 w-2.5 rounded-full bg-current transition-opacity ${
                   isNavOpen ? "opacity-0" : "opacity-100"
                 }`}
               />
               <span
-                className={`block h-0.5 w-3 rounded-full bg-current transition-transform ${
-                  isNavOpen ? "-translate-y-[1.5px] -rotate-45" : ""
+                className={`block h-0.5 w-2.5 rounded-full bg-current transition-transform ${
+                  isNavOpen ? "-translate-y-[1px] -rotate-45" : ""
                 }`}
               />
             </button>
