@@ -52,6 +52,7 @@ export function Header() {
   const { adminUnreadInquiries, appearance, profileUsername } = useSettings();
   const [isPasswordActive, setIsPasswordActive] = useState(false);
   const [isAuthModeSwitching, setIsAuthModeSwitching] = useState(false);
+  const isDarkAppearance = appearance === "dark";
 
   const displayName = useMemo(() => {
     if (!user) {
@@ -507,7 +508,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
           <PageTransitionLink href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-sm font-semibold text-white">
@@ -593,26 +594,30 @@ export function Header() {
             <button
               type="button"
               onClick={() => setIsNavOpen((current) => !current)}
-              className={`inline-flex h-9 w-9 flex-col items-center justify-center gap-[3px] rounded-full border text-zinc-700 transition-colors md:hidden ${
+              className={`inline-flex h-8 w-8 flex-col items-center justify-center gap-[2px] rounded-full border text-zinc-700 transition-colors md:hidden ${
                 isNavOpen
-                  ? "border-red-200 bg-red-50 text-red-600"
-                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                  ? isDarkAppearance
+                    ? "border-red-500 bg-red-500/10 text-red-400"
+                    : "border-red-200 bg-red-50 text-red-600"
+                  : isDarkAppearance
+                    ? "border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800"
+                    : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
               }`}
               aria-label="Toggle navigation"
             >
               <span
-                className={`block h-0.5 w-3.5 rounded-full bg-current transition-transform ${
-                  isNavOpen ? "translate-y-[2px] rotate-45" : ""
+                className={`block h-0.5 w-3 rounded-full bg-current transition-transform ${
+                  isNavOpen ? "translate-y-[1.5px] rotate-45" : ""
                 }`}
               />
               <span
-                className={`block h-0.5 w-3.5 rounded-full bg-current transition-opacity ${
+                className={`block h-0.5 w-3 rounded-full bg-current transition-opacity ${
                   isNavOpen ? "opacity-0" : "opacity-100"
                 }`}
               />
               <span
-                className={`block h-0.5 w-3.5 rounded-full bg-current transition-transform ${
-                  isNavOpen ? "-translate-y-[2px] -rotate-45" : ""
+                className={`block h-0.5 w-3 rounded-full bg-current transition-transform ${
+                  isNavOpen ? "-translate-y-[1.5px] -rotate-45" : ""
                 }`}
               />
             </button>
@@ -620,7 +625,9 @@ export function Header() {
         </div>
       </header>
       <div
-        className={`fixed inset-x-0 top-17 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur transition-all duration-200 md:hidden ${
+        className={`fixed inset-x-0 top-17 z-30 border-b backdrop-blur transition-all duration-200 md:hidden ${
+          isDarkAppearance ? "border-zinc-800 bg-zinc-950/95" : "border-zinc-200 bg-white/95"
+        } ${
           isNavOpen
             ? "pointer-events-auto opacity-100 translate-y-0"
             : "pointer-events-none opacity-0 -translate-y-2"
@@ -640,8 +647,12 @@ export function Header() {
                   href={item.href}
                   className={`flex items-center justify-between rounded-full px-3 py-1.5 text-[13px] ${
                     isActive
-                      ? "bg-red-50 font-semibold text-red-600"
-                      : "text-zinc-700 hover:bg-zinc-50"
+                      ? isDarkAppearance
+                        ? "bg-red-500/10 font-semibold text-red-400"
+                        : "bg-red-50 font-semibold text-red-600"
+                      : isDarkAppearance
+                        ? "text-zinc-100 hover:bg-zinc-900"
+                        : "text-zinc-700 hover:bg-zinc-50"
                   }`}
                 >
                   <span>{item.label}</span>

@@ -36,6 +36,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
       setIsLoading(false);
+
+      if (typeof window !== "undefined") {
+        const hash = window.location.hash;
+
+        if (
+          hash &&
+          (hash.includes("access_token=") ||
+            hash.includes("refresh_token=") ||
+            hash.includes("type=recovery") ||
+            hash.includes("type=signup") ||
+            hash.includes("type=invite"))
+        ) {
+          const url = window.location.href.split("#")[0] ?? window.location.href;
+
+          window.history.replaceState({}, "", url);
+        }
+      }
     });
 
     const {

@@ -931,8 +931,10 @@ export default function AdminPage() {
 
         if (codeValue === "23505") {
           setError("A voucher with this code already exists. Try a different code.");
+          showToast("error", "A voucher with this code already exists. Try a different code.");
         } else {
           setError("Unable to create voucher right now.");
+          showToast("error", "Unable to create voucher right now.");
         }
 
         return;
@@ -942,9 +944,11 @@ export default function AdminPage() {
         setVouchers((current) => [data as AdminVoucherRow, ...current]);
         setNewVoucherCode("");
         setNewVoucherDays("");
+        showToast("success", "Voucher created. You can share it from the list below.");
       }
     } catch {
       setError("Something went wrong while creating the voucher.");
+      showToast("error", "Something went wrong while creating the voucher.");
     } finally {
       setIsCreatingVoucher(false);
     }
@@ -1189,8 +1193,8 @@ export default function AdminPage() {
                         Generate a code that unlocks a Pro or Top tier for a set number of
                         days.
                       </p>
-                    </div>
-                    <div className="space-y-3">
+                  </div>
+                  <div className="space-y-3">
                       <div className="space-y-1">
                         <p className="text-[11px] font-medium text-zinc-600">Code</p>
                         <input
@@ -1240,6 +1244,127 @@ export default function AdminPage() {
                         {error}
                       </p>
                     )}
+                    <div className="mt-5 border-t border-zinc-100 pt-4">
+                      <div className="mb-3 space-y-1">
+                        <p className="text-xs font-medium text-zinc-500">Existing vouchers</p>
+                        <p className="text-[11px] text-zinc-500">
+                          Recently created vouchers appear here with their status and duration.
+                        </p>
+                      </div>
+                      {vouchers.length === 0 && (
+                        <p className="text-[11px] text-zinc-500">No vouchers created yet.</p>
+                      )}
+                      {vouchers.length > 0 && (
+                        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                          {vouchers.map((voucher) => (
+                            <div
+                              key={voucher.id}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px]"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-medium text-zinc-900">
+                                  {voucher.code}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-zinc-500">
+                                  {voucher.pro_days ?? 0} days ·{" "}
+                                  {voucher.is_active ? "Active" : "Inactive"}
+                                </p>
+                                {voucher.redeemed_ends_at && (
+                                  <p className="mt-0.5 text-[10px] text-zinc-600">
+                                    {voucher.redeemed_started_at && (
+                                      <>
+                                        {new Date(
+                                          voucher.redeemed_started_at,
+                                        ).toLocaleDateString("en-US")}{" "}
+                                        –{" "}
+                                      </>
+                                    )}
+                                    {new Date(
+                                      voucher.redeemed_ends_at,
+                                    ).toLocaleDateString("en-US")}
+                                    {(() => {
+                                      const label = getRemainingDaysLabel(
+                                        voucher.redeemed_ends_at,
+                                      );
+
+                                      return label ? ` · ${label}` : "";
+                                    })()}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end gap-1 text-right">
+                                {voucher.redeemed_user_email && (
+                                  <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    <span>Redeemed</span>
+                                  </div>
+                                )}
+                                {voucher.redeemed_user_email && (
+                                  <p className="text-[10px] font-medium text-zinc-700">
+                                    {voucher.redeemed_user_email}
+                                  </p>
+                                )}
+                                {!voucher.redeemed_user_email && (
+                                  <p className="text-[10px] text-zinc-400">Not redeemed yet</p>
+                                )}
+                                {voucher.created_at && (
+                                  <p className="text-[9px] text-zinc-400">
+                                    {new Date(voucher.created_at).toLocaleDateString("en-US")}
+                                  </p>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      const baseUrl =
+                                        typeof window !== "undefined"
+                                          ? window.location.origin
+                                          : process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+                                      if (!baseUrl) {
+                                        showToast(
+                                          "error",
+                                          "Unable to copy voucher link without a configured site URL.",
+                                        );
+                                        return;
+                                      }
+
+                                      const shareUrl = `${baseUrl}/pricing?voucher=${encodeURIComponent(
+                                        voucher.code,
+                                      )}`;
+
+                                      if (
+                                        typeof navigator !== "undefined" &&
+                                        typeof navigator.clipboard !== "undefined"
+                                      ) {
+                                        await navigator.clipboard.writeText(shareUrl);
+                                        showToast(
+                                          "success",
+                                          "Voucher link copied to clipboard.",
+                                        );
+                                      } else {
+                                        showToast(
+                                          "error",
+                                          "Clipboard permissions are not available in this browser.",
+                                        );
+                                      }
+                                    } catch {
+                                      showToast(
+                                        "error",
+                                        "Unable to copy voucher link right now.",
+                                      );
+                                    }
+                                  }}
+                                  className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-medium text-zinc-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                >
+                                  Copy link
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1534,118 +1659,6 @@ export default function AdminPage() {
                           );
                         })}
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="mb-3 space-y-1">
-                    <p className="text-xs font-medium text-zinc-500">Existing vouchers</p>
-                    <p className="text-[11px] text-zinc-500">
-                      Recently created vouchers appear here with their status and duration.
-                    </p>
-                  </div>
-                  {vouchers.length === 0 && (
-                    <p className="text-[11px] text-zinc-500">No vouchers created yet.</p>
-                  )}
-                  {vouchers.length > 0 && (
-                    <div className="space-y-2">
-                      {vouchers.map((voucher) => (
-                        <div
-                          key={voucher.id}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px]"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-zinc-900">
-                              {voucher.code}
-                            </p>
-                            <p className="mt-0.5 text-[10px] text-zinc-500">
-                              {voucher.pro_days ?? 0} days ·{" "}
-                              {voucher.is_active ? "Active" : "Inactive"}
-                            </p>
-                            {voucher.redeemed_ends_at && (
-                              <p className="mt-0.5 text-[10px] text-zinc-600">
-                                {voucher.redeemed_started_at && (
-                                  <>
-                                    {new Date(
-                                      voucher.redeemed_started_at,
-                                    ).toLocaleDateString("en-US")}{" "}
-                                    –{" "}
-                                  </>
-                                )}
-                                {new Date(voucher.redeemed_ends_at).toLocaleDateString("en-US")}
-                                {(() => {
-                                  const label = getRemainingDaysLabel(voucher.redeemed_ends_at);
-
-                                  return label ? ` · ${label}` : "";
-                                })()}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-1 text-right">
-                            {voucher.redeemed_user_email && (
-                              <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                <span>Redeemed</span>
-                              </div>
-                            )}
-                            {voucher.redeemed_user_email && (
-                              <p className="text-[10px] font-medium text-zinc-700">
-                                {voucher.redeemed_user_email}
-                              </p>
-                            )}
-                            {!voucher.redeemed_user_email && (
-                              <p className="text-[10px] text-zinc-400">Not redeemed yet</p>
-                            )}
-                            {voucher.created_at && (
-                              <p className="text-[9px] text-zinc-400">
-                                {new Date(voucher.created_at).toLocaleDateString("en-US")}
-                              </p>
-                            )}
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  const baseUrl =
-                                    typeof window !== "undefined"
-                                      ? window.location.origin
-                                      : process.env.NEXT_PUBLIC_SITE_URL ?? "";
-
-                                  if (!baseUrl) {
-                                    showToast(
-                                      "error",
-                                      "Unable to copy voucher link without a configured site URL.",
-                                    );
-                                    return;
-                                  }
-
-                                  const shareUrl = `${baseUrl}/pricing?voucher=${encodeURIComponent(
-                                    voucher.code,
-                                  )}`;
-
-                                  if (
-                                    typeof navigator !== "undefined" &&
-                                    typeof navigator.clipboard !== "undefined"
-                                  ) {
-                                    await navigator.clipboard.writeText(shareUrl);
-                                    showToast("success", "Voucher link copied to clipboard.");
-                                  } else {
-                                    showToast(
-                                      "error",
-                                      "Clipboard permissions are not available in this browser.",
-                                    );
-                                  }
-                                } catch {
-                                  showToast("error", "Unable to copy voucher link right now.");
-                                }
-                              }}
-                              className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-medium text-zinc-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                            >
-                              Copy link
-                            </button>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
