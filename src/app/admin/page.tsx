@@ -26,6 +26,17 @@ type AdminVoucherRow = {
   is_active: boolean | null;
   created_at: string | null;
   expires_at: string | null;
+  is_redeemed?: boolean | null;
+  redeemed_user_email?: string | null;
+  redeemed_started_at?: string | null;
+  redeemed_ends_at?: string | null;
+};
+
+type AdminVoucherSubscriptionRow = {
+  voucher_id: string;
+  user_id: string | null;
+  started_at: string | null;
+  ends_at: string | null;
 };
 
 type AdminUserTimelinePoint = {
@@ -51,7 +62,7 @@ type CountrySegment = {
   offset: number;
 };
 
-type PlanValue = "free" | "starter" | "top";
+type PlanValue = "free" | "pro" | "top";
 
 type PlanToggleProps = {
   value: PlanValue;
@@ -102,6 +113,75 @@ type AdminCachePayload = {
   vouchers: AdminVoucherRow[];
   updatedAt: string;
 };
+
+function normalizePlanValue(raw: string | null | undefined): PlanValue {
+  const trimmed = (raw ?? "").toLowerCase().trim();
+
+  if (trimmed === "top_tier" || trimmed === "top" || trimmed === "top tier" || trimmed === "teams") {
+    return "top";
+  }
+
+  if (trimmed === "pro" || trimmed === "pro plan") {
+    return "pro";
+  }
+
+  if (trimmed === "starter" || trimmed === "free") {
+    return "free";
+  }
+
+  return "free";
+}
+
+function mapUiPlanToDbPlan(next: PlanValue): string {
+  if (next === "top") {
+    return "top";
+  }
+
+  if (next === "pro") {
+    return "pro";
+  }
+
+  return "starter";
+}
+
+function getRemainingDaysLabel(endsAtIso: string | null): string | null {
+  if (!endsAtIso) {
+    return null;
+  }
+
+  const endsAt = new Date(endsAtIso);
+
+  if (Number.isNaN(endsAt.getTime())) {
+    return null;
+  }
+
+  const now = new Date();
+  const diffMs = endsAt.getTime() - now.getTime();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const days = Math.max(0, Math.ceil(Math.abs(diffMs) / oneDayMs));
+
+  if (diffMs >= 0) {
+    if (days === 0) {
+      return "Expires today";
+    }
+
+    if (days === 1) {
+      return "1 day left";
+    }
+
+    return `${days} days left`;
+  }
+
+  if (days === 0) {
+    return "Expired today";
+  }
+
+  if (days === 1) {
+    return "Expired 1 day ago";
+  }
+
+  return `Expired ${days} days ago`;
+}
 
 const COUNTRY_COLORS = [
   "#ef4444",
@@ -182,9 +262,25 @@ export default function AdminPage() {
     : 0;
 
   const totalUsers = users.length;
-  const proUsers = users.filter((entry) => entry.subscription_mode === "starter").length;
-  const topUsers = users.filter((entry) => entry.subscription_mode === "top").length;
-  const freeUsers = totalUsers - proUsers - topUsers;
+  const planCounts = users.reduce(
+    (counts, entry) => {
+      const mode = normalizePlanValue(entry.subscription_mode);
+
+      if (mode === "free") {
+        counts.free += 1;
+      } else if (mode === "pro") {
+        counts.pro += 1;
+      } else if (mode === "top") {
+        counts.top += 1;
+      }
+
+      return counts;
+    },
+    { free: 0, pro: 0, top: 0 },
+  );
+  const freeUsers = planCounts.free;
+  const proUsers = planCounts.pro;
+  const topUsers = planCounts.top;
   const adminUsers = users.filter((entry) => (entry.role ?? "user") === "admin").length;
   const verifiedUsers = users.filter((entry) => entry.is_email_verified).length;
   const distinctCountries = (() => {
@@ -545,7 +641,7 @@ export default function AdminPage() {
   const showConfirmPlanToast = (userId: string, nextMode: PlanValue) => {
     const id = Date.now() + Math.random();
     const label =
-      nextMode === "top" ? "Top tier" : nextMode === "starter" ? "Pro" : "Free";
+      nextMode === "top" ? "Top tier" : nextMode === "pro" ? "Pro" : "Free";
 
     setToasts([
       {
@@ -558,31 +654,49 @@ export default function AdminPage() {
     ]);
   };
 
-  const handleChangeUserPlan = async (
-    userId: string,
-    nextMode: "free" | "starter" | "top",
-  ) => {
+  const handleChangeUserPlan = async (userId: string, nextMode: PlanValue) => {
     const label =
-      nextMode === "top" ? "Top tier" : nextMode === "starter" ? "Pro" : "Free";
+      nextMode === "top" ? "Top tier" : nextMode === "pro" ? "Pro" : "Free";
 
     try {
       setIsUpdatingPlan(userId);
 
-      const supabase = getSupabaseClient();
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ subscription_mode: nextMode })
-        .eq("id", userId);
+      const response = await fetch("/api/admin/update-plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          subscriptionMode: mapUiPlanToDbPlan(nextMode),
+        }),
+      });
 
-      if (updateError) {
-        setError("Unable to update user plan right now.");
-        showToast("error", "Unable to update user plan right now.");
+      if (!response.ok) {
+        let message = "Unable to update user plan right now.";
+
+        try {
+          const payload = (await response.json()) as { error?: string };
+
+          if (
+            typeof payload.error === "string" &&
+            payload.error.trim().length > 0
+          ) {
+            message = payload.error;
+          }
+        } catch {
+        }
+
+        setError(message);
+        showToast("error", message);
         return;
       }
 
       setUsers((current) =>
         current.map((entry) =>
-          entry.id === userId ? { ...entry, subscription_mode: nextMode } : entry,
+          entry.id === userId
+            ? { ...entry, subscription_mode: mapUiPlanToDbPlan(nextMode) }
+            : entry,
         ),
       );
     } catch {
@@ -687,15 +801,68 @@ export default function AdminPage() {
           setUsers(userRows as AdminUserRow[]);
         }
 
+        const { data: subscriptionRows, error: subscriptionsError } = await supabase
+          .from("user_voucher_subscriptions")
+          .select("voucher_id, user_id, started_at, ends_at");
+
+        if (subscriptionsError) {
+          setError("Unable to load voucher redemptions right now.");
+        }
+
         const { data: voucherRows, error: vouchersError } = await supabase
           .from("vouchers")
           .select("id, code, pro_days, is_active, created_at, expires_at")
           .order("created_at", { ascending: false });
 
+        let enrichedVouchers: AdminVoucherRow[] | null = null;
+
         if (vouchersError) {
           setError("Unable to load vouchers right now.");
         } else if (voucherRows) {
-          setVouchers(voucherRows as AdminVoucherRow[]);
+          const vouchersTyped = voucherRows as AdminVoucherRow[];
+          const subsTyped = (subscriptionRows ?? []) as AdminVoucherSubscriptionRow[];
+          const usersById = new Map(
+            (userRows ?? []).map((entry) => [entry.id, entry.email ?? null] as const),
+          );
+          const latestSubscriptionByVoucher = new Map<string, AdminVoucherSubscriptionRow>();
+
+          for (const subscription of subsTyped) {
+            if (!subscription.voucher_id) {
+              continue;
+            }
+
+            const existing = latestSubscriptionByVoucher.get(subscription.voucher_id);
+
+            if (!existing) {
+              latestSubscriptionByVoucher.set(subscription.voucher_id, subscription);
+              continue;
+            }
+
+            const existingEnds = existing.ends_at ?? "";
+            const currentEnds = subscription.ends_at ?? "";
+
+            if (currentEnds > existingEnds) {
+              latestSubscriptionByVoucher.set(subscription.voucher_id, subscription);
+            }
+          }
+
+          enrichedVouchers = vouchersTyped.map((voucher) => {
+            const subscription = latestSubscriptionByVoucher.get(voucher.id);
+            const userEmail =
+              subscription && subscription.user_id
+                ? usersById.get(subscription.user_id) ?? null
+                : null;
+
+            return {
+              ...voucher,
+              is_redeemed: Boolean(subscription),
+              redeemed_user_email: userEmail,
+              redeemed_started_at: subscription?.started_at ?? null,
+              redeemed_ends_at: subscription?.ends_at ?? null,
+            };
+          });
+
+          setVouchers(enrichedVouchers);
         }
 
         const { data: unreadRows, error: unreadError } = await supabase
@@ -707,11 +874,11 @@ export default function AdminPage() {
           setAdminUnreadInquiries(unreadRows.length);
         }
 
-        if (typeof window !== "undefined" && userRows && voucherRows) {
+        if (typeof window !== "undefined" && userRows && (enrichedVouchers || voucherRows)) {
           try {
             const payload: AdminCachePayload = {
               users: userRows as AdminUserRow[],
-              vouchers: voucherRows as AdminVoucherRow[],
+              vouchers: (enrichedVouchers ?? (voucherRows as AdminVoucherRow[])) as AdminVoucherRow[],
               updatedAt: new Date().toISOString(),
             };
 
@@ -923,10 +1090,11 @@ export default function AdminPage() {
                       <div className="mt-3 space-y-3">
                         {users.map((entry) => {
                           const isAdminUser = (entry.role ?? "user") === "admin";
+                          const normalizedPlan = normalizePlanValue(entry.subscription_mode);
                           const planLabel =
-                            entry.subscription_mode === "top"
+                            normalizedPlan === "top"
                               ? "Top tier"
-                              : entry.subscription_mode === "starter"
+                              : normalizedPlan === "pro"
                               ? "Pro"
                               : "Free";
                           const countryLabel = entry.country || "Unknown";
@@ -999,9 +1167,7 @@ export default function AdminPage() {
                                 <div className="inline-flex items-center gap-1">
                                   <span className="text-[9px] text-zinc-500">Change plan</span>
                                   <PlanToggle
-                                    value={
-                                      (entry.subscription_mode as PlanValue | null) ?? "free"
-                                    }
+                                    value={normalizePlanValue(entry.subscription_mode)}
                                     disabled={isUpdatingPlan === entry.id}
                                     onChange={(next) => showConfirmPlanToast(entry.id, next)}
                                   />
@@ -1397,8 +1563,40 @@ export default function AdminPage() {
                               {voucher.pro_days ?? 0} days ·{" "}
                               {voucher.is_active ? "Active" : "Inactive"}
                             </p>
+                            {voucher.redeemed_ends_at && (
+                              <p className="mt-0.5 text-[10px] text-zinc-600">
+                                {voucher.redeemed_started_at && (
+                                  <>
+                                    {new Date(
+                                      voucher.redeemed_started_at,
+                                    ).toLocaleDateString("en-US")}{" "}
+                                    –{" "}
+                                  </>
+                                )}
+                                {new Date(voucher.redeemed_ends_at).toLocaleDateString("en-US")}
+                                {(() => {
+                                  const label = getRemainingDaysLabel(voucher.redeemed_ends_at);
+
+                                  return label ? ` · ${label}` : "";
+                                })()}
+                              </p>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-1 text-right">
+                            {voucher.redeemed_user_email && (
+                              <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                <span>Redeemed</span>
+                              </div>
+                            )}
+                            {voucher.redeemed_user_email && (
+                              <p className="text-[10px] font-medium text-zinc-700">
+                                {voucher.redeemed_user_email}
+                              </p>
+                            )}
+                            {!voucher.redeemed_user_email && (
+                              <p className="text-[10px] text-zinc-400">Not redeemed yet</p>
+                            )}
                             {voucher.created_at && (
                               <p className="text-[9px] text-zinc-400">
                                 {new Date(voucher.created_at).toLocaleDateString("en-US")}
@@ -1664,14 +1862,14 @@ export default function AdminPage() {
 function PlanToggle({ value, disabled, onChange }: PlanToggleProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const freeRef = useRef<HTMLButtonElement | null>(null);
-  const starterRef = useRef<HTMLButtonElement | null>(null);
+  const proRef = useRef<HTMLButtonElement | null>(null);
   const topRef = useRef<HTMLButtonElement | null>(null);
   const [pillStyle, setPillStyle] = useState<{ left: number; width: number } | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     const activeButton =
-      value === "starter" ? starterRef.current : value === "top" ? topRef.current : freeRef.current;
+      value === "pro" ? proRef.current : value === "top" ? topRef.current : freeRef.current;
 
     if (!container || !activeButton) {
       return;
@@ -1720,11 +1918,11 @@ function PlanToggle({ value, disabled, onChange }: PlanToggleProps) {
       </button>
       <button
         type="button"
-        ref={starterRef}
+        ref={proRef}
         disabled={disabled}
-        onClick={() => handleClick("starter")}
+        onClick={() => handleClick("pro")}
         className={`relative z-10 rounded-full px-3 py-1 text-center font-medium transition-colors duration-200 ${
-          value === "starter" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
+          value === "pro" ? "text-white" : "text-zinc-600 hover:text-zinc-900"
         }`}
       >
         Pro

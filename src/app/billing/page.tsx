@@ -38,8 +38,8 @@ export default function BillingPage() {
       return "Free";
     }
 
-    if (subscriptionMode === "starter") {
-      return "Starter";
+    if (subscriptionMode === "pro") {
+      return "Pro";
     }
 
     return "Top tier";

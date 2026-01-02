@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type AnalyticsEntry = {
   name: string;
@@ -84,6 +85,8 @@ export default function SettingsPage() {
     setProfileBio,
     setProfileBannerColor,
     setFocusMode,
+    lastUsernameChangedAt,
+    setLastUsernameChangedAt,
   } = useSettings();
   const [nudgeInput, setNudgeInput] = useState(String(nudgeAmount || 8));
   const [profileUsernameDraft, setProfileUsernameDraft] = useState(profileUsername || "");
@@ -93,6 +96,7 @@ export default function SettingsPage() {
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [analyticsEntries, setAnalyticsEntries] = useState<AnalyticsEntry[]>([]);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -488,7 +492,7 @@ export default function SettingsPage() {
 
   const displayName = useMemo(() => {
     if (!user) {
-      return "";
+      return profileUsername || "";
     }
 
     const metadata = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
@@ -501,8 +505,18 @@ export default function SettingsPage() {
       return metaName;
     }
 
-    return user.email ?? "Account";
-  }, [user]);
+    if (profileUsername && profileUsername.trim().length > 0) {
+      return profileUsername;
+    }
+
+    const email = user.email ?? "";
+
+    if (email.includes("@")) {
+      return email.split("@")[0] || "Account";
+    }
+
+    return email || "Account";
+  }, [user, profileUsername]);
 
   const isProfileDirty =
     profileUsernameDraft !== (profileUsername || "") ||
@@ -532,11 +546,49 @@ export default function SettingsPage() {
     }
   })();
 
-  const handleProfileSave = () => {
+  const USERNAME_COOLDOWN_MINUTES = 10;
+
+  const handleProfileSave = async () => {
     const nextUsername = profileUsernameDraft.trim();
     const nextBio = profileBioDraft.trim();
     const nextBanner = profileBannerDraft;
 
+    setProfileError(null);
+
+    if (!user) {
+      return;
+    }
+
+    const now = new Date();
+
+    if (lastUsernameChangedAt) {
+      const last = new Date(lastUsernameChangedAt);
+      const diffMinutes = (now.getTime() - last.getTime()) / 60000;
+
+      if (Number.isFinite(diffMinutes) && diffMinutes < USERNAME_COOLDOWN_MINUTES) {
+        const remaining = Math.ceil(USERNAME_COOLDOWN_MINUTES - diffMinutes);
+        setProfileError(`Oops, that was quick. You can change your username again in ${remaining} minutes.`);
+        return;
+      }
+    }
+
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from("users")
+      .update({ username: nextUsername, bio: nextBio })
+      .eq("id", user.id);
+
+    if (error) {
+      const message =
+        typeof error.message === "string" && error.message.trim().length > 0
+          ? error.message
+          : "Unable to update profile right now.";
+      setProfileError(message);
+      return;
+    }
+
+    setProfileUsername(nextUsername);
+    setProfileBio(nextBio);
     setProfileUsername(nextUsername);
     setProfileBio(nextBio);
     setProfileBannerColor(nextBanner);
@@ -544,6 +596,7 @@ export default function SettingsPage() {
     setProfileUsernameDraft(nextUsername);
     setProfileBioDraft(nextBio);
     setProfileBannerDraft(nextBanner);
+    setLastUsernameChangedAt(now.toISOString());
   };
 
   const handleNudgeSave = () => {
@@ -671,8 +724,8 @@ export default function SettingsPage() {
                               <span className="font-medium">
                                 {subscriptionMode === "free"
                                   ? "Free"
-                                  : subscriptionMode === "starter"
-                                  ? "Starter"
+                                  : subscriptionMode === "pro"
+                                  ? "Pro"
                                   : "Top tier"}
                               </span>
                             </p>
@@ -724,6 +777,9 @@ export default function SettingsPage() {
                             className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 placeholder:text-zinc-400 focus:border-red-400 focus:ring-1 focus:ring-red-200"
                           />
                         </div>
+                        {profileError && (
+                          <p className="text-[10px] text-red-500">{profileError}</p>
+                        )}
                         <div className="space-y-1">
                           <p className="text-[11px] font-medium text-zinc-600">Email</p>
                           <div className="relative">
@@ -1070,7 +1126,7 @@ export default function SettingsPage() {
                   </div>
                   <div
                     className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-[11px] ${
-                      subscriptionMode === "starter"
+                      subscriptionMode === "pro"
                         ? "border-red-500 bg-red-50 text-red-800"
                         : "border-zinc-200 bg-zinc-50 text-zinc-700"
                     }`}
@@ -1078,7 +1134,7 @@ export default function SettingsPage() {
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <p
                         className={`font-medium ${
-                          subscriptionMode === "starter"
+                          subscriptionMode === "pro"
                             ? "text-red-700 [data-theme=dark]:text-red-200"
                             : ""
                         }`}
@@ -1087,7 +1143,7 @@ export default function SettingsPage() {
                       </p>
                       <p
                         className={`text-[11px] ${
-                          subscriptionMode === "starter"
+                          subscriptionMode === "pro"
                             ? "text-red-700 [data-theme=dark]:text-red-200"
                             : "text-zinc-500 [data-theme=dark]:text-zinc-400"
                         }`}

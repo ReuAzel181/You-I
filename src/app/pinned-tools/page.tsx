@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { tools as allTools } from "@/components/ToolGrid";
 import { PageTransitionLink } from "@/components/PageTransitionLink";
+import { useAuth } from "@/providers/AuthProvider";
 
 type WorkspacePreset = {
   id: string;
@@ -33,6 +34,300 @@ type WaveFavorite = {
 };
 
 type WorkspaceClearTarget = "presets" | "fonts" | "waves";
+
+function buildUserScopedStorageKey(baseKey: string, userId: string | null): string {
+  if (!userId) {
+    return baseKey;
+  }
+
+  return `${baseKey}::${userId}`;
+}
+
+function loadWorkspacePresetsFromStorage(storageKey: string): WorkspacePreset[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const mapped = parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") {
+          return null;
+        }
+
+        const value = item as {
+          id?: unknown;
+          name?: unknown;
+          toolName?: unknown;
+          note?: unknown;
+          createdAt?: unknown;
+        };
+
+        if (
+          typeof value.id !== "string" ||
+          typeof value.name !== "string" ||
+          typeof value.toolName !== "string"
+        ) {
+          return null;
+        }
+
+        const base = {
+          id: value.id,
+          name: value.name,
+          toolName: value.toolName,
+          note: typeof value.note === "string" ? value.note : "",
+          createdAt:
+            typeof value.createdAt === "string"
+              ? value.createdAt
+              : new Date().toISOString(),
+        } satisfies WorkspacePreset;
+        return base;
+      })
+      .filter((preset): preset is WorkspacePreset => Boolean(preset));
+
+    const seen = new Set<string>();
+
+    return mapped.filter((preset) => {
+      if (seen.has(preset.id)) {
+        return false;
+      }
+      seen.add(preset.id);
+      return true;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function loadFontFavoritesFromStorage(storageKey: string): FontFavorite[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const mapped = parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") {
+          return null;
+        }
+
+        const value = item as {
+          family?: unknown;
+          category?: unknown;
+          addedAt?: unknown;
+        };
+
+        if (typeof value.family !== "string" || typeof value.category !== "string") {
+          return null;
+        }
+
+        const base = {
+          family: value.family,
+          category: value.category,
+          addedAt:
+            typeof value.addedAt === "string" ? value.addedAt : new Date().toISOString(),
+        } satisfies FontFavorite;
+
+        return base;
+      })
+      .filter((item): item is FontFavorite => Boolean(item));
+
+    const seen = new Set<string>();
+
+    return mapped.filter((item) => {
+      if (seen.has(item.family)) {
+        return false;
+      }
+      seen.add(item.family);
+      return true;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function loadWaveFavoritesFromStorage(storageKey: string): WaveFavorite[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const mapped = parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") {
+          return null;
+        }
+
+        const value = item as {
+          id?: unknown;
+          position?: unknown;
+          shape?: unknown;
+          heightValue?: unknown;
+          intensityValue?: unknown;
+          fillColor?: unknown;
+          backgroundColor?: unknown;
+          createdAt?: unknown;
+        };
+
+        if (
+          typeof value.position !== "string" ||
+          (value.position !== "top" && value.position !== "bottom")
+        ) {
+          return null;
+        }
+
+        if (
+          typeof value.shape !== "string" ||
+          (value.shape !== "smooth" && value.shape !== "peaks")
+        ) {
+          return null;
+        }
+
+        if (typeof value.heightValue !== "string" || typeof value.intensityValue !== "string") {
+          return null;
+        }
+
+        if (typeof value.fillColor !== "string" || typeof value.backgroundColor !== "string") {
+          return null;
+        }
+
+        const base = {
+          id:
+            typeof value.id === "string"
+              ? value.id
+              : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          position: value.position === "top" ? "top" : "bottom",
+          shape: value.shape === "peaks" ? "peaks" : "smooth",
+          heightValue: value.heightValue,
+          intensityValue: value.intensityValue,
+          fillColor: value.fillColor,
+          backgroundColor: value.backgroundColor,
+          createdAt:
+            typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
+        } satisfies WaveFavorite;
+
+        return base;
+      })
+      .filter((item): item is WaveFavorite => Boolean(item));
+
+    return mapped;
+  } catch {
+    return [];
+  }
+}
+
+function loadColorContrastPresetsFromStorage(
+  storageKey: string,
+): Record<
+  string,
+  {
+    textColor: string;
+    backgroundColor: string;
+    containerColor: string;
+    mode: "two" | "three";
+  }
+> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+
+    if (!stored) {
+      return {};
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return {};
+    }
+
+    const mapped: Record<
+      string,
+      {
+        textColor: string;
+        backgroundColor: string;
+        containerColor: string;
+        mode: "two" | "three";
+      }
+    > = {};
+
+    parsed.forEach((item) => {
+      if (!item || typeof item !== "object") {
+        return;
+      }
+
+      const value = item as {
+        id?: unknown;
+        textColor?: unknown;
+        backgroundColor?: unknown;
+        containerColor?: unknown;
+        mode?: unknown;
+      };
+
+      if (
+        (typeof value.id !== "string" && typeof value.id !== "number") ||
+        typeof value.textColor !== "string" ||
+        typeof value.backgroundColor !== "string" ||
+        typeof value.containerColor !== "string" ||
+        (value.mode !== "two" && value.mode !== "three")
+      ) {
+        return;
+      }
+
+      const id = String(value.id);
+
+      mapped[id] = {
+        textColor: value.textColor,
+        backgroundColor: value.backgroundColor,
+        containerColor: value.containerColor,
+        mode: value.mode,
+      };
+    });
+
+    return mapped;
+  } catch {
+    return {};
+  }
+}
 
 function buildWavePathForFavorite(
   favorite: WaveFavorite,
@@ -231,219 +526,34 @@ const WAVE_FAVORITES_STORAGE_KEY = "zanari-wave-favorites";
 const COLOR_CONTRAST_PRESETS_STORAGE_KEY = "zanari-color-contrast-presets";
 
 export default function PinnedToolsPage() {
-  const [presets, setPresets] = useState<WorkspacePreset[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const workspaceStorageKey = buildUserScopedStorageKey(
+    WORKSPACE_PRESETS_STORAGE_KEY,
+    userId,
+  );
+  const fontStorageKey = buildUserScopedStorageKey(FONT_FAVORITES_STORAGE_KEY, userId);
+  const waveStorageKey = buildUserScopedStorageKey(WAVE_FAVORITES_STORAGE_KEY, userId);
+  const colorStorageKey = buildUserScopedStorageKey(
+    COLOR_CONTRAST_PRESETS_STORAGE_KEY,
+    userId,
+  );
 
-    try {
-      const stored = window.localStorage.getItem(WORKSPACE_PRESETS_STORAGE_KEY);
-
-      if (!stored) {
-        return [];
-      }
-
-      const parsed = JSON.parse(stored) as unknown;
-
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      const mapped = parsed
-        .map((item) => {
-          if (!item || typeof item !== "object") {
-            return null;
-          }
-
-          const value = item as {
-            id?: unknown;
-            name?: unknown;
-            toolName?: unknown;
-            note?: unknown;
-            createdAt?: unknown;
-          };
-
-          if (
-            typeof value.id !== "string" ||
-            typeof value.name !== "string" ||
-            typeof value.toolName !== "string"
-          ) {
-            return null;
-          }
-
-          const base = {
-            id: value.id,
-            name: value.name,
-            toolName: value.toolName,
-            note: typeof value.note === "string" ? value.note : "",
-            createdAt:
-              typeof value.createdAt === "string"
-                ? value.createdAt
-                : new Date().toISOString(),
-          } satisfies WorkspacePreset;
-          return base;
-        })
-        .filter((preset): preset is WorkspacePreset => Boolean(preset));
-
-      const seen = new Set<string>();
-
-      return mapped.filter((preset) => {
-        if (seen.has(preset.id)) {
-          return false;
-        }
-        seen.add(preset.id);
-        return true;
-      });
-    } catch {
-      return [];
-    }
-  });
-
+  const [presets, setPresets] = useState<WorkspacePreset[]>(() =>
+    loadWorkspacePresetsFromStorage(workspaceStorageKey),
+  );
   const [hasHydrated, setHasHydrated] = useState(false);
-  const [fontFavorites, setFontFavorites] = useState<FontFavorite[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    try {
-      const stored = window.localStorage.getItem(FONT_FAVORITES_STORAGE_KEY);
-
-      if (!stored) {
-        return [];
-      }
-
-      const parsed = JSON.parse(stored) as unknown;
-
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      const mapped = parsed
-        .map((item) => {
-          if (!item || typeof item !== "object") {
-            return null;
-          }
-
-          const value = item as {
-            family?: unknown;
-            category?: unknown;
-            addedAt?: unknown;
-          };
-
-          if (typeof value.family !== "string" || typeof value.category !== "string") {
-            return null;
-          }
-
-          const base = {
-            family: value.family,
-            category: value.category,
-            addedAt:
-              typeof value.addedAt === "string" ? value.addedAt : new Date().toISOString(),
-          } satisfies FontFavorite;
-
-          return base;
-        })
-        .filter((item): item is FontFavorite => Boolean(item));
-
-      const seen = new Set<string>();
-
-      return mapped.filter((item) => {
-        if (seen.has(item.family)) {
-          return false;
-        }
-        seen.add(item.family);
-        return true;
-      });
-    } catch {
-      return [];
-    }
-  });
+  const [fontFavorites, setFontFavorites] = useState<FontFavorite[]>(() =>
+    loadFontFavoritesFromStorage(fontStorageKey),
+  );
   const [clearToast, setClearToast] = useState<{
     id: number;
     target: WorkspaceClearTarget;
     message: string;
   } | null>(null);
-  const [waveFavorites, setWaveFavorites] = useState<WaveFavorite[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    try {
-      const stored = window.localStorage.getItem(WAVE_FAVORITES_STORAGE_KEY);
-
-      if (!stored) {
-        return [];
-      }
-
-      const parsed = JSON.parse(stored) as unknown;
-
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      const mapped = parsed
-        .map((item) => {
-          if (!item || typeof item !== "object") {
-            return null;
-          }
-
-          const value = item as {
-            id?: unknown;
-            position?: unknown;
-            shape?: unknown;
-            heightValue?: unknown;
-            intensityValue?: unknown;
-            fillColor?: unknown;
-            backgroundColor?: unknown;
-            createdAt?: unknown;
-          };
-
-          if (
-            typeof value.position !== "string" ||
-            (value.position !== "top" && value.position !== "bottom")
-          ) {
-            return null;
-          }
-
-          if (
-            typeof value.shape !== "string" ||
-            (value.shape !== "smooth" && value.shape !== "peaks")
-          ) {
-            return null;
-          }
-
-          if (typeof value.heightValue !== "string" || typeof value.intensityValue !== "string") {
-            return null;
-          }
-
-          if (typeof value.fillColor !== "string" || typeof value.backgroundColor !== "string") {
-            return null;
-          }
-
-          const base = {
-            id:
-              typeof value.id === "string"
-                ? value.id
-                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            position: value.position === "top" ? "top" : "bottom",
-            shape: value.shape === "peaks" ? "peaks" : "smooth",
-            heightValue: value.heightValue,
-            intensityValue: value.intensityValue,
-            fillColor: value.fillColor,
-            backgroundColor: value.backgroundColor,
-            createdAt:
-              typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
-          } satisfies WaveFavorite;
-
-          return base;
-        })
-        .filter((item): item is WaveFavorite => Boolean(item));
-
-      return mapped;
-    } catch {
-      return [];
-    }
-  });
+  const [waveFavorites, setWaveFavorites] = useState<WaveFavorite[]>(() =>
+    loadWaveFavoritesFromStorage(waveStorageKey),
+  );
   const [waveDownloadFormats, setWaveDownloadFormats] = useState<
     Record<string, "svg" | "png" | "jpg">
   >({});
@@ -452,7 +562,7 @@ export default function PinnedToolsPage() {
     "ABCDEFG abcdefg 1234567890 !@#$%^&*()",
   );
 
-  const [colorContrastPresets] = useState<
+  const [colorContrastPresets, setColorContrastPresets] = useState<
     Record<
       string,
       {
@@ -462,74 +572,7 @@ export default function PinnedToolsPage() {
         mode: "two" | "three";
       }
     >
-  >(() => {
-    if (typeof window === "undefined") {
-      return {};
-    }
-
-    try {
-      const stored = window.localStorage.getItem(
-        COLOR_CONTRAST_PRESETS_STORAGE_KEY,
-      );
-
-      if (!stored) {
-        return {};
-      }
-
-      const parsed = JSON.parse(stored) as unknown;
-
-      if (!Array.isArray(parsed)) {
-        return {};
-      }
-
-      const mapped: Record<
-        string,
-        {
-          textColor: string;
-          backgroundColor: string;
-          containerColor: string;
-          mode: "two" | "three";
-        }
-      > = {};
-
-      parsed.forEach((item) => {
-        if (!item || typeof item !== "object") {
-          return;
-        }
-
-        const value = item as {
-          id?: unknown;
-          textColor?: unknown;
-          backgroundColor?: unknown;
-          containerColor?: unknown;
-          mode?: unknown;
-        };
-
-        if (
-          (typeof value.id !== "string" && typeof value.id !== "number") ||
-          typeof value.textColor !== "string" ||
-          typeof value.backgroundColor !== "string" ||
-          typeof value.containerColor !== "string" ||
-          (value.mode !== "two" && value.mode !== "three")
-        ) {
-          return;
-        }
-
-        const id = String(value.id);
-
-        mapped[id] = {
-          textColor: value.textColor,
-          backgroundColor: value.backgroundColor,
-          containerColor: value.containerColor,
-          mode: value.mode,
-        };
-      });
-
-      return mapped;
-    } catch {
-      return {};
-    }
-  });
+  >(() => loadColorContrastPresetsFromStorage(colorStorageKey));
 
   const handleDeletePreset = (presetId: string) => {
     setPresets((current) => {
@@ -538,15 +581,13 @@ export default function PinnedToolsPage() {
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
-          WORKSPACE_PRESETS_STORAGE_KEY,
+          workspaceStorageKey,
           JSON.stringify(next),
         );
 
         if (presetToDelete && presetToDelete.toolName === "Color Contrast Checker") {
           try {
-            const storedColor = window.localStorage.getItem(
-              COLOR_CONTRAST_PRESETS_STORAGE_KEY,
-            );
+            const storedColor = window.localStorage.getItem(colorStorageKey);
 
             if (storedColor) {
               const parsedColor = JSON.parse(storedColor);
@@ -566,10 +607,7 @@ export default function PinnedToolsPage() {
                   return true;
                 });
 
-                window.localStorage.setItem(
-                  COLOR_CONTRAST_PRESETS_STORAGE_KEY,
-                  JSON.stringify(nextColorPresets),
-                );
+                window.localStorage.setItem(colorStorageKey, JSON.stringify(nextColorPresets));
               }
             }
           } catch {
@@ -587,7 +625,7 @@ export default function PinnedToolsPage() {
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
-          FONT_FAVORITES_STORAGE_KEY,
+          fontStorageKey,
           JSON.stringify(next),
         );
       }
@@ -602,7 +640,7 @@ export default function PinnedToolsPage() {
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
-          WAVE_FAVORITES_STORAGE_KEY,
+          waveStorageKey,
           JSON.stringify(next),
         );
       }
@@ -615,7 +653,7 @@ export default function PinnedToolsPage() {
     setPresets(() => {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
-          WORKSPACE_PRESETS_STORAGE_KEY,
+          workspaceStorageKey,
           JSON.stringify([]),
         );
       }
@@ -628,7 +666,7 @@ export default function PinnedToolsPage() {
     setFontFavorites(() => {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
-          FONT_FAVORITES_STORAGE_KEY,
+          fontStorageKey,
           JSON.stringify([]),
         );
       }
@@ -641,7 +679,7 @@ export default function PinnedToolsPage() {
     setWaveFavorites(() => {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
-          WAVE_FAVORITES_STORAGE_KEY,
+          waveStorageKey,
           JSON.stringify([]),
         );
       }
@@ -797,9 +835,9 @@ export default function PinnedToolsPage() {
                           const tool = allTools.find(
                             (item) => item.name === preset.toolName,
                           );
-                          const createdDate = new Date(
-                            preset.createdAt,
-                          ).toLocaleDateString("en-US");
+                          const createdDate = new Date(preset.createdAt).toLocaleDateString(
+                            "en-US",
+                          );
                           const iconSource = tool ? tool.name : preset.toolName;
                           const iconInitial =
                             iconSource.trim().length > 0
@@ -835,13 +873,16 @@ export default function PinnedToolsPage() {
                                     <p className="truncate text-[10px] text-zinc-500">
                                       {tool ? tool.name : preset.toolName}
                                     </p>
+                                    <p className="truncate text-[9px] text-zinc-400">
+                                      Saved on {createdDate}
+                                    </p>
                                   </div>
                                 </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeletePreset(preset.id)}
-                                  className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[9px] font-medium text-zinc-700 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeletePreset(preset.id)}
+                                    className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[9px] font-medium text-zinc-700 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
                                   >
                                     Remove
                                   </button>

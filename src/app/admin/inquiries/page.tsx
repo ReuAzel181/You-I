@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/providers/AuthProvider";
-import { useAnalytics } from "@/providers/SettingsProvider";
+import { useAnalytics, useSettings } from "@/providers/SettingsProvider";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type AdminInquiryRow = {
@@ -23,6 +23,7 @@ type AdminInquiryRow = {
 export default function AdminInquiriesPage() {
   const { user, isLoading } = useAuth();
   const { analyticsEnabled, trackEvent } = useAnalytics();
+  const { setAdminUnreadInquiries } = useSettings();
   const [inquiries, setInquiries] = useState<AdminInquiryRow[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasCheckedAdmin, setHasCheckedAdmin] = useState(false);
@@ -97,17 +98,65 @@ export default function AdminInquiriesPage() {
         const supabase = getSupabaseClient();
         const { data, error: inquiriesError } = await supabase
           .from("inquiries")
-          .select("id, full_name, email, team_size, topic, usage, message, is_read");
+          .select("*")
+          .order("created_at", { ascending: false });
 
         if (inquiriesError) {
+          console.error("Failed to load inquiries", inquiriesError);
           setError("Unable to load inquiries right now.");
           return;
         }
 
         if (data) {
-          setInquiries(data as AdminInquiryRow[]);
+          const mapped = data
+            .map((raw) => {
+              const row = raw as Record<string, unknown>;
+              const idValue = row.id;
+              const id = typeof idValue === "string" ? idValue : "";
+              if (!id) {
+                return null;
+              }
+
+              const fullNameValue = row.full_name;
+              const emailValue = row.email;
+              const teamSizeValue = row.team_size;
+              const topicValue = row.topic;
+              const usageValue = row.usage;
+              const messageValue = row.message;
+              const isReadValue = row.is_read;
+              const createdAtValue = row.created_at;
+
+              const base: AdminInquiryRow = {
+                id,
+                full_name: typeof fullNameValue === "string" ? fullNameValue : null,
+                email: typeof emailValue === "string" ? emailValue : null,
+                team_size: typeof teamSizeValue === "string" ? teamSizeValue : null,
+                topic: typeof topicValue === "string" ? topicValue : null,
+                usage: typeof usageValue === "string" ? usageValue : null,
+                message: typeof messageValue === "string" ? messageValue : null,
+                is_read:
+                  typeof isReadValue === "boolean"
+                    ? isReadValue
+                    : isReadValue === null || typeof isReadValue === "undefined"
+                      ? false
+                      : Boolean(isReadValue),
+                created_at:
+                  typeof createdAtValue === "string" || createdAtValue instanceof Date
+                    ? String(createdAtValue)
+                    : null,
+              };
+
+              return base;
+            })
+            .filter((item): item is AdminInquiryRow => Boolean(item));
+
+          setInquiries(mapped);
+
+          const unread = mapped.filter((item) => !item.is_read).length;
+          setAdminUnreadInquiries(unread);
         }
-      } catch {
+      } catch (unknownError) {
+        console.error("Unexpected error while loading inquiries", unknownError);
         setError("Something went wrong while loading inquiries.");
       } finally {
         setIsLoadingData(false);
@@ -115,7 +164,7 @@ export default function AdminInquiriesPage() {
     };
 
     void loadInquiries();
-  }, [isAdmin]);
+  }, [isAdmin, setAdminUnreadInquiries]);
 
   const handleToggleRead = async (id: string, nextIsRead: boolean) => {
     try {
@@ -132,11 +181,16 @@ export default function AdminInquiriesPage() {
         return;
       }
 
-      setInquiries((current) =>
-        current.map((item) =>
+      setInquiries((current) => {
+        const next = current.map((item) =>
           item.id === id ? { ...item, is_read: nextIsRead } : item,
-        ),
-      );
+        );
+
+        const unread = next.filter((item) => !item.is_read).length;
+        setAdminUnreadInquiries(unread);
+
+        return next;
+      });
     } catch {
       setError("Something went wrong while updating the inquiry status.");
     } finally {

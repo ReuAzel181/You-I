@@ -49,13 +49,13 @@ export function Header() {
   const [showLoginLinkInError, setShowLoginLinkInError] = useState(false);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const { adminUnreadInquiries, appearance } = useSettings();
+  const { adminUnreadInquiries, appearance, profileUsername } = useSettings();
   const [isPasswordActive, setIsPasswordActive] = useState(false);
   const [isAuthModeSwitching, setIsAuthModeSwitching] = useState(false);
 
   const displayName = useMemo(() => {
     if (!user) {
-      return "";
+      return profileUsername || "";
     }
 
     const metadata = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
@@ -68,8 +68,18 @@ export function Header() {
       return metaName;
     }
 
-    return user.email ?? "Account";
-  }, [user]);
+    if (profileUsername && profileUsername.trim().length > 0) {
+      return profileUsername;
+    }
+
+    const email = user.email ?? "";
+
+    if (email.includes("@")) {
+      return email.split("@")[0] || "Account";
+    }
+
+    return email || "Account";
+  }, [user, profileUsername]);
 
   const passwordHintColorClass =
     appearance === "dark" ? "text-zinc-400" : "text-zinc-500";
@@ -308,13 +318,47 @@ export function Header() {
     return true;
   });
 
+  function launchSideConfetti() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    void import("canvas-confetti").then(({ default: confetti }) => {
+      const end = Date.now() + 15000;
+      const colors = ["#ef4444", "#f97316", "#22c55e", "#0ea5e9"];
+
+      function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors,
+        });
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors,
+        });
+
+        if (Date.now() < end) {
+          window.requestAnimationFrame(frame);
+        }
+      }
+
+      frame();
+    });
+  }
+
   async function handleAuthSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     setVisibleError(null);
      setShowLoginLinkInError(false);
 
-    if (authMode === "signup" && authStep === "verify") {
+      if (authMode === "signup" && authStep === "verify") {
       if (codeExpiresAt && Date.now() > codeExpiresAt) {
         setVisibleError("Code has expired. Request a new one.");
         return;
@@ -355,6 +399,7 @@ export function Header() {
       if (didSignUp) {
         closeAuth();
         setIsCelebrateOpen(true);
+        launchSideConfetti();
       }
 
       return;

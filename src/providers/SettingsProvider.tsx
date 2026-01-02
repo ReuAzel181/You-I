@@ -6,7 +6,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type AppearanceMode = "system" | "light" | "light-high-contrast" | "dark";
 
-type SubscriptionMode = "free" | "starter" | "top";
+type SubscriptionMode = "free" | "pro" | "top";
 
 type SettingsState = {
   appearance: AppearanceMode;
@@ -21,6 +21,7 @@ type SettingsState = {
   profileStatus: string;
   profileCountry: string;
   subscriptionMode: SubscriptionMode;
+  lastUsernameChangedAt: string | null;
   focusMode: boolean;
   profileBannerColor: "red" | "sky" | "emerald" | "violet" | "amber";
   adminUnreadInquiries: number;
@@ -39,6 +40,7 @@ type SettingsContextValue = SettingsState & {
   setProfileStatus: (value: string) => void;
   setProfileCountry: (value: string) => void;
   setSubscriptionMode: (mode: SubscriptionMode) => void;
+  setLastUsernameChangedAt: (value: string | null) => void;
   setFocusMode: (value: boolean) => void;
   setProfileBannerColor: (value: SettingsState["profileBannerColor"]) => void;
   setAdminUnreadInquiries: (value: number) => void;
@@ -103,7 +105,8 @@ const defaultSettings: SettingsState = {
   profileBio: "",
   profileStatus: "online",
   profileCountry: "US",
-  subscriptionMode: "starter",
+  subscriptionMode: "free",
+  lastUsernameChangedAt: null,
   focusMode: false,
   profileBannerColor: "red",
   adminUnreadInquiries: 0,
@@ -180,10 +183,14 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
             : getDefaultCountryCode(),
         subscriptionMode:
           parsed.subscriptionMode === "free" ||
-          parsed.subscriptionMode === "starter" ||
+          parsed.subscriptionMode === "pro" ||
           parsed.subscriptionMode === "top"
             ? parsed.subscriptionMode
             : defaultSettings.subscriptionMode,
+        lastUsernameChangedAt:
+          typeof parsed.lastUsernameChangedAt === "string"
+            ? parsed.lastUsernameChangedAt
+            : defaultSettings.lastUsernameChangedAt,
         focusMode:
           typeof parsed.focusMode === "boolean" ? parsed.focusMode : defaultSettings.focusMode,
         profileBannerColor:
@@ -268,7 +275,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id, country, subscription_mode")
+        .select("id, country, subscription_mode, username, bio, last_username_changed_at")
         .eq("email", email)
         .maybeSingle();
 
@@ -280,13 +287,19 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       const rawSubscriptionMode =
         (data?.subscription_mode as string | null | undefined) ?? null;
       let nextSubscriptionMode: SubscriptionMode | null = null;
+      const nextUsername = (data?.username as string | null | undefined) ?? null;
+      const nextBio = (data?.bio as string | null | undefined) ?? null;
+      const nextLastChanged =
+        (data?.last_username_changed_at as string | null | undefined) ?? null;
 
-      if (
-        rawSubscriptionMode === "free" ||
-        rawSubscriptionMode === "starter" ||
-        rawSubscriptionMode === "top"
-      ) {
-        nextSubscriptionMode = rawSubscriptionMode;
+      const trimmedMode = (rawSubscriptionMode ?? "").toLowerCase().trim();
+
+      if (trimmedMode === "top_tier" || trimmedMode === "top" || trimmedMode === "top tier") {
+        nextSubscriptionMode = "top";
+      } else if (trimmedMode === "pro" || trimmedMode === "pro plan") {
+        nextSubscriptionMode = "pro";
+      } else if (trimmedMode === "starter" || trimmedMode === "free") {
+        nextSubscriptionMode = "free";
       }
 
       if (!nextCountry || nextCountry === "Unknown") {
@@ -331,15 +344,43 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           changed = true;
         }
 
-        if (nextSubscriptionMode && current.subscriptionMode !== nextSubscriptionMode) {
-          if (!changed) {
-            draft = {
-              ...draft,
-            };
-            changed = true;
-          }
+        if (
+          typeof nextUsername === "string" &&
+          nextUsername.trim().length > 0 &&
+          current.profileUsername !== nextUsername
+        ) {
+          draft = {
+            ...draft,
+            profileUsername: nextUsername,
+          };
+          changed = true;
+        }
 
-          draft.subscriptionMode = nextSubscriptionMode;
+        if (typeof nextBio === "string" && current.profileBio !== nextBio) {
+          draft = {
+            ...draft,
+            profileBio: nextBio,
+          };
+          changed = true;
+        }
+
+        if (nextSubscriptionMode && current.subscriptionMode !== nextSubscriptionMode) {
+          draft = {
+            ...draft,
+            subscriptionMode: nextSubscriptionMode,
+          };
+          changed = true;
+        }
+
+        if (
+          typeof nextLastChanged === "string" &&
+          current.lastUsernameChangedAt !== nextLastChanged
+        ) {
+          draft = {
+            ...draft,
+            lastUsernameChangedAt: nextLastChanged,
+          };
+          changed = true;
         }
 
         if (!changed) {
@@ -446,6 +487,13 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }));
   };
 
+  const setLastUsernameChangedAt = (value: string | null) => {
+    setSettings((current) => ({
+      ...current,
+      lastUsernameChangedAt: value,
+    }));
+  };
+
   const setFocusMode = (value: boolean) => {
     setSettings((current) => ({
       ...current,
@@ -453,7 +501,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }));
   };
 
-  const setAdminUnreadInquiries = (value: number) => {
+  const setAdminUnreadInquiries = useCallback((value: number) => {
     const next =
       typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0;
 
@@ -461,7 +509,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       ...current,
       adminUnreadInquiries: next,
     }));
-  };
+  }, []);
 
   const value: SettingsContextValue = {
     ...settings,
@@ -477,6 +525,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setProfileStatus,
     setProfileCountry,
     setSubscriptionMode,
+    setLastUsernameChangedAt,
     setFocusMode,
     setProfileBannerColor,
     setAdminUnreadInquiries,

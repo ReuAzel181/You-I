@@ -22,6 +22,12 @@ type VoucherStyles = {
   error: string;
 };
 
+type VoucherToastStyles = {
+  container: string;
+  icon: string;
+  button: string;
+};
+
 function getVoucherStyles(accent: VoucherAccentId): VoucherStyles {
   switch (accent) {
     case "emerald":
@@ -78,6 +84,93 @@ function getVoucherStyles(accent: VoucherAccentId): VoucherStyles {
   }
 }
 
+function getVoucherToastStyles(accent: VoucherAccentId): VoucherToastStyles {
+  switch (accent) {
+    case "emerald":
+      return {
+        container: "border-emerald-200 bg-white text-zinc-900",
+        icon: "bg-emerald-500 text-white",
+        button: "border-emerald-100 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
+      };
+    case "violet":
+      return {
+        container: "border-violet-200 bg-white text-zinc-900",
+        icon: "bg-violet-500 text-white",
+        button: "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100",
+      };
+    case "amber":
+      return {
+        container: "border-amber-200 bg-white text-zinc-900",
+        icon: "bg-amber-500 text-white",
+        button: "border-amber-100 bg-amber-50 text-amber-800 hover:bg-amber-100",
+      };
+    case "sky":
+      return {
+        container: "border-sky-200 bg-white text-zinc-900",
+        icon: "bg-sky-500 text-white",
+        button: "border-sky-100 bg-sky-50 text-sky-800 hover:bg-sky-100",
+      };
+    case "red":
+    default:
+      return {
+        container: "border-red-200 bg-white text-zinc-900",
+        icon: "bg-red-500 text-white",
+        button: "border-red-100 bg-red-50 text-red-800 hover:bg-red-100",
+      };
+  }
+}
+
+function launchVoucherSideConfetti(accent: VoucherAccentId) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  void import("canvas-confetti").then(({ default: confetti }) => {
+    const end = Date.now() + 15000;
+    const baseColors = [
+      "#ef4444",
+      "#f97316",
+      "#0ea5e9",
+      "#8b5cf6",
+      "#22c55e",
+      "#fee2e2",
+      "#fef3c7",
+      "#e0f2fe",
+      "#ede9fe",
+      "#dcfce7",
+    ];
+    const accentOrder: VoucherAccentId[] = ["red", "amber", "sky", "violet", "emerald"];
+    const accentIndex = accentOrder.indexOf(accent);
+    const offset = accentIndex === -1 ? 0 : accentIndex;
+    const colors = [...baseColors.slice(offset), ...baseColors.slice(0, offset)];
+
+    function frame() {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors,
+        shapes: ["circle"],
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors,
+        shapes: ["circle"],
+      });
+
+      if (Date.now() < end) {
+        window.requestAnimationFrame(frame);
+      }
+    }
+
+    frame();
+  });
+}
+
 export default function PricingPage() {
   const { analyticsEnabled, trackEvent } = useAnalytics();
   const { user, isLoading } = useAuth();
@@ -101,10 +194,11 @@ export default function PricingPage() {
   );
   const [voucherPlanLabel, setVoucherPlanLabel] = useState<"Pro" | "Top tier" | null>(null);
   const [voucherEndsAt, setVoucherEndsAt] = useState<string | null>(null);
+  const [hasActiveVoucher, setHasActiveVoucher] = useState(false);
 
-  const isStarterPlan = subscriptionMode === "starter";
+  const isProPlan = subscriptionMode === "pro";
   const isTopPlan = subscriptionMode === "top";
-  const isFreePlan = !isStarterPlan && !isTopPlan;
+  const isFreePlan = !isProPlan && !isTopPlan;
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -148,6 +242,47 @@ export default function PricingPage() {
 
   const showAuthNotice = !user && !isLoading;
   const voucherStyles = getVoucherStyles(profileBannerColor);
+  const voucherToastStyles = getVoucherToastStyles(profileBannerColor);
+
+  useEffect(() => {
+    if (!user || isLoading) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadActiveVoucher = async () => {
+      const supabase = getSupabaseClient();
+      const nowIso = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from("user_voucher_subscriptions")
+        .select("ends_at")
+        .eq("user_id", user.id)
+        .gt("ends_at", nowIso)
+        .order("ends_at", { ascending: false })
+        .limit(1);
+
+      if (isCancelled) {
+        return;
+      }
+
+      if (error || !data || data.length === 0) {
+        setHasActiveVoucher(false);
+        return;
+      }
+
+      setHasActiveVoucher(true);
+      setVoucherEndsAt(data[0].ends_at as string);
+      setVoucherPlanLabel(subscriptionMode === "pro" ? "Pro" : "Top tier");
+    };
+
+    void loadActiveVoucher();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, isLoading, subscriptionMode]);
 
   const currencyConfig = (() => {
     switch (profileCountry) {
@@ -353,7 +488,7 @@ export default function PricingPage() {
                       </span>
                     </div>
                   </div>
-                  {isStarterPlan ? (
+                  {isProPlan ? (
                     <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-white">
                       Current plan
                     </span>
@@ -467,7 +602,7 @@ export default function PricingPage() {
                       href="/billing"
                       className="mt-6 inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:bg-red-600 active:translate-y-0 active:scale-95"
                     >
-                      {subscriptionMode === "starter" ? "Manage billing" : "Open billing"}
+                      {subscriptionMode === "pro" ? "Manage billing" : "Open billing"}
                     </Link>
                   )}
                 </div>
@@ -633,167 +768,194 @@ export default function PricingPage() {
                   Enter a code to unlock amazing gifts.
                 </p>
               </div>
-              <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[220px]">
-                <div className="flex w-full gap-2">
-                  <input
-                    type="text"
-                    inputMode="text"
-                    placeholder="Enter voucher code"
-                    value={voucherCode}
-                    onChange={(event) => {
-                      setVoucherCode(event.target.value);
-                      if (voucherNotice) {
-                        setVoucherNotice("");
-                        setShowEmptyVoucherNotice(false);
-                        setEmptyVoucherPosition(null);
-                      }
-                    }}
-                    className={`h-8 flex-1 rounded-lg bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 focus:outline-none focus:ring-1 ${voucherStyles.input}`}
-                  />
-                  <button
-                    type="button"
-                    disabled={isApplyingVoucher}
-                    onClick={async (event) => {
-                      if (!voucherCode.trim()) {
-                        const rect = (
-                          event.currentTarget as HTMLButtonElement
-                        ).getBoundingClientRect();
-                        setVoucherNotice("empty");
-                        setEmptyVoucherPosition({
-                          x: rect.left + rect.width / 2,
-                          y: rect.top,
-                        });
-                        setShowEmptyVoucherNotice(true);
-                        window.setTimeout(() => {
-                          setShowEmptyVoucherNotice(false);
-                          setVoucherNotice("");
-                          setEmptyVoucherPosition(null);
-                        }, 2000);
-                        return;
-                      }
-
-                      if (!user) {
-                        setVoucherNotice("login-required");
-                        return;
-                      }
-
-                      setIsApplyingVoucher(true);
-                      try {
-                        const supabase = getSupabaseClient();
-                        const trimmedCode = voucherCode.trim();
-
-                        const { data: voucher, error: fetchError } = await supabase
-                          .from("vouchers")
-                          .select("id, is_redeemed, pro_days, plan, expires_at")
-                          .eq("code", trimmedCode)
-                          .maybeSingle();
-
-                        if (fetchError) {
-                          setVoucherNotice("error");
-                          return;
-                        }
-
-                        if (!voucher) {
-                          setVoucherNotice("invalid");
-                          return;
-                        }
-
-                        if ((voucher as { is_redeemed?: boolean }).is_redeemed) {
-                          setVoucherNotice("already-used");
-                          return;
-                        }
-
-                        const { pro_days: proDays } = voucher as {
-                          pro_days?: number | null;
-                        };
-
-                        if (!proDays || proDays <= 0) {
-                          setVoucherNotice("invalid");
-                          return;
-                        }
-
-                        const now = new Date();
-                        const endsAt = new Date(now.getTime() + proDays * 24 * 60 * 60 * 1000);
-
-                        const { error: subscriptionError } = await supabase
-                          .from("user_voucher_subscriptions")
-                          .insert({
-                            user_id: user.id,
-                            voucher_id: (voucher as { id: string }).id,
-                            started_at: now.toISOString(),
-                            ends_at: endsAt.toISOString(),
-                          });
-
-                        if (subscriptionError) {
-                          setVoucherNotice("error");
-                          return;
-                        }
-
-                        const { error: redeemError } = await supabase
-                          .from("vouchers")
-                          .update({ is_redeemed: true, user_id: user.id })
-                          .eq("id", (voucher as { id: string }).id);
-
-                        if (redeemError) {
-                          setVoucherNotice("error");
-                          return;
-                        }
-
-                        const nextMode =
-                          (voucher as { plan?: string | null }).plan === "starter"
-                            ? "starter"
-                            : "top";
-                        const planLabel = nextMode === "starter" ? "Pro" : "Top tier";
-
-                        const { error: userUpdateError } = await supabase
-                          .from("users")
-                          .update({
-                            subscription_mode: nextMode,
-                          })
-                          .eq("id", user.id);
-
-                        if (userUpdateError) {
-                          setVoucherNotice("error");
-                          return;
-                        }
-
-                        setSubscriptionMode(nextMode);
-                        setVoucherPlanLabel(planLabel);
-                        setVoucherEndsAt(endsAt.toISOString());
-                        setVoucherNotice("applied");
-                      } catch {
-                        setVoucherNotice("error");
-                      } finally {
-                        setIsApplyingVoucher(false);
-                      }
-                    }}
-                    className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-[11px] font-semibold text-white shadow-sm disabled:opacity-60 ${voucherStyles.button}`}
-                  >
-                    {isApplyingVoucher ? "Applying…" : "Apply"}
-                  </button>
+              {hasActiveVoucher && voucherEndsAt ? (
+                <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[220px]">
+                  <p className={`text-[11px] font-medium ${voucherStyles.body}`}>
+                    You already redeemed a voucher.
+                  </p>
+                  <p className={`text-[11px] ${voucherStyles.body}`}>
+                    Your voucher access is active until{" "}
+                    {new Date(voucherEndsAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    .
+                  </p>
+                  <p className={`text-[10px] ${voucherStyles.body}`}>
+                    Redeeming another code will be available once this plan expires.
+                  </p>
                 </div>
-                {voucherNotice === "empty" && null}
-                {voucherNotice === "login-required" && (
-                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
-                    Log in to apply the voucher.
-                  </p>
-                )}
-                {voucherNotice === "invalid" && (
-                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
-                    This voucher code is not valid. Check the code and try again.
-                  </p>
-                )}
-                {voucherNotice === "already-used" && (
-                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
-                    This voucher has already been used.
-                  </p>
-                )}
-                {voucherNotice === "error" && (
-                  <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
-                    We could not apply this voucher right now. Please try again later.
-                  </p>
-                )}
-              </div>
+              ) : (
+                <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[220px]">
+                  <div className="flex w-full gap-2">
+                    <input
+                      type="text"
+                      inputMode="text"
+                      placeholder="Enter voucher code"
+                      value={voucherCode}
+                      onChange={(event) => {
+                        setVoucherCode(event.target.value);
+                        if (voucherNotice) {
+                          setVoucherNotice("");
+                          setShowEmptyVoucherNotice(false);
+                          setEmptyVoucherPosition(null);
+                        }
+                      }}
+                      className={`h-8 flex-1 rounded-lg bg-white px-2 text-[11px] text-zinc-800 outline-none ring-0 focus:outline-none focus:ring-1 ${voucherStyles.input}`}
+                    />
+                    <button
+                      type="button"
+                      disabled={isApplyingVoucher}
+                      onClick={async (event) => {
+                        if (!voucherCode.trim()) {
+                          const rect = (
+                            event.currentTarget as HTMLButtonElement
+                          ).getBoundingClientRect();
+                          setVoucherNotice("empty");
+                          setEmptyVoucherPosition({
+                            x: rect.left + rect.width / 2,
+                            y: rect.top,
+                          });
+                          setShowEmptyVoucherNotice(true);
+                          window.setTimeout(() => {
+                            setShowEmptyVoucherNotice(false);
+                            setVoucherNotice("");
+                            setEmptyVoucherPosition(null);
+                          }, 2000);
+                          return;
+                        }
+
+                        if (!user) {
+                          setVoucherNotice("login-required");
+                          return;
+                        }
+
+                        setIsApplyingVoucher(true);
+                        try {
+                          const supabase = getSupabaseClient();
+                          const trimmedCode = voucherCode.trim();
+
+                          const { data: voucher, error: fetchError } = await supabase
+                            .from("vouchers")
+                            .select("id, is_redeemed, pro_days, plan, expires_at")
+                            .eq("code", trimmedCode)
+                            .maybeSingle();
+
+                          if (fetchError) {
+                            setVoucherNotice("error");
+                            return;
+                          }
+
+                          if (!voucher) {
+                            setVoucherNotice("invalid");
+                            return;
+                          }
+
+                          if ((voucher as { is_redeemed?: boolean }).is_redeemed) {
+                            setVoucherNotice("already-used");
+                            return;
+                          }
+
+                          const { pro_days: proDays } = voucher as {
+                            pro_days?: number | null;
+                          };
+
+                          if (!proDays || proDays <= 0) {
+                            setVoucherNotice("invalid");
+                            return;
+                          }
+
+                          const now = new Date();
+                          const endsAt = new Date(now.getTime() + proDays * 24 * 60 * 60 * 1000);
+
+                          const { error: subscriptionError } = await supabase
+                            .from("user_voucher_subscriptions")
+                            .insert({
+                              user_id: user.id,
+                              voucher_id: (voucher as { id: string }).id,
+                              started_at: now.toISOString(),
+                              ends_at: endsAt.toISOString(),
+                            });
+
+                          if (subscriptionError) {
+                            setVoucherNotice("error");
+                            return;
+                          }
+
+                          const { error: redeemError } = await supabase
+                            .from("vouchers")
+                            .update({ is_redeemed: true, user_id: user.id })
+                            .eq("id", (voucher as { id: string }).id);
+
+                          if (redeemError) {
+                            setVoucherNotice("error");
+                            return;
+                          }
+
+                          const nextVoucherPlan =
+                            (voucher as { plan?: string | null }).plan === "starter"
+                              ? "pro"
+                              : "top";
+                          const planLabel = nextVoucherPlan === "pro" ? "Pro" : "Top tier";
+
+                          const { error: userUpdateError } = await supabase
+                            .from("users")
+                            .update({
+                              subscription_mode:
+                                nextVoucherPlan === "top"
+                                  ? "top_tier"
+                                  : nextVoucherPlan === "pro"
+                                    ? "pro"
+                                    : "starter",
+                            })
+                            .eq("id", user.id);
+
+                          if (userUpdateError) {
+                            setVoucherNotice("error");
+                            return;
+                          }
+
+                          setSubscriptionMode(nextVoucherPlan);
+                          setVoucherPlanLabel(planLabel);
+                          setVoucherEndsAt(endsAt.toISOString());
+                          setHasActiveVoucher(true);
+                          setVoucherNotice("applied");
+                          launchVoucherSideConfetti(profileBannerColor);
+                        } catch {
+                          setVoucherNotice("error");
+                        } finally {
+                          setIsApplyingVoucher(false);
+                        }
+                      }}
+                      className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-[11px] font-semibold text-white shadow-sm disabled:opacity-60 ${voucherStyles.button}`}
+                    >
+                      {isApplyingVoucher ? "Applying…" : "Redeem"}
+                    </button>
+                  </div>
+                  {voucherNotice === "empty" && null}
+                  {voucherNotice === "login-required" && (
+                    <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
+                      Log in to apply the voucher.
+                    </p>
+                  )}
+                  {voucherNotice === "invalid" && (
+                    <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
+                      This voucher code is not valid. Check the code and try again.
+                    </p>
+                  )}
+                  {voucherNotice === "already-used" && (
+                    <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
+                      This voucher has already been used.
+                    </p>
+                  )}
+                  {voucherNotice === "error" && (
+                    <p className={`text-[10px] font-medium ${voucherStyles.error}`}>
+                      We could not apply this voucher right now. Please try again later.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="mt-6 grid gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-[11px] text-zinc-600 md:grid-cols-3">
               <div>
@@ -826,10 +988,12 @@ export default function PricingPage() {
           <>
             <div className="pointer-events-none fixed inset-0 z-40 flex items-start justify-center px-4 pt-20 sm:px-0">
               <div
-                className={`pointer-events-auto flex w-full max-w-md flex-col gap-3 rounded-2xl border px-5 py-4 text-[13px] shadow-lg ring-1 ring-black/5 sm:px-6 sm:py-5 ${voucherStyles.container}`}
+                className={`pointer-events-auto flex w-full max-w-md flex-col gap-3 rounded-2xl border px-5 py-4 text-[13px] shadow-lg ring-1 ring-black/5 sm:px-6 sm:py-5 ${voucherToastStyles.container}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white">
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${voucherToastStyles.icon}`}
+                  >
                     ✓
                   </div>
                   <div className="flex flex-col gap-1">
@@ -848,13 +1012,16 @@ export default function PricingPage() {
                       })}
                       .
                     </p>
+                    <p className="text-[11px] leading-snug text-zinc-500">
+                      You can redeem another voucher once this plan expires.
+                    </p>
                   </div>
                 </div>
                 <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={() => setVoucherNotice("")}
-                    className="inline-flex items-center justify-center rounded-full border border-white/40 bg-white/10 px-3 py-1.5 text-[11px] font-medium"
+                    className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[11px] font-medium ${voucherToastStyles.button}`}
                   >
                     Got it
                   </button>
@@ -888,42 +1055,40 @@ type VoucherConfettiProps = {
 };
 
 function VoucherConfetti({ accent }: VoucherConfettiProps) {
-  const primaryColorClass =
-    accent === "emerald"
-      ? "bg-emerald-400"
-      : accent === "violet"
-        ? "bg-violet-400"
-        : accent === "amber"
-          ? "bg-amber-400"
-          : accent === "sky"
-            ? "bg-sky-400"
-            : "bg-red-400";
-
-  const secondaryColorClass =
-    accent === "emerald"
-      ? "bg-emerald-300"
-      : accent === "violet"
-        ? "bg-violet-300"
-        : accent === "amber"
-          ? "bg-amber-300"
-          : accent === "sky"
-            ? "bg-sky-300"
-            : "bg-red-300";
+  const palette: VoucherAccentId[] = ["red", "amber", "sky", "violet", "emerald"];
+  const colorClassMap: Record<VoucherAccentId, string> = {
+    red: "bg-red-400",
+    amber: "bg-amber-400",
+    sky: "bg-sky-400",
+    violet: "bg-violet-400",
+    emerald: "bg-emerald-400",
+  };
+  const softColorClassMap: Record<VoucherAccentId, string> = {
+    red: "bg-red-300",
+    amber: "bg-amber-300",
+    sky: "bg-sky-300",
+    violet: "bg-violet-300",
+    emerald: "bg-emerald-300",
+  };
+  const startIndex = palette.indexOf(accent);
+  const ordered = startIndex === -1 ? palette : [...palette.slice(startIndex), ...palette.slice(0, startIndex)];
+  const primaryClasses = ordered.map((id) => colorClassMap[id]);
+  const secondaryClasses = ordered.map((id) => softColorClassMap[id]);
 
   return (
     <div className="pointer-events-none fixed inset-y-0 right-0 z-30 flex items-center pr-4 sm:pr-6">
       <div className="relative h-32 w-32 sm:h-40 sm:w-40">
         <div
-          className={`absolute left-2 top-4 h-3 w-3 rounded-sm ${primaryColorClass} celebrate-confetti-orbit`}
+          className={`absolute left-2 top-4 h-3 w-3 rounded-sm ${primaryClasses[0]} celebrate-confetti-orbit`}
         />
         <div
-          className={`absolute right-3 top-10 h-2.5 w-2.5 rounded-sm ${secondaryColorClass} celebrate-confetti-sway`}
+          className={`absolute right-3 top-10 h-2.5 w-2.5 rounded-sm ${secondaryClasses[1]} celebrate-confetti-sway`}
         />
         <div
-          className={`absolute bottom-2 left-6 h-20 w-1.5 rounded-full ${primaryColorClass} celebrate-ribbon-fall-a`}
+          className={`absolute bottom-6 left-6 h-3 w-3 rounded-sm ${primaryClasses[2]} celebrate-confetti-orbit`}
         />
         <div
-          className={`absolute bottom-4 right-5 h-16 w-1.5 rounded-full ${secondaryColorClass} celebrate-ribbon-fall-b`}
+          className={`absolute bottom-4 right-5 h-2.5 w-2.5 rounded-sm ${secondaryClasses[3]} celebrate-confetti-sway`}
         />
       </div>
     </div>

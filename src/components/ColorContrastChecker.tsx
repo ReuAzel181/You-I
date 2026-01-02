@@ -41,6 +41,14 @@ type ColorPreset = {
 
 const COLOR_CONTRAST_PRESETS_STORAGE_KEY = "zanari-color-contrast-presets";
 
+function buildUserScopedStorageKey(baseKey: string, userId: string | null): string {
+  if (!userId) {
+    return baseKey;
+  }
+
+  return `${baseKey}::${userId}`;
+}
+
 function parseHexColor(value: string): RgbColor | null {
   const hex = value.trim().replace(/^#/, "");
 
@@ -438,6 +446,11 @@ function ColorSwatchPicker({ value, onChange, fallback, label }: ColorSwatchPick
 
 export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerProps) {
   const { user, isLoading } = useAuth();
+  const userId = user?.id ?? null;
+  const colorPresetStorageKey = buildUserScopedStorageKey(
+    COLOR_CONTRAST_PRESETS_STORAGE_KEY,
+    userId,
+  );
   const { nudgeAmount } = useSettings();
   const effectiveNudgeAmount =
     Number.isFinite(nudgeAmount) && nudgeAmount > 0 ? nudgeAmount : 8;
@@ -544,7 +557,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
     }
 
     try {
-      const stored = window.localStorage.getItem(COLOR_CONTRAST_PRESETS_STORAGE_KEY);
+      const stored = window.localStorage.getItem(colorPresetStorageKey);
 
       if (!stored) {
         return [];
@@ -876,8 +889,9 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
 
       if (typeof window !== "undefined") {
         try {
-          const storageKey = "zanari-workspace-presets";
-          const stored = window.localStorage.getItem(storageKey);
+          const baseWorkspaceKey = "zanari-workspace-presets";
+          const workspaceStorageKey = buildUserScopedStorageKey(baseWorkspaceKey, userId);
+          const stored = window.localStorage.getItem(workspaceStorageKey);
           const parsed = stored ? JSON.parse(stored) : [];
           const safeList = Array.isArray(parsed) ? parsed : [];
 
@@ -900,7 +914,7 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
           ];
 
           window.localStorage.setItem(
-            storageKey,
+            workspaceStorageKey,
             JSON.stringify(nextWorkspacePresets),
           );
         } catch {
@@ -974,12 +988,12 @@ export function ColorContrastChecker({ variant = "full" }: ColorContrastCheckerP
 
     try {
       window.localStorage.setItem(
-        COLOR_CONTRAST_PRESETS_STORAGE_KEY,
+        colorPresetStorageKey,
         JSON.stringify(presets),
       );
     } catch {
     }
-  }, [presets]);
+  }, [presets, colorPresetStorageKey]);
 
   useEffect(() => {
     if (typeof document === "undefined") {
